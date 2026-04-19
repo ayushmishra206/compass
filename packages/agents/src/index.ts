@@ -1,2 +1,1 @@
-// @compass/agents — populated in a future phase. See README.md.
-export {};
+export * as stubs from './stubs/index.js';
