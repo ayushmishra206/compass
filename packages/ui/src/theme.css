@@ -1,0 +1,91 @@
+@import '@fontsource/newsreader/index.css';
+@import '@fontsource/instrument-sans/index.css';
+@import '@fontsource/jetbrains-mono/index.css';
+
+@theme {
+  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+}
+
+:root {
+  --accent-h: 48;
+  --accent-c: 0.13;
+  --accent-l: 0.56;
+
+  --bg: oklch(0.972 0.012 75);
+  --bg-deep: oklch(0.95 0.014 75);
+  --panel: oklch(0.988 0.008 75);
+  --panel-2: oklch(0.965 0.011 75);
+  --ink: oklch(0.22 0.015 55);
+  --ink-2: oklch(0.36 0.014 55);
+  --ink-3: oklch(0.52 0.012 55);
+  --ink-4: oklch(0.68 0.01 55);
+  --hair: oklch(0.22 0.015 55 / 0.1);
+  --hair-2: oklch(0.22 0.015 55 / 0.18);
+  --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --accent-ink: oklch(0.34 var(--accent-c) var(--accent-h));
+  --accent-wash: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.1);
+  --sage: oklch(0.55 0.05 150);
+  --slate: oklch(0.52 0.03 255);
+
+  --sh-1: 0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 1px 2px oklch(0.22 0.015 55 / 0.04);
+  --sh-2: 0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 12px 32px -12px oklch(0.22 0.015 55 / 0.18);
+  --sh-3: 0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 24px 64px -16px oklch(0.22 0.015 55 / 0.28);
+}
+
+html[data-theme='dark'] {
+  --bg: oklch(0.18 0.012 55);
+  --bg-deep: oklch(0.14 0.012 55);
+  --panel: oklch(0.22 0.012 55);
+  --panel-2: oklch(0.26 0.012 55);
+  --ink: oklch(0.94 0.01 75);
+  --ink-2: oklch(0.8 0.01 75);
+  --ink-3: oklch(0.64 0.01 75);
+  --ink-4: oklch(0.46 0.01 75);
+  --hair: oklch(0.94 0.01 75 / 0.08);
+  --hair-2: oklch(0.94 0.01 75 / 0.16);
+  --accent-ink: oklch(0.78 var(--accent-c) var(--accent-h));
+  --accent-wash: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.18);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
