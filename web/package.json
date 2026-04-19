@@ -1,0 +1,10 @@
+{
+  "name": "compass-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Compass new-tab prototype — React/Babel-in-browser. Served statically.",
+  "scripts": {
+    "dev": "python3 -m http.server 8765",
+    "start": "python3 -m http.server 8765"
+  }
+}
