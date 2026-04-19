@@ -1,0 +1,12 @@
+node_modules
+dist
+.output
+.wxt
+coverage
+*.log
+.DS_Store
+.turbo
+.env
+.env.local
+playwright-report
+test-results
