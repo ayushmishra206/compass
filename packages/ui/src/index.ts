@@ -1,6 +1,7 @@
 export { cn } from './utils/cn.js';
 export * from './tokens.js';
 export { applyAccent } from './theme/accents.js';
+export { ThemeProvider, type Theme, type Density } from './theme/ThemeProvider.js';
 export * from './icons/index.js';
 export * from './components/Button.js';
 export * from './components/IconButton.js';
