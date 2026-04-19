@@ -1,6 +1,6 @@
 import { forwardRef, type SVGProps, type ReactNode } from 'react';
 
-export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'ref'> {
+export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'ref' | 'stroke'> {
   /** Pixel size for both width and height. Defaults to 16. */
   size?: number;
   /** Stroke width. Defaults to 1.6 (matches the prototype's feather-style weight). */
