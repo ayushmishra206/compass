@@ -19,5 +19,4 @@ export * from './components/Modal.js';
 export * from './components/Segmented.js';
 export * from './components/Toggle.js';
 export * from './components/BrandMark.js';
-export { useEscape } from './hooks/useEscape.js';
-export { useFocusTrap } from './hooks/useFocusTrap.js';
+export * from './hooks/index.js';
