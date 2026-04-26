@@ -11,7 +11,7 @@ import type {
   Vitals,
 } from '../types/index.js';
 
-export const USER: UserProfile = {
+export const USER: UserProfile & { name?: string } = {
   id: 'u1',
   createdAt: '2025-01-01T00:00:00Z',
   timezone: 'America/New_York',
@@ -19,6 +19,7 @@ export const USER: UserProfile = {
   workHours: { start: '09:00', end: '17:00' },
   briefingHour: 8,
   reflectionHour: 18,
+  name: 'Casey',
 };
 
 export const BRIEF: Brief = {
@@ -78,7 +79,14 @@ export const VITALS: Vitals = {
   weather: { tempC: 14, summary: 'Mild, light drizzle' },
 };
 
-export const GOALS: Goal[] = [
+export const GOALS: Array<
+  Goal & {
+    progress?: number;
+    weeksRemaining?: number;
+    milestones?: Array<{ week: number; title: string; done: boolean; current: boolean }>;
+    dailyTemplates?: string[];
+  }
+> = [
   {
     id: 'g1',
     createdAt: '2026-01-01T00:00:00Z',
@@ -88,6 +96,19 @@ export const GOALS: Goal[] = [
     endDate: '2026-03-31',
     why: 'It is the hinge feature for Plus retention. If the morning brief works, everything else lands.',
     status: 'active',
+    progress: 0.65,
+    weeksRemaining: 8,
+    milestones: [
+      { week: 1, title: 'API scaffolding', done: true, current: false },
+      { week: 2, title: 'LLM integration', done: true, current: false },
+      { week: 3, title: 'Brief UX + personalization', done: false, current: true },
+      { week: 4, title: 'QA + beta rollout', done: false, current: false },
+    ],
+    dailyTemplates: [
+      'Review brief quality metrics in the dashboard',
+      "Polish edge cases from yesterday's Q&A",
+      'Prepare rollout comms for beta group',
+    ],
   },
   {
     id: 'g2',
@@ -98,6 +119,19 @@ export const GOALS: Goal[] = [
     endDate: '2026-03-31',
     why: 'Recovery has been drifting; a concrete target fixes the training cadence.',
     status: 'active',
+    progress: 0.4,
+    weeksRemaining: 10,
+    milestones: [
+      { week: 1, title: 'Tempo runs establish baseline', done: true, current: false },
+      { week: 3, title: 'VO2 max intervals', done: true, current: false },
+      { week: 5, title: 'Sustained pace practice', done: false, current: true },
+      { week: 8, title: 'Taper & race', done: false, current: false },
+    ],
+    dailyTemplates: [
+      'Morning: 5 min easy, 10 min at goal pace, 5 min easy',
+      'Strength work 3x per week (glutes, core)',
+      'Recovery day light cross-training',
+    ],
   },
   {
     id: 'g3',
@@ -107,10 +141,16 @@ export const GOALS: Goal[] = [
     startDate: '2026-01-01',
     endDate: '2026-12-31',
     status: 'active',
+    progress: 0.25,
+    weeksRemaining: 35,
+    milestones: [],
+    dailyTemplates: ['30 min morning reading before standup', 'One book per month on average'],
   },
 ];
 
-export const NOTES: Note[] = [
+export const NOTES: Array<
+  Note & { excerpt?: string; updated?: string; related?: Array<{ id: string; stale: boolean }> }
+> = [
   {
     id: 'n1',
     title: 'Compass AI — architecture decisions',
@@ -125,6 +165,10 @@ export const NOTES: Note[] = [
     ],
     tags: ['compass', 'architecture'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt:
+      'Decision rule: anything needing DOM, WebGPU, OPFS sync handles, or more than ~25 seconds of work goes in the offscreen document.',
+    updated: 'Apr 26',
+    related: [{ id: 'n4', stale: true }],
   },
   {
     id: 'n2',
@@ -136,6 +180,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['compass'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Service worker stays thin. Offscreen doc handles heavy work.',
+    updated: 'Apr 25',
+    related: [],
   },
   {
     id: 'n3',
@@ -147,6 +194,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['ml', 'compass'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Comparing embedding models for local semantic search.',
+    updated: 'Apr 23',
+    related: [],
   },
   {
     id: 'n4',
@@ -158,6 +208,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['compass', 'archive'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Early feature brainstorm for Compass AI platform.',
+    updated: 'Nov 25',
+    related: [],
   },
   {
     id: 'n5',
@@ -169,6 +222,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['pricing'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Board meeting notes on pricing strategy for Q2.',
+    updated: 'Apr 19',
+    related: [],
   },
   {
     id: 'n6',
@@ -180,6 +236,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['running'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Personal notes on running mechanics and cadence.',
+    updated: 'Apr 12',
+    related: [],
   },
   {
     id: 'n7',
@@ -191,6 +250,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['goals'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Q2 goals and vision statement.',
+    updated: 'Apr 5',
+    related: [],
   },
   {
     id: 'n8',
@@ -202,6 +264,9 @@ export const NOTES: Note[] = [
     autoLinks: [],
     tags: ['compass', 'auth'],
     embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Investigation into ChatGPT login and OpenRouter alternatives.',
+    updated: 'Mar 26',
+    related: [],
   },
 ];
 

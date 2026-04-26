@@ -4,6 +4,7 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 import js from '@eslint/js';
+import globals from 'globals';
 
 export default [
   {
@@ -19,31 +20,14 @@ export default [
         ecmaFeatures: { jsx: true },
       },
       globals: {
-        // Browser APIs
-        window: 'readonly',
-        document: 'readonly',
-        navigator: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        fetch: 'readonly',
-        setTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearTimeout: 'readonly',
-        clearInterval: 'readonly',
-        // Crypto APIs
-        crypto: 'readonly',
-        CryptoKey: 'readonly',
-        TextEncoder: 'readonly',
-        TextDecoder: 'readonly',
-        btoa: 'readonly',
-        atob: 'readonly',
-        // Chrome extension APIs
-        chrome: 'readonly',
-        // Node globals
-        process: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        global: 'readonly',
+        ...globals.browser,
+        ...globals.node,
+        // WXT auto-imports
+        defineBackground: 'readonly',
+        defineContentScript: 'readonly',
+        defineUnlistedScript: 'readonly',
+        definePopup: 'readonly',
+        defineOptions: 'readonly',
       },
     },
     plugins: {
@@ -59,6 +43,7 @@ export default [
       ...prettier.rules,
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      'no-undef': 'off', // TypeScript handles undefined identifiers
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
     },
