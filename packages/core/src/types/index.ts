@@ -1,15 +1,23 @@
-/**
- * Entity types for Phase 0 mock fixtures. Phase 1 replaces these with Zod
- * schemas per PRD §6, with TS types derived via `z.infer<>`.
- */
+export * from './credentials';
+export * from './ping';
+export * from './ledger';
+export * from './user';
+export * from './configuration';
+export * from './goal';
+export * from './milestone';
+export * from './note';
+export * from './focus';
+export * from './block';
+export * from './briefing';
+export * from './gmail';
+export * from './meeting';
+export * from './telemetry';
 
-export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  timezone: string;
-  plus: boolean;
-}
+/**
+ * Phase 0 mock fixture types — kept for backward compatibility with fixtures.
+ * Phase 1 Zod schemas are the source of truth; these TypeScript-only definitions
+ * are legacy and will be sunset when fixtures migrate to Zod-inferred types.
+ */
 
 export interface TopPriority {
   title: string;
@@ -57,55 +65,22 @@ export interface Vitals {
   weather: { tempC: number; summary: string } | null;
 }
 
-export interface Milestone {
-  week: number;
-  title: string;
-  done: boolean;
-  current?: boolean;
-  targetDate?: string;
-  definitionOfDone?: string;
-}
-
-export interface Goal {
+export interface Soundscape {
   id: string;
-  title: string;
-  horizon: 'quarter' | 'year' | 'custom';
-  weeksRemaining: number;
-  progress: number;
-  why: string;
-  milestones: Milestone[];
-  dailyTemplates: string[];
-  status?: 'active' | 'paused' | 'achieved' | 'abandoned';
+  name: string;
+  loved: boolean;
 }
 
-export interface GoalDecomposition {
-  generatedAt: string;
-  milestones: Milestone[];
-  dailyTemplates: string[];
-  risks: string[];
-  firstWeekFocus: string;
-}
-
-export interface AutoLink {
+export interface Suggestion {
   id: string;
-  reason: string;
-  sim: number;
-  stale?: boolean;
-}
-
-export interface Note {
-  id: string;
-  title: string;
-  excerpt: string;
-  body?: string;
-  tags: string[];
-  updated: string;
-  related: AutoLink[];
+  kind: 'peak_shift' | 'burnout_warn' | 'soundscape_swap' | 'break_prompt';
+  body: string;
+  action: string;
 }
 
 export type InboxPriority = 'p1' | 'p2' | 'p3' | 'p4';
 
-export interface ExtractedAction {
+export interface ExtractedActionLegacy {
   title: string;
   owner: 'me' | 'other' | 'ambiguous';
   due: string;
@@ -120,41 +95,7 @@ export interface InboxAction {
   subject: string;
   priority: InboxPriority;
   received: string;
-  actions: ExtractedAction[];
+  actions: ExtractedActionLegacy[];
   snippet: string;
   hasDraft: boolean;
-}
-
-export interface BlockRule {
-  id: string;
-  pattern: string;
-  mode: 'soft' | 'hard';
-  source: 'user' | 'adaptive';
-  strikes: number;
-  note: string;
-}
-
-export interface Soundscape {
-  id: string;
-  name: string;
-  loved: boolean;
-}
-
-export interface Suggestion {
-  id: string;
-  kind: 'peak_shift' | 'burnout_warn' | 'soundscape_swap' | 'break_prompt';
-  body: string;
-  action: string;
-}
-
-export type NegotiationOffer =
-  | 'grant_5min'
-  | 'suggest_break'
-  | 'redirect_to_focus'
-  | 'just_acknowledge';
-
-export interface NegotiationTurn {
-  role: 'user' | 'assistant';
-  text: string;
-  offer?: NegotiationOffer;
 }
