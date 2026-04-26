@@ -1,2 +1,2 @@
-// @compass/db — populated in a future phase. See README.md.
-export {};
+export { startDb, getDb } from './init';
+export type { Db } from './opfs';
