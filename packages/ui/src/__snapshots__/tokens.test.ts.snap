@@ -1,0 +1,77 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tokens > matches snapshot (drift guard vs theme.css) 1`] = `
+{
+  "color": {
+    "dark": {
+      "accent": "oklch(var(--accent-l) var(--accent-c) var(--accent-h))",
+      "accent-ink": "oklch(0.78 var(--accent-c) var(--accent-h))",
+      "accent-wash": "oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.18)",
+      "bg": "oklch(0.18 0.012 55)",
+      "bg-deep": "oklch(0.14 0.012 55)",
+      "hair": "oklch(0.94 0.010 75 / 0.08)",
+      "hair-2": "oklch(0.94 0.010 75 / 0.16)",
+      "ink": "oklch(0.94 0.010 75)",
+      "ink-2": "oklch(0.80 0.010 75)",
+      "ink-3": "oklch(0.64 0.010 75)",
+      "ink-4": "oklch(0.46 0.010 75)",
+      "panel": "oklch(0.22 0.012 55)",
+      "panel-2": "oklch(0.26 0.012 55)",
+      "sage": "oklch(0.78 0.06 150)",
+      "slate": "oklch(0.78 0.05 255)",
+    },
+    "light": {
+      "accent": "oklch(var(--accent-l) var(--accent-c) var(--accent-h))",
+      "accent-ink": "oklch(0.34 var(--accent-c) var(--accent-h))",
+      "accent-wash": "oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.10)",
+      "bg": "oklch(0.972 0.012 75)",
+      "bg-deep": "oklch(0.95 0.014 75)",
+      "hair": "oklch(0.22 0.015 55 / 0.10)",
+      "hair-2": "oklch(0.22 0.015 55 / 0.18)",
+      "ink": "oklch(0.22 0.015 55)",
+      "ink-2": "oklch(0.36 0.014 55)",
+      "ink-3": "oklch(0.52 0.012 55)",
+      "ink-4": "oklch(0.68 0.010 55)",
+      "panel": "oklch(0.988 0.008 75)",
+      "panel-2": "oklch(0.965 0.011 75)",
+      "sage": "oklch(0.55 0.05 150)",
+      "slate": "oklch(0.52 0.03 255)",
+    },
+  },
+  "density": {
+    "compact": {
+      "sidebarP": 10,
+      "sidebarW": 64,
+    },
+    "spacious": {
+      "sidebarP": 18,
+      "sidebarW": 232,
+    },
+  },
+  "motion": {
+    "duration": {
+      "fast": 120,
+      "mid": 220,
+      "slow": 400,
+    },
+    "easing": {
+      "standard": "cubic-bezier(0.2, 0, 0, 1)",
+    },
+  },
+  "radius": {
+    "lg": 22,
+    "md": 14,
+    "sm": 8,
+  },
+  "shadow": {
+    "sh-1": "0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 1px 2px oklch(0.22 0.015 55 / 0.04)",
+    "sh-2": "0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 12px 32px -12px oklch(0.22 0.015 55 / 0.18)",
+    "sh-3": "0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 24px 64px -16px oklch(0.22 0.015 55 / 0.28)",
+  },
+  "type": {
+    "mono": "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+    "sans": "'Instrument Sans', ui-sans-serif, system-ui, sans-serif",
+    "serif": "'Newsreader', ui-serif, Georgia, serif",
+  },
+}
+`;
