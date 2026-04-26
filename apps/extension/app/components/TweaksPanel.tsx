@@ -1,5 +1,6 @@
 import { ACCENTS, type AccentName, IconButton, IconClose, Segmented, Swatch } from '@compass/ui';
 import { useShell } from '@app/state/shell.js';
+import { DevPingButton } from './DevPingButton.js';
 
 /** Floating tweaks panel for theme, accent, density. */
 export function TweaksPanel() {
@@ -68,6 +69,13 @@ export function TweaksPanel() {
             onChange={setDensity}
           />
         </div>
+        {import.meta.env.DEV && (
+          <>
+            <div className="border-t border-[var(--hair)] my-2" />
+            <div className="text-[12.5px] text-[var(--ink-2)] mb-2 font-serif">Dev</div>
+            <DevPingButton />
+          </>
+        )}
       </div>
     </div>
   );
