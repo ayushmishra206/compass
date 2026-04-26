@@ -62,6 +62,12 @@ importers:
       '@compass/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@compass/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@compass/llm':
+        specifier: workspace:*
+        version: link:../../packages/llm
       '@compass/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -212,7 +218,13 @@ importers:
       '@compass/core':
         specifier: workspace:*
         version: link:../core
+      '@compass/db':
+        specifier: workspace:*
+        version: link:../db
     devDependencies:
+      '@sqlite.org/sqlite-wasm':
+        specifier: ^3.53.0-build1
+        version: 3.53.0-build1
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

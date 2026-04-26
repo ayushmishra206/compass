@@ -1,12 +1,24 @@
 import { createHandlerRegistry, installRequestListener } from '@compass/runtime';
+import { startDb } from '@compass/db';
+import { recordCall } from '@compass/llm/ledger';
+
+void startDb();
 
 const registry = createHandlerRegistry();
 
-// Synthetic ping for week 1; replaced with real LLM call in week 3.
-registry.register('system.ping', async ({ utterance }) => ({
-  pong: true as const,
-  echo: utterance,
-}));
+registry.register('system.ping', async ({ utterance }) => {
+  await recordCall({
+    ts: new Date().toISOString(),
+    feature: 'system.ping',
+    provider: 'openrouter',
+    model: 'synthetic-stub',
+    promptTok: 0,
+    cachedTok: 0,
+    completionTok: 0,
+    usdEstimated: 0,
+  });
+  return { pong: true as const, echo: utterance };
+});
 
 installRequestListener(registry);
 
