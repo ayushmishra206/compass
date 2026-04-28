@@ -10,6 +10,7 @@ export default defineConfig({
         __dirname,
         './packages/runtime/src/in-process.ts',
       ),
+      '@compass/runtime/rpc': path.resolve(__dirname, './packages/runtime/src/rpc.ts'),
       '@compass/llm': path.resolve(__dirname, './packages/llm/src'),
       '@compass/db': path.resolve(__dirname, './packages/db/src'),
       '@compass/embeddings': path.resolve(__dirname, './packages/embeddings/src'),
