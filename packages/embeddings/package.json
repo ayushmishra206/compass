@@ -15,6 +15,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@compass/core": "workspace:*"
+    "@compass/core": "workspace:*",
+    "@huggingface/transformers": "^3"
   }
 }
