@@ -38,16 +38,16 @@ apps/extension ← ui, core, agents
 
 Every place where real LLM / DB / OAuth work will eventually happen is a named stub in `packages/agents/src/stubs/`. Consumers import by name; future phases replace implementations without touching consumer code.
 
-| Seam                            | Signature                                               | Consumer       | Real impl sprint                                                |
-| ------------------------------- | ------------------------------------------------------- | -------------- | --------------------------------------------------------------- |
-| `validateLlmKey(provider, key)` | `(Provider, string) => Promise<{ valid, error? }>`      | Onboarding     | Phase 1 — real `GET /v1/models`                                 |
-| `generateMorningBrief(inputs)`  | `(BriefInputs) => Promise<Brief>`                       | New Tab        | Phase 2 — LLM call with prompt template                         |
-| `semanticSearch(query)`         | `(string) => Promise<NoteHit[]>`                        | CmdK           | Phase 2 — sqlite-vec hybrid retrieval                           |
-| `detectAutoLinks(note)`         | `(Note) => Promise<AutoLink[]>`                         | Notes detail   | Phase 2 — embedding neighbor search                             |
-| `decomposeGoal(goal)`           | `(Goal) => Promise<GoalDecomposition>`                  | DecomposeModal | Phase 4 — high-tier LLM with structured output                  |
-| `extractGmailActions(msg)`      | `(GmailMessage) => Promise<InboxAction \| null>`        | Inbox          | Phase 4 — Gmail API + LLM extraction                            |
-| `draftReply(action)`            | `(Action) => AsyncIterable<string>`                     | DraftModal     | Phase 4 — streamed LLM with separation-of-extraction-and-action |
-| `negotiateBlock(rule, reason)`  | `(BlockRule, string) => AsyncIterable<NegotiationTurn>` | BlockOverlay   | Phase 3 — LLM negotiation w/ pattern detect                     |
+| Seam                            | Signature                                               | Consumer       | Real impl sprint                                                    |
+| ------------------------------- | ------------------------------------------------------- | -------------- | ------------------------------------------------------------------- |
+| `validateLlmKey(provider, key)` | `(Provider, string) => Promise<{ valid, error? }>`      | Onboarding     | Phase 1 (OpenRouter only); Phase 1.5 adds OpenAI + Anthropic direct |
+| `generateMorningBrief(inputs)`  | `(BriefInputs) => Promise<Brief>`                       | New Tab        | Phase 2 — LLM call with prompt template                             |
+| `semanticSearch(query)`         | `(string) => Promise<NoteHit[]>`                        | CmdK           | Phase 2 — sqlite-vec hybrid retrieval                               |
+| `detectAutoLinks(note)`         | `(Note) => Promise<AutoLink[]>`                         | Notes detail   | Phase 2 — embedding neighbor search                                 |
+| `decomposeGoal(goal)`           | `(Goal) => Promise<GoalDecomposition>`                  | DecomposeModal | Phase 4 — high-tier LLM with structured output                      |
+| `extractGmailActions(msg)`      | `(GmailMessage) => Promise<InboxAction \| null>`        | Inbox          | Phase 4 — Gmail API + LLM extraction                                |
+| `draftReply(action)`            | `(Action) => AsyncIterable<string>`                     | DraftModal     | Phase 4 — streamed LLM with separation-of-extraction-and-action     |
+| `negotiateBlock(rule, reason)`  | `(BlockRule, string) => AsyncIterable<NegotiationTurn>` | BlockOverlay   | Phase 3 — LLM negotiation w/ pattern detect                         |
 
 All stubs are typed against `@compass/core` entity types, so real implementations must return the same shapes. Each stub has a latency parity test that fails if the real implementation runs faster than the canned delay — a cheap guard against accidentally breaking the "feels live" experience.
 
@@ -88,6 +88,54 @@ One shell store at `apps/extension/app/state/shell.ts`:
 - **Transient:** `overlay`, `overlayPayload`, `tweaksOpen`.
 
 Surface-local state uses `useState`. A surface only promotes to Zustand when multiple sibling components need the same state (e.g., Notes list + CmdK both need the selected note ID).
+
+---
+
+## Heavy-doc + RPC
+
+The service worker spins up an **offscreen document** (Chrome MV3 API) that runs the real compute: LLM calls, DB queries, embeddings. The extension's UI communicates via `rpc()` calls, which are request-response message pairs tagged with a request ID for correlation.
+
+**Key contracts:**
+
+- `HeavyRuntime` — interface exposed by offscreen; all methods async, no callbacks.
+- `Routes` — registry mapping `'system.ping' | 'llm.validate_key' | ...` to typed handlers.
+- `ensureHeavyDoc()` — idempotent opener; checks if offscreen exists, creates if not.
+- **Request-ID correlation:** every RPC gets a UUID; responses carry it back, allowing parallel in-flight calls.
+- **Eviction safety:** offscreen is not guaranteed to stay alive (browser can kill it for memory); RPC timeout falls back to `ensure` + retry.
+
+Example flow (`rpc('system.ping', {})`):
+
+1. UI calls `rpc('system.ping', {})` → generates request ID `req-123`.
+2. Sends `{ id: 'req-123', route: 'system.ping', payload: {} }` to offscreen.
+3. Offscreen handler runs, returns `{ status: 'ok' }`.
+4. Offscreen sends `{ id: 'req-123', result: { status: 'ok' } }` back.
+5. RPC promise resolves with result.
+
+---
+
+## Migrations policy
+
+Phase 1 introduced `packages/db` with SQLite-WASM + sqlite-vec stored in OPFS. Migrations are **additive-only**: no column drops, no table renames, only new columns (with defaults) or new tables.
+
+**Naming and structure:**
+
+- Historically, migrations were numbered files (`0001-foundation.sql`, `0002-add-embeddings.sql`).
+- Currently, migration SQL is inlined as TypeScript strings in `packages/db/src/migration-runner.ts` to avoid build-tool friction in WASM bundles.
+- Migrations run in numeric order on first open; `meta.schema_version` is checked before applying.
+
+**Runner invariants:**
+
+- `meta.schema_version` always equals the highest-numbered migration applied.
+- Runner is idempotent: applying the same migration twice is safe (checked via version).
+- No DROP/ALTER destructive ops — future schema changes only remove stubs from code, not from DB.
+
+---
+
+## Credential read pattern
+
+Onboarding and settings both need to read the user's stored API keys. All credential reads go through **one function:** `getActiveCredentials()` in `packages/core/src/credentials.ts`. This is the single integration seam for `chrome.storage.local` reads, enforced by ESLint rule.
+
+Future encrypted-storage migration (Phase 1.5+) will be a one-function edit: swap the storage backend inside `getActiveCredentials()` without touching consumers.
 
 ---
 
