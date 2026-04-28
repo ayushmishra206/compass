@@ -3,3 +3,4 @@ export * from './ledger';
 export * from './provider';
 export * from './validate';
 export { createOpenRouterProvider } from './providers/openrouter';
+export { executeTask } from './router';
