@@ -33,13 +33,13 @@ function b64decode(s: string): Uint8Array {
 async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const baseKey = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(passphrase),
+    new TextEncoder().encode(passphrase) as BufferSource,
     { name: 'PBKDF2' },
     false,
     ['deriveKey'],
   );
   return crypto.subtle.deriveKey(
-    { ...KDF, salt },
+    { ...KDF, salt: salt as BufferSource },
     baseKey,
     { name: CIPHER.name, length: CIPHER.length },
     false,
@@ -52,9 +52,9 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
   const key = await deriveKey(passphrase, salt);
   const ct = await crypto.subtle.encrypt(
-    { name: CIPHER.name, iv },
+    { name: CIPHER.name, iv: iv as BufferSource },
     key,
-    new TextEncoder().encode(plaintext),
+    new TextEncoder().encode(plaintext) as BufferSource,
   );
   return {
     v: 1,
@@ -73,6 +73,10 @@ export async function decrypt(env: EncryptedSecret, passphrase: string): Promise
   const iv = b64decode(env.iv);
   const ct = b64decode(env.ct);
   const key = await deriveKey(passphrase, salt);
-  const pt = await crypto.subtle.decrypt({ name: CIPHER.name, iv }, key, ct);
+  const pt = await crypto.subtle.decrypt(
+    { name: CIPHER.name, iv: iv as BufferSource },
+    key,
+    ct as BufferSource,
+  );
   return new TextDecoder().decode(pt);
 }

@@ -1,4 +1,3 @@
-import migration0001 from './migrations/0001-foundation.sql?raw';
 import type { Db } from './opfs';
 
 interface Migration {
@@ -7,7 +6,30 @@ interface Migration {
   sql: string;
 }
 
-const MIGRATIONS: Migration[] = [{ version: 1, name: 'foundation', sql: migration0001 }];
+const MIGRATION_0001_FOUNDATION = `
+CREATE TABLE meta (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+INSERT INTO meta(key, value) VALUES ('schema_version', '1');
+
+CREATE TABLE llm_cost_ledger (
+  id              TEXT PRIMARY KEY,
+  ts              TEXT NOT NULL,
+  feature         TEXT NOT NULL,
+  provider        TEXT NOT NULL,
+  model           TEXT NOT NULL,
+  prompt_tok      INTEGER NOT NULL,
+  cached_tok      INTEGER NOT NULL,
+  completion_tok  INTEGER NOT NULL,
+  usd_estimated   REAL NOT NULL
+);
+CREATE INDEX idx_ledger_ts ON llm_cost_ledger(ts);
+`;
+
+const MIGRATIONS: Migration[] = [
+  { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
+];
 
 export function getSchemaVersion(db: Db): number {
   try {

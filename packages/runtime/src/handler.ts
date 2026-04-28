@@ -5,7 +5,7 @@ export function createHandlerRegistry(): HandlerRegistry {
   const handlers = new Map<keyof Routes, RpcHandler<keyof Routes>>();
   return {
     register(kind, handler) {
-      handlers.set(kind, handler as RpcHandler<keyof Routes>);
+      handlers.set(kind, handler as unknown as RpcHandler<keyof Routes>);
     },
     unregister(kind) {
       handlers.delete(kind);

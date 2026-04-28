@@ -11,7 +11,7 @@ import type {
   Vitals,
 } from '../types/index.js';
 
-export const USER: UserProfile & { name?: string } = {
+export const USER: UserProfile & { name: string } = {
   id: 'u1',
   createdAt: '2025-01-01T00:00:00Z',
   timezone: 'America/New_York',
@@ -81,10 +81,10 @@ export const VITALS: Vitals = {
 
 export const GOALS: Array<
   Goal & {
-    progress?: number;
-    weeksRemaining?: number;
-    milestones?: Array<{ week: number; title: string; done: boolean; current: boolean }>;
-    dailyTemplates?: string[];
+    progress: number;
+    weeksRemaining: number;
+    milestones: Array<{ week: number; title: string; done: boolean; current: boolean }>;
+    dailyTemplates: string[];
   }
 > = [
   {
@@ -149,7 +149,11 @@ export const GOALS: Array<
 ];
 
 export const NOTES: Array<
-  Note & { excerpt?: string; updated?: string; related?: Array<{ id: string; stale: boolean }> }
+  Note & {
+    excerpt?: string;
+    updated?: string;
+    related: Array<{ id: string; stale: boolean; sim: number; reason: string }>;
+  }
 > = [
   {
     id: 'n1',
@@ -168,7 +172,7 @@ export const NOTES: Array<
     excerpt:
       'Decision rule: anything needing DOM, WebGPU, OPFS sync handles, or more than ~25 seconds of work goes in the offscreen document.',
     updated: 'Apr 26',
-    related: [{ id: 'n4', stale: true }],
+    related: [{ id: 'n4', stale: true, sim: 0.83, reason: 'shared concept: offscreen' }],
   },
   {
     id: 'n2',
@@ -344,7 +348,7 @@ export const INBOX_ACTIONS: InboxAction[] = [
   },
 ];
 
-export const BLOCK_RULES: BlockRule[] = [
+export const BLOCK_RULES: Array<BlockRule & { note?: string }> = [
   {
     id: 'b1',
     pattern: 'reddit.com',

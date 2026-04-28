@@ -27,3 +27,24 @@ export const GoalSchema = z.object({
   metrics: z.array(GoalMetricSchema).optional(),
 });
 export type Goal = z.infer<typeof GoalSchema>;
+
+// GoalDecomposition is the structured output of the Phase 4 `goal.decompose`
+// task. Phase 1 ships a minimal type so the Phase 0 seam stub for
+// `decomposeGoal()` typechecks; Phase 4 will refine the schema with semantic
+// validators when the consumer surfaces ship.
+export const GoalDecompositionMilestoneSchema = z.object({
+  week: z.number().int(),
+  title: z.string(),
+  done: z.boolean(),
+  definitionOfDone: z.string(),
+});
+export type GoalDecompositionMilestone = z.infer<typeof GoalDecompositionMilestoneSchema>;
+
+export const GoalDecompositionSchema = z.object({
+  generatedAt: z.string(),
+  milestones: z.array(GoalDecompositionMilestoneSchema),
+  dailyTemplates: z.array(z.string()),
+  risks: z.array(z.string()),
+  firstWeekFocus: z.string(),
+});
+export type GoalDecomposition = z.infer<typeof GoalDecompositionSchema>;
