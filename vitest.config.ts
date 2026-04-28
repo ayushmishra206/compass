@@ -20,6 +20,12 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['tests/**/*.test.ts'],
+    // Default include covers per-package tests (`packages/*/src/**/*.test.ts`,
+    // `packages/*/tests/**/*.test.ts`, `apps/*/app/**/*.test.tsx`) plus the
+    // repo-root `tests/` directory used for cross-package contract + gate
+    // harnesses. Each package's `pnpm test` invokes vitest from that
+    // package's cwd, so vitest's default include discovers tests within that
+    // package; this root config inherits the default and only adds the
+    // workspace-resolution aliases above.
   },
 });
