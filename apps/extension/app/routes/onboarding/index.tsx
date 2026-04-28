@@ -7,20 +7,52 @@ import {
   IconCheck,
   IconEye,
   IconEyeOff,
-  IconLink,
   IconSpark,
   Input,
   Spinner,
 } from '@compass/ui';
 import { stubs } from '@compass/agents';
+import { setActiveCredentials } from '@compass/core';
+
+/**
+ * Maps raw validation error messages to user-friendly text.
+ */
+function humanizeValidationError(raw: string): string {
+  if (raw.includes('401') || raw.includes('invalid')) {
+    return 'OpenRouter says this key is invalid. Try generating a new one at openrouter.ai/keys.';
+  }
+  if (raw.includes('429') || raw.includes('rate')) {
+    return 'OpenRouter is rate-limiting validation requests. Try again in 60 seconds.';
+  }
+  if (raw.includes('network') || raw.includes('fetch')) {
+    return 'Could not reach OpenRouter. Check your network connection.';
+  }
+  return `OpenRouter validation failed: ${raw}`;
+}
+
+/**
+ * Maps thrown errors to user-friendly messages.
+ */
+function humanizeException(err: unknown): string {
+  if (err instanceof Error) {
+    if (err.name === 'LlmTimeout') {
+      return 'OpenRouter took too long to respond. Try again.';
+    }
+    if (err.name === 'LlmUnavailable') {
+      return 'OpenRouter appears to be down. Try again in a few minutes.';
+    }
+    return err.message;
+  }
+  return 'An unexpected error occurred. Please try again.';
+}
 
 export function Onboarding({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
-  const [picked, setPicked] = useState<'openai' | 'anthropic' | 'openrouter' | null>(null);
   const [key, setKey] = useState('');
   const [show, setShow] = useState(false);
   const [validating, setValidating] = useState(false);
   const [valid, setValid] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
     <div className="fixed inset-0 z-[65] bg-[var(--bg)] flex">
@@ -83,14 +115,17 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
             <div className="flex gap-2.5">
               <Button
                 variant="accent"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  setStep(1);
+                  setErrorMessage(null);
+                }}
                 trailing={<IconArrow size={13} />}
                 className="!px-5 !py-2.5"
               >
                 Connect a model
               </Button>
               <Button variant="ghost" onClick={onClose}>
-                Skip — use Compass without AI
+                Skip — add a key later
               </Button>
             </div>
           </div>
@@ -105,138 +140,96 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
               Bring your own model.
             </h1>
             <p className="font-serif text-[16px] italic text-[var(--ink-3)] max-w-[520px] mt-0 mb-7">
-              Pick one. You can add the others later. Any of them keeps your data off our servers.
+              OpenRouter is the easiest way to get started. Coming in v0.2: direct OpenAI and
+              Anthropic support.
             </p>
 
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {(
-                [
-                  {
-                    id: 'openai',
-                    name: 'OpenAI',
-                    sub: 'Platform key (sk-proj-…)',
-                    tag: 'recommended',
-                    bill: 'Your OpenAI org',
-                  },
-                  {
-                    id: 'anthropic',
-                    name: 'Anthropic',
-                    sub: 'Console key (sk-ant-…)',
-                    tag: null,
-                    bill: 'Your Anthropic org',
-                  },
-                  {
-                    id: 'openrouter',
-                    name: 'OpenRouter',
-                    sub: 'One-click OAuth sign-in',
-                    tag: 'easiest',
-                    bill: 'Your OpenRouter balance',
-                  },
-                ] as const
-              ).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPicked(p.id)}
-                  className="text-left p-[18px] rounded-[14px] transition-all"
-                  style={{
-                    border: '1px solid',
-                    borderColor: picked === p.id ? 'var(--accent)' : 'var(--hair)',
-                    background: picked === p.id ? 'var(--accent-wash)' : 'var(--panel)',
-                    boxShadow: picked === p.id ? 'var(--sh-2)' : 'var(--sh-1)',
+            <Card padded className="mb-6">
+              <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mb-3">
+                Paste your OpenRouter API key
+              </div>
+              <div className="flex gap-2 items-center">
+                <Input
+                  value={key}
+                  onChange={(e) => {
+                    setKey(e.target.value);
+                    setValid(false);
+                    setErrorMessage(null);
                   }}
+                  type={show ? 'text' : 'password'}
+                  placeholder="sk-or-…"
+                  aria-label="OpenRouter API key"
+                  mono
+                />
+                <button
+                  type="button"
+                  onClick={() => setShow((s) => !s)}
+                  aria-label="Toggle key visibility"
+                  className="w-8 h-8 grid place-items-center rounded-lg"
                 >
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className="font-serif text-[17px] font-medium">{p.name}</span>
-                    {p.tag && (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.02em] px-1.5 py-0.5 rounded-full bg-[var(--accent-wash)] text-[var(--accent-ink)]">
-                        {p.tag}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[12.5px] text-[var(--ink-3)] mb-3">{p.sub}</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)]">
-                    billed to · {p.bill}
-                  </div>
+                  {show ? <IconEyeOff size={14} /> : <IconEye size={14} />}
                 </button>
-              ))}
-            </div>
-
-            {picked === 'openai' && (
-              <Card padded>
-                <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mb-2">
-                  Paste your OpenAI key
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    value={key}
-                    onChange={(e) => {
-                      setKey(e.target.value);
-                      setValid(false);
-                    }}
-                    type={show ? 'text' : 'password'}
-                    placeholder="sk-proj-…"
-                    aria-label="OpenAI key"
-                    mono
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow((s) => !s)}
-                    aria-label="Toggle key visibility"
-                    className="w-8 h-8 grid place-items-center rounded-lg"
-                  >
-                    {show ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-                  </button>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    disabled={!key.length || validating}
-                    onClick={async () => {
-                      setValidating(true);
-                      const result = await stubs.validateLlmKey('openai', key);
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={!key.length || validating}
+                  onClick={async () => {
+                    setValidating(true);
+                    setErrorMessage(null);
+                    try {
+                      const result = await stubs.validateLlmKey('openrouter', key);
                       setValidating(false);
                       if (result.valid) {
                         setValid(true);
+                        const now = new Date().toISOString();
+                        await setActiveCredentials({
+                          default: 'openrouter',
+                          openrouter: {
+                            apiKey: key,
+                            addedAt: now,
+                            lastValidatedAt: now,
+                          },
+                        });
                         setTimeout(() => setStep(2), 500);
+                      } else {
+                        setErrorMessage(humanizeValidationError(result.error || 'Unknown error'));
                       }
-                    }}
-                  >
-                    {validating ? <Spinner /> : valid ? 'Valid ✓' : 'Validate'}
-                  </Button>
-                </div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mt-3 leading-[1.6]">
-                  validation calls GET /v1/models once · stored in chrome.storage.local · passphrase
-                  encryption available (advanced)
-                </div>
-              </Card>
-            )}
-
-            {picked === 'openrouter' && (
-              <Card padded>
-                <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mb-3">
-                  You&apos;ll be redirected to openrouter.ai to authorize Compass.
-                </div>
-                <Button
-                  variant="accent"
-                  leading={<IconLink size={13} />}
-                  onClick={() => setTimeout(() => setStep(2), 1200)}
+                    } catch (err) {
+                      setValidating(false);
+                      setErrorMessage(humanizeException(err));
+                    }
+                  }}
                 >
-                  Continue to OpenRouter
+                  {validating ? <Spinner /> : valid ? 'Valid ✓' : 'Validate'}
                 </Button>
-              </Card>
-            )}
-
-            {picked === 'anthropic' && (
-              <Card padded>
-                <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mb-2">
-                  Paste your Anthropic key
+              </div>
+              {errorMessage && (
+                <div className="font-serif text-[14px] text-[var(--warning-ink)] mt-3 p-2 bg-[var(--warning-wash)] rounded-lg">
+                  {errorMessage}
                 </div>
-                <Input placeholder="sk-ant-…" aria-label="Anthropic key" mono />
-                <Button size="sm" variant="primary" className="mt-2.5" onClick={() => setStep(2)}>
-                  Validate
-                </Button>
-              </Card>
-            )}
+              )}
+              <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mt-3 leading-[1.6]">
+                Get your key at openrouter.ai/keys · stored in chrome.storage.local · validation
+                tests connectivity
+              </div>
+            </Card>
+
+            <div className="flex gap-2.5">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setKey('');
+                  setValid(false);
+                  setErrorMessage(null);
+                  setStep(0);
+                }}
+              >
+                Back
+              </Button>
+              <Button variant="ghost" onClick={onClose}>
+                Skip — add a key later
+              </Button>
+            </div>
           </div>
         )}
 

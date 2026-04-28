@@ -1,17 +1,18 @@
-import { delay } from './_util.js';
+import { rpc } from '@compass/runtime';
 
-export type Provider = 'openai' | 'anthropic' | 'openrouter';
+export type Provider = 'openrouter';
 export interface ValidationResult {
   valid: boolean;
   error?: string;
 }
 
 /**
- * Stub: returns `valid: true` for any plausible-looking key after ~900 ms.
- * Phase 1 replaces with a real `GET /v1/models` (OpenAI) or equivalent.
+ * Phase 1: validates LLM key via RPC call to offscreen llm.validateKey handler.
+ * Narrowed to 'openrouter' provider; direct providers (openai, anthropic) deferred to v0.2.
  */
-export async function validateLlmKey(_provider: Provider, key: string): Promise<ValidationResult> {
-  await delay(900);
-  if (!key || key.length < 4) return { valid: false, error: 'invalid_api_key' };
-  return { valid: true };
+export async function validateLlmKey(
+  provider: Provider,
+  apiKey: string,
+): Promise<ValidationResult> {
+  return rpc('llm.validateKey', { provider, apiKey });
 }
