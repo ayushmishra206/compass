@@ -21,6 +21,9 @@
   },
   "dependencies": {
     "@compass/core": "workspace:*",
-    "@compass/db": "workspace:*"
+    "@compass/db": "workspace:*",
+    "openai": "^4",
+    "zod": "^4",
+    "zod-to-json-schema": "^3"
   }
 }
