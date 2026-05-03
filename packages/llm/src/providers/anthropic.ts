@@ -92,8 +92,7 @@ export function createAnthropicProvider(opts: AnthropicOpts): LlmProvider {
           baseURL: opts.baseURL,
           dangerouslyAllowBrowser: true,
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (probe as any).models.list();
+        await probe.models.list();
         return { valid: true };
       } catch (err) {
         const mapped = mapHttpError(err);
