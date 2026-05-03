@@ -3,6 +3,8 @@
 //
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
+import type { ProviderId } from '@compass/core';
+
 export interface Routes {
   'system.ping': {
     req: { utterance: string };
@@ -13,7 +15,7 @@ export interface Routes {
     res: LlmCompleteResponse;
   };
   'llm.validateKey': {
-    req: { provider: 'openrouter'; apiKey: string };
+    req: { provider: ProviderId; apiKey: string };
     res: { valid: boolean; error?: string };
   };
   'ledger.getMonthlySpend': {

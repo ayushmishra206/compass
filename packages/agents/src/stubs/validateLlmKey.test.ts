@@ -46,4 +46,28 @@ describe('validateLlmKey', () => {
 
     await expect(validateLlmKey('openrouter', 'test-key')).rejects.toThrow('Network error');
   });
+
+  it('forwards openai provider via rpc', async () => {
+    const mockRpc = vi.mocked(runtime.rpc);
+    mockRpc.mockResolvedValue({ valid: true });
+
+    await validateLlmKey('openai', 'sk-openai-test');
+
+    expect(mockRpc).toHaveBeenCalledWith('llm.validateKey', {
+      provider: 'openai',
+      apiKey: 'sk-openai-test',
+    });
+  });
+
+  it('forwards anthropic provider via rpc', async () => {
+    const mockRpc = vi.mocked(runtime.rpc);
+    mockRpc.mockResolvedValue({ valid: true });
+
+    await validateLlmKey('anthropic', 'sk-ant-test');
+
+    expect(mockRpc).toHaveBeenCalledWith('llm.validateKey', {
+      provider: 'anthropic',
+      apiKey: 'sk-ant-test',
+    });
+  });
 });

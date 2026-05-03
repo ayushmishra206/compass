@@ -1,14 +1,16 @@
+import type { ProviderId } from '@compass/core';
 import { rpc } from '@compass/runtime';
 
-export type Provider = 'openrouter';
+export type Provider = ProviderId;
+
 export interface ValidationResult {
   valid: boolean;
   error?: string;
 }
 
 /**
- * Phase 1: validates LLM key via RPC call to offscreen llm.validateKey handler.
- * Narrowed to 'openrouter' provider; direct providers (openai, anthropic) deferred to v0.2.
+ * Validates an LLM API key for the given provider via RPC to the offscreen
+ * llm.validateKey handler. Phase 1.5: supports openrouter, openai, anthropic.
  */
 export async function validateLlmKey(
   provider: Provider,
