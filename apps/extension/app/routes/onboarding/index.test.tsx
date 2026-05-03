@@ -391,4 +391,60 @@ describe('Onboarding', () => {
       expect(screen.getByText(/Welcome to Compass AI/)).toBeInTheDocument();
     });
   });
+
+  describe('Provider chooser', () => {
+    it('chooser updates label and validates against the chosen provider (openai)', async () => {
+      const user = userEvent.setup();
+      const mockValidateLlmKey = vi.mocked(agents.stubs.validateLlmKey);
+      const mockSetActiveCredentials = vi.mocked(core.setActiveCredentials);
+
+      mockValidateLlmKey.mockResolvedValue({ valid: true });
+      mockSetActiveCredentials.mockResolvedValue();
+
+      render(<Onboarding onClose={vi.fn()} />);
+      await user.click(screen.getByRole('button', { name: /Connect a model/i }));
+
+      await user.click(screen.getByRole('radio', { name: 'OpenAI' }));
+      expect(screen.getByText(/Paste your OpenAI API key/i)).toBeInTheDocument();
+
+      const input = screen.getByLabelText(/openai API key/i);
+      await user.type(input, 'sk-test');
+      await user.click(screen.getByRole('button', { name: /Validate/i }));
+
+      expect(mockValidateLlmKey).toHaveBeenCalledWith('openai', 'sk-test');
+      expect(mockSetActiveCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({
+          default: 'openai',
+          openai: expect.objectContaining({ apiKey: 'sk-test' }),
+        }),
+      );
+    });
+
+    it('chooser updates label and validates against the chosen provider (anthropic)', async () => {
+      const user = userEvent.setup();
+      const mockValidateLlmKey = vi.mocked(agents.stubs.validateLlmKey);
+      const mockSetActiveCredentials = vi.mocked(core.setActiveCredentials);
+
+      mockValidateLlmKey.mockResolvedValue({ valid: true });
+      mockSetActiveCredentials.mockResolvedValue();
+
+      render(<Onboarding onClose={vi.fn()} />);
+      await user.click(screen.getByRole('button', { name: /Connect a model/i }));
+
+      await user.click(screen.getByRole('radio', { name: 'Anthropic' }));
+      expect(screen.getByText(/Paste your Anthropic API key/i)).toBeInTheDocument();
+
+      const input = screen.getByLabelText(/anthropic API key/i);
+      await user.type(input, 'sk-ant-test');
+      await user.click(screen.getByRole('button', { name: /Validate/i }));
+
+      expect(mockValidateLlmKey).toHaveBeenCalledWith('anthropic', 'sk-ant-test');
+      expect(mockSetActiveCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({
+          default: 'anthropic',
+          anthropic: expect.objectContaining({ apiKey: 'sk-ant-test' }),
+        }),
+      );
+    });
+  });
 });
