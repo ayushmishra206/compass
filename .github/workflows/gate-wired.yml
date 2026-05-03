@@ -1,7 +1,7 @@
 name: gate-wired
 on:
   schedule:
-    - cron: '0 6 * * *'   # daily 06:00 UTC
+    - cron: '0 6 * * *' # daily 06:00 UTC
   workflow_dispatch:
 
 env:
@@ -24,3 +24,5 @@ jobs:
       - run: pnpm vitest run tests/gate/wired.test.ts
         env:
           OPENROUTER_TEST_KEY: ${{ secrets.OPENROUTER_TEST_KEY }}
+          OPENAI_TEST_KEY: ${{ secrets.OPENAI_TEST_KEY }}
+          ANTHROPIC_TEST_KEY: ${{ secrets.ANTHROPIC_TEST_KEY }}
