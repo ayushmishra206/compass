@@ -172,4 +172,153 @@ describe('executeTask', () => {
     expect(out.parsed).toEqual({ pong: true, echo: 'hi' });
     expect(mockRecordCall.mock.calls[0]![0]).toMatchObject({ provider: 'anthropic' });
   });
+
+  describe('failover', () => {
+    it('falls over from primary RateLimited to secondary success', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or-test', addedAt: '2026-05-03T00:00:00Z' },
+        anthropic: { apiKey: 'sk-ant-test', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmRateLimited } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmRateLimited());
+      mockAnthropicComplete.mockResolvedValue({
+        parsed: { pong: true, echo: 'hi' },
+        text: '',
+        usage: { promptTok: 8, cachedTok: 0, completionTok: 4 },
+        model: 'claude-haiku-4-5',
+        finishReason: 'stop',
+      });
+
+      const out = await executeTask('system.ping', {
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+      expect(out.parsed).toEqual({ pong: true, echo: 'hi' });
+      expect(mockRecordCall).toHaveBeenCalledTimes(1);
+      expect(mockRecordCall.mock.calls[0]![0]).toMatchObject({ provider: 'anthropic' });
+    });
+
+    it('falls over from primary 5xx to secondary success', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or-test', addedAt: '2026-05-03T00:00:00Z' },
+        openai: { apiKey: 'sk-openai-test', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmUnavailable } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmUnavailable(503, 'unavailable'));
+      mockOpenAiComplete.mockResolvedValue({
+        parsed: { pong: true, echo: 'hi' },
+        text: '',
+        usage: { promptTok: 8, cachedTok: 0, completionTok: 4 },
+        model: 'gpt-4o-mini',
+        finishReason: 'stop',
+      });
+
+      const out = await executeTask('system.ping', {
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+      expect(out.parsed).toEqual({ pong: true, echo: 'hi' });
+      expect(mockRecordCall.mock.calls[0]![0]).toMatchObject({ provider: 'openai' });
+    });
+
+    it('does NOT failover on LlmKeyInvalid (surface immediately)', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or-bad', addedAt: '2026-05-03T00:00:00Z' },
+        anthropic: { apiKey: 'sk-ant-test', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmKeyInvalid } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmKeyInvalid('openrouter', 'bad key'));
+
+      await expect(
+        executeTask('system.ping', { messages: [{ role: 'user', content: 'hi' }] }),
+      ).rejects.toBeInstanceOf(LlmKeyInvalid);
+      expect(mockAnthropicComplete).not.toHaveBeenCalled();
+    });
+
+    it('does NOT failover on LlmTimeout (surface immediately)', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or-test', addedAt: '2026-05-03T00:00:00Z' },
+        anthropic: { apiKey: 'sk-ant-test', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmTimeout } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmTimeout(30_000));
+
+      await expect(
+        executeTask('system.ping', { messages: [{ role: 'user', content: 'hi' }] }),
+      ).rejects.toBeInstanceOf(LlmTimeout);
+      expect(mockAnthropicComplete).not.toHaveBeenCalled();
+    });
+
+    it('all providers fail → throws last LlmUnavailable', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or-test', addedAt: '2026-05-03T00:00:00Z' },
+        openai: { apiKey: 'sk-openai-test', addedAt: '2026-05-03T00:00:00Z' },
+        anthropic: { apiKey: 'sk-ant-test', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmUnavailable } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmUnavailable(503, 'first failed'));
+      mockOpenAiComplete.mockRejectedValue(new LlmUnavailable(503, 'second failed'));
+      mockAnthropicComplete.mockRejectedValue(new LlmUnavailable(503, 'third failed'));
+
+      await expect(
+        executeTask('system.ping', { messages: [{ role: 'user', content: 'hi' }] }),
+      ).rejects.toMatchObject({
+        name: 'LlmUnavailable',
+        message: expect.stringContaining('third failed'),
+      });
+      expect(mockComplete).toHaveBeenCalledTimes(1);
+      expect(mockOpenAiComplete).toHaveBeenCalledTimes(1);
+      expect(mockAnthropicComplete).toHaveBeenCalledTimes(1);
+      expect(mockRecordCall).not.toHaveBeenCalled();
+    });
+
+    it('failover order: openrouter (default) → openai → anthropic', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or', addedAt: '2026-05-03T00:00:00Z' },
+        openai: { apiKey: 'sk-oa', addedAt: '2026-05-03T00:00:00Z' },
+        anthropic: { apiKey: 'sk-an', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmRateLimited, LlmUnavailable } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmRateLimited());
+      mockOpenAiComplete.mockRejectedValue(new LlmUnavailable(503));
+      mockAnthropicComplete.mockResolvedValue({
+        parsed: { pong: true, echo: 'hi' },
+        text: '',
+        usage: { promptTok: 5, cachedTok: 0, completionTok: 3 },
+        model: 'claude-haiku-4-5',
+        finishReason: 'stop',
+      });
+
+      await executeTask('system.ping', { messages: [{ role: 'user', content: 'hi' }] });
+      expect(mockComplete).toHaveBeenCalledTimes(1);
+      expect(mockOpenAiComplete).toHaveBeenCalledTimes(1);
+      expect(mockAnthropicComplete).toHaveBeenCalledTimes(1);
+      expect(mockRecordCall.mock.calls[0]![0]).toMatchObject({ provider: 'anthropic' });
+    });
+
+    it('skips providers without keys in chain', async () => {
+      mockGetActiveCredentials.mockResolvedValue({
+        default: 'openrouter',
+        openrouter: { apiKey: 'sk-or', addedAt: '2026-05-03T00:00:00Z' },
+        anthropic: { apiKey: 'sk-an', addedAt: '2026-05-03T00:00:00Z' },
+      });
+      const { LlmRateLimited } = await import('../src/errors');
+      mockComplete.mockRejectedValue(new LlmRateLimited());
+      mockAnthropicComplete.mockResolvedValue({
+        parsed: { pong: true, echo: 'hi' },
+        text: '',
+        usage: { promptTok: 5, cachedTok: 0, completionTok: 3 },
+        model: 'claude-haiku-4-5',
+        finishReason: 'stop',
+      });
+
+      await executeTask('system.ping', { messages: [{ role: 'user', content: 'hi' }] });
+      expect(mockOpenAiComplete).not.toHaveBeenCalled();
+      expect(mockAnthropicComplete).toHaveBeenCalledTimes(1);
+    });
+  });
 });
