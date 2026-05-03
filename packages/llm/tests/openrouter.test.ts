@@ -39,6 +39,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const out = await provider.complete({
       taskId: 'system.ping',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'hi' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -71,6 +72,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const out = await provider.complete({
       taskId: 'test.cache',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'test' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -92,6 +94,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const out = await provider.complete({
       taskId: 'system.text',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'hello' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -115,6 +118,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     await provider.complete({
       taskId: 'test.sys',
+      model: 'anthropic/claude-haiku-4-5',
       system: 'You are helpful',
       messages: [{ role: 'user', content: 'help' }],
       maxOutputTokens: 50,
@@ -140,6 +144,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     await provider.complete({
       taskId: 'test.temp',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'hi' }],
       maxOutputTokens: 50,
       temperature: 0.7,
@@ -162,6 +167,7 @@ describe('OpenRouter provider', () => {
     await expect(
       provider.complete({
         taskId: 'test.401',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -180,6 +186,7 @@ describe('OpenRouter provider', () => {
     await expect(
       provider.complete({
         taskId: 'test.403',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -198,6 +205,7 @@ describe('OpenRouter provider', () => {
     await expect(
       provider.complete({
         taskId: 'test.429',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -216,6 +224,7 @@ describe('OpenRouter provider', () => {
     await expect(
       provider.complete({
         taskId: 'test.503',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -226,6 +235,7 @@ describe('OpenRouter provider', () => {
     try {
       await provider.complete({
         taskId: 'test.503',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -247,6 +257,7 @@ describe('OpenRouter provider', () => {
     await expect(
       provider.complete({
         taskId: 'test.timeout',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -264,6 +275,7 @@ describe('OpenRouter provider', () => {
     await expect(
       provider.complete({
         taskId: 'test.timeout-msg',
+        model: 'anthropic/claude-haiku-4-5',
         messages: [{ role: 'user', content: 'test' }],
         maxOutputTokens: 50,
         timeoutMs: 5000,
@@ -312,6 +324,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const stream = provider.stream({
       taskId: 'test.stream',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'test' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -348,6 +361,7 @@ describe('OpenRouter provider', () => {
 
     await provider.complete({
       taskId: 'test.custom',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'test' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -368,6 +382,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const out = await provider.complete({
       taskId: 'test.no-reason',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'test' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -387,6 +402,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const out = await provider.complete({
       taskId: 'test.no-content',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'test' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,
@@ -406,6 +422,7 @@ describe('OpenRouter provider', () => {
     const provider = createOpenRouterProvider({ apiKey: 'test-key' });
     const out = await provider.complete({
       taskId: 'test.no-usage',
+      model: 'anthropic/claude-haiku-4-5',
       messages: [{ role: 'user', content: 'test' }],
       maxOutputTokens: 50,
       timeoutMs: 5000,

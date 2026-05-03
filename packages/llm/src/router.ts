@@ -26,6 +26,7 @@ export async function executeTask(
 
   const req: LlmRequest = {
     taskId,
+    model,
     system: payload.system,
     messages: payload.messages,
     schema: payload.schema,
@@ -35,8 +36,6 @@ export async function executeTask(
     cacheable: route.cacheable,
     timeoutMs: opts.timeoutMs ?? 30_000,
     trusted: opts.trusted,
-    // Phase-1 hack: thread the model through to OpenRouter via internal key
-    ...({ _model: model } as Record<string, string>),
   };
 
   const resp = await provider.complete(req);

@@ -20,7 +20,7 @@ export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
     dangerouslyAllowBrowser: true,
   });
 
-  async function complete(req: LlmRequest, model: string): Promise<LlmResponse> {
+  async function complete(req: LlmRequest): Promise<LlmResponse> {
     const messages = [
       ...(req.system ? [{ role: 'system' as const, content: req.system }] : []),
       ...req.messages,
@@ -41,7 +41,7 @@ export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
     try {
       const resp = await client.chat.completions.create(
         {
-          model,
+          model: req.model,
           messages,
           max_tokens: req.maxOutputTokens,
           temperature: req.temperature,
@@ -64,7 +64,7 @@ export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
               ?.prompt_tokens_details?.cached_tokens ?? 0,
           completionTok: resp.usage?.completion_tokens ?? 0,
         },
-        model: resp.model ?? model,
+        model: resp.model ?? req.model,
         finishReason: (choice?.finish_reason as LlmResponse['finishReason']) ?? 'stop',
       };
     } catch (err) {
@@ -75,12 +75,7 @@ export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
   return {
     id: 'openrouter',
     async complete(req) {
-      // Router decides the model; provider receives it via taskId routing.
-      // For Phase 1, callers may pass the model in a special internal field
-      // until the router (Task 21) wires it properly.
-      const model =
-        (req as LlmRequest & { _model?: string })._model ?? 'anthropic/claude-haiku-4-5';
-      return complete(req, model);
+      return complete(req);
     },
     // eslint-disable-next-line require-yield
     async *stream(): AsyncIterable<LlmStreamEvent> {

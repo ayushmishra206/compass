@@ -54,6 +54,30 @@ describe('executeTask', () => {
     await expect(executeTask('system.ping', { messages: [] })).rejects.toThrow(/key/i);
   });
 
+  it('passes route.models[providerId] as req.model', async () => {
+    mockGetActiveCredentials.mockResolvedValue({
+      default: 'openrouter',
+      openrouter: { apiKey: 'sk-or-test', addedAt: '2026-04-26T00:00:00Z' },
+    });
+    mockComplete.mockResolvedValue({
+      parsed: { pong: true, echo: 'hi' },
+      text: '',
+      usage: { promptTok: 10, cachedTok: 0, completionTok: 5 },
+      model: 'anthropic/claude-haiku-4-5',
+      finishReason: 'stop',
+    });
+    await executeTask('system.ping', {
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+    expect(mockComplete).toHaveBeenCalledTimes(1);
+    expect(mockComplete.mock.calls[0]![0]).toMatchObject({
+      taskId: 'system.ping',
+      model: 'anthropic/claude-haiku-4-5',
+    });
+    // No `_model` cast anywhere
+    expect(mockComplete.mock.calls[0]![0]).not.toHaveProperty('_model');
+  });
+
   it('happy path writes a ledger row', async () => {
     mockGetActiveCredentials.mockResolvedValue({
       default: 'openrouter',

@@ -8,6 +8,7 @@ export interface LlmMessage {
 
 export interface LlmRequest {
   taskId: string;
+  model: string;
   system?: string;
   messages: LlmMessage[];
   schema?: z.ZodTypeAny;

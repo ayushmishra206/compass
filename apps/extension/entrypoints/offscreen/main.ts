@@ -19,6 +19,7 @@ registry.register('system.ping', async ({ utterance }) => {
     provider,
     {
       taskId: 'system.ping',
+      model: 'anthropic/claude-haiku-4-5',
       system:
         'You are a connectivity diagnostic. Respond ONLY with the literal JSON object {"pong": true, "echo": "<the user\'s utterance>"}.',
       messages: [{ role: 'user', content: `<utterance>${utterance}</utterance>` }],
