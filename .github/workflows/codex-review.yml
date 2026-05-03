@@ -14,14 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     outputs:
       final_message: ${{ steps.run_codex.outputs.final-message }}
     steps:
+      - name: Skip if OPENAI_API_KEY is not configured
+        if: env.OPENAI_API_KEY == ''
+        run: |
+          echo "::notice title=Codex review skipped::OPENAI_API_KEY secret is not configured for this repository. Add it under Settings → Secrets and variables → Actions to enable Codex reviews on PRs."
+
       - uses: actions/checkout@v5
+        if: env.OPENAI_API_KEY != ''
         with:
           ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
       - name: Pre-fetch base and head refs for the PR
+        if: env.OPENAI_API_KEY != ''
         env:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -32,6 +41,7 @@ jobs:
 
       - name: Run Codex
         id: run_codex
+        if: env.OPENAI_API_KEY != ''
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
