@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import { NOTES } from '@compass/core/fixtures';
-import type { Note } from '@compass/core';
+
+// Phase-0 fixtures extend Note with mock-only display fields (`excerpt`,
+// `updated`, `related`) that aren't in the canonical Phase 1 Note schema.
+// Surface code uses this extended shape until Phase 2 rewires real data.
+type Note = (typeof NOTES)[number];
 import {
   Badge,
   IconButton,

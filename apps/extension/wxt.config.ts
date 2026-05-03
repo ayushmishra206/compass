@@ -10,6 +10,11 @@ export default defineConfig({
         '@app': new URL('./app', import.meta.url).pathname,
       },
     },
+    build: {
+      rollupOptions: {
+        external: ['sqlite-vec'],
+      },
+    },
   }),
   manifest: {
     name: 'Compass',

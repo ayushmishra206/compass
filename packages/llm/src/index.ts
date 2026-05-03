@@ -1,2 +1,6 @@
-// @compass/llm — populated in a future phase. See README.md.
-export {};
+export * from './errors';
+export * from './ledger';
+export * from './provider';
+export * from './validate';
+export { createOpenRouterProvider } from './providers/openrouter';
+export { executeTask } from './router';

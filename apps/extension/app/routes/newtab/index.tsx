@@ -30,7 +30,7 @@ import {
   Surface,
   Grid12,
 } from '@compass/ui';
-import type { InboxAction, Note, Suggestion } from '@compass/core';
+import type { InboxAction, Suggestion } from '@compass/core';
 import { useShell } from '@app/state/shell.js';
 
 export function NewTab() {
@@ -55,7 +55,7 @@ export function NewTab() {
       </div>
 
       <h1 className="font-serif text-[44px] font-normal leading-[1.1] tracking-[-0.02em] mt-0 mb-1">
-        Good morning, {USER.name.split(' ')[0]}.
+        Good morning, {(USER as unknown as { name?: string }).name?.split(' ')[0] ?? 'there'}.
       </h1>
       <p className="font-serif text-[22px] font-light text-[var(--ink-3)] italic mt-0 mb-7">
         {BRIEF.oneLineMood}
@@ -503,7 +503,7 @@ function GoalsMini() {
 function NotesMini() {
   return (
     <div className="flex flex-col gap-2.5">
-      {NOTES.slice(0, 3).map((n: Note) => (
+      {NOTES.slice(0, 3).map((n) => (
         <button
           key={n.id}
           type="button"

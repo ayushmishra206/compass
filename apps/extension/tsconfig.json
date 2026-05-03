@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": { "@app/*": ["./app/*"] },
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": ["vitest/globals", "@testing-library/jest-dom", "chrome"]
   },
   "include": ["app/**/*", "entrypoints/**/*", "tests/**/*", "wxt.config.ts", ".wxt/types/**/*"]
 }

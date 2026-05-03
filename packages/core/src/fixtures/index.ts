@@ -11,12 +11,15 @@ import type {
   Vitals,
 } from '../types/index.js';
 
-export const USER: UserProfile = {
+export const USER: UserProfile & { name: string } = {
   id: 'u1',
-  name: 'Ayush',
-  email: 'ayush@compassdash.com',
+  createdAt: '2025-01-01T00:00:00Z',
   timezone: 'America/New_York',
-  plus: true,
+  locale: 'en-US',
+  workHours: { start: '09:00', end: '17:00' },
+  briefingHour: 8,
+  reflectionHour: 18,
+  name: 'Casey',
 };
 
 export const BRIEF: Brief = {
@@ -76,137 +79,197 @@ export const VITALS: Vitals = {
   weather: { tempC: 14, summary: 'Mild, light drizzle' },
 };
 
-export const GOALS: Goal[] = [
+export const GOALS: Array<
+  Goal & {
+    progress: number;
+    weeksRemaining: number;
+    milestones: Array<{ week: number; title: string; done: boolean; current: boolean }>;
+    dailyTemplates: string[];
+  }
+> = [
   {
     id: 'g1',
+    createdAt: '2026-01-01T00:00:00Z',
     title: 'Launch Compass AI upgrade to Plus users',
     horizon: 'quarter',
-    weeksRemaining: 6,
-    progress: 0.62,
+    startDate: '2026-01-01',
+    endDate: '2026-03-31',
     why: 'It is the hinge feature for Plus retention. If the morning brief works, everything else lands.',
+    status: 'active',
+    progress: 0.65,
+    weeksRemaining: 8,
     milestones: [
-      { week: 1, title: 'Provider abstraction + BYOK storage', done: true },
-      { week: 2, title: 'Offscreen runtime + SQLite-vec wired', done: true },
-      { week: 3, title: 'Daily Agent MVP behind flag', done: true },
-      { week: 4, title: 'Semantic Notes auto-linking', done: true, current: true },
-      { week: 5, title: 'Adaptive personalization signals', done: false },
-      { week: 6, title: 'Smarter blocker negotiation', done: false },
-      { week: 7, title: 'Gmail + Meeting AI in staging', done: false },
-      { week: 8, title: 'Closed beta — 200 users', done: false },
+      { week: 1, title: 'API scaffolding', done: true, current: false },
+      { week: 2, title: 'LLM integration', done: true, current: false },
+      { week: 3, title: 'Brief UX + personalization', done: false, current: true },
+      { week: 4, title: 'QA + beta rollout', done: false, current: false },
     ],
     dailyTemplates: [
-      'One 90-min PRD / spec block',
-      'One 45-min review / unblock block',
-      'Tue + Thu: demo rehearsal',
+      'Review brief quality metrics in the dashboard',
+      "Polish edge cases from yesterday's Q&A",
+      'Prepare rollout comms for beta group',
     ],
   },
   {
     id: 'g2',
+    createdAt: '2026-01-01T00:00:00Z',
     title: 'Run a 10k under 48 minutes',
     horizon: 'quarter',
-    weeksRemaining: 9,
-    progress: 0.28,
+    startDate: '2026-01-01',
+    endDate: '2026-03-31',
     why: 'Recovery has been drifting; a concrete target fixes the training cadence.',
+    status: 'active',
+    progress: 0.4,
+    weeksRemaining: 10,
     milestones: [
-      { week: 1, title: 'Three 5k runs to set a baseline', done: true },
-      { week: 2, title: 'Add one tempo run mid-week', done: true, current: true },
-      { week: 3, title: 'First 8k at steady pace', done: false },
+      { week: 1, title: 'Tempo runs establish baseline', done: true, current: false },
+      { week: 3, title: 'VO2 max intervals', done: true, current: false },
+      { week: 5, title: 'Sustained pace practice', done: false, current: true },
+      { week: 8, title: 'Taper & race', done: false, current: false },
     ],
-    dailyTemplates: ['20 min easy on Tue/Thu', 'Long run Sat'],
+    dailyTemplates: [
+      'Morning: 5 min easy, 10 min at goal pace, 5 min easy',
+      'Strength work 3x per week (glutes, core)',
+      'Recovery day light cross-training',
+    ],
   },
   {
     id: 'g3',
+    createdAt: '2026-01-01T00:00:00Z',
     title: 'Read 12 books this year (3/12)',
     horizon: 'year',
-    weeksRemaining: 35,
+    startDate: '2026-01-01',
+    endDate: '2026-12-31',
+    status: 'active',
     progress: 0.25,
-    why: '',
+    weeksRemaining: 35,
     milestones: [],
-    dailyTemplates: [],
+    dailyTemplates: ['30 min morning reading before standup', 'One book per month on average'],
   },
 ];
 
-export const NOTES: Note[] = [
+export const NOTES: Array<
+  Note & {
+    excerpt?: string;
+    updated?: string;
+    related: Array<{ id: string; stale: boolean; sim: number; reason: string }>;
+  }
+> = [
   {
     id: 'n1',
     title: 'Compass AI — architecture decisions',
-    excerpt:
-      'Offscreen doc owns heavy work. Service worker stays thin. OPFS-backed SQLite with sqlite-vec for semantic search…',
-    tags: ['compass', 'architecture'],
-    updated: '2h ago',
-    related: [
-      { id: 'n2', reason: 'Both discuss the offscreen runtime and SQLite-vec choice.', sim: 0.88 },
-      {
-        id: 'n3',
-        reason: 'This one covers the embedding model trade-off you revisit here.',
-        sim: 0.81,
-      },
-      {
-        id: 'n4',
-        reason: 'Earlier sketch of the same PRD outline — 5 months old.',
-        sim: 0.83,
-        stale: true,
-      },
+    body: 'Offscreen doc owns heavy work. Service worker stays thin. OPFS-backed SQLite with sqlite-vec for semantic search…',
+    createdAt: '2026-04-24T00:00:00Z',
+    updatedAt: '2026-04-26T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [
+      { targetNoteId: 'n2', similarity: 0.88, detectedAt: '2026-04-26T00:00:00Z', surfaced: true },
+      { targetNoteId: 'n3', similarity: 0.81, detectedAt: '2026-04-26T00:00:00Z', surfaced: true },
+      { targetNoteId: 'n4', similarity: 0.83, detectedAt: '2026-04-26T00:00:00Z', surfaced: false },
     ],
+    tags: ['compass', 'architecture'],
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt:
+      'Decision rule: anything needing DOM, WebGPU, OPFS sync handles, or more than ~25 seconds of work goes in the offscreen document.',
+    updated: 'Apr 26',
+    related: [{ id: 'n4', stale: true, sim: 0.83, reason: 'shared concept: offscreen' }],
   },
   {
     id: 'n2',
     title: 'Offscreen runtime notes',
-    excerpt:
-      'Decision rule: anything needing DOM, WebGPU, OPFS sync handles, or > 25s work goes offscreen…',
+    body: 'Decision rule: anything needing DOM, WebGPU, OPFS sync handles, or > 25s work goes offscreen…',
+    createdAt: '2026-04-25T00:00:00Z',
+    updatedAt: '2026-04-25T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['compass'],
-    updated: 'yesterday',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Service worker stays thin. Offscreen doc handles heavy work.',
+    updated: 'Apr 25',
     related: [],
   },
   {
     id: 'n3',
     title: 'Embedding model trade-offs',
-    excerpt:
-      'all-MiniLM-L6-v2 quantized int8 runs in ~380ms on M1. text-embedding-3-small better recall but adds a net dep…',
+    body: 'all-MiniLM-L6-v2 quantized int8 runs in ~380ms on M1. text-embedding-3-small better recall but adds a net dep…',
+    createdAt: '2026-04-23T00:00:00Z',
+    updatedAt: '2026-04-23T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['ml', 'compass'],
-    updated: '3 days ago',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Comparing embedding models for local semantic search.',
+    updated: 'Apr 23',
     related: [],
   },
   {
     id: 'n4',
     title: 'PRD outline — Nov 2025',
-    excerpt: 'Proactive daily agent, semantic notes, smart blocker. Goal decomposition as stretch…',
+    body: 'Proactive daily agent, semantic notes, smart blocker. Goal decomposition as stretch…',
+    createdAt: '2025-11-26T00:00:00Z',
+    updatedAt: '2025-11-26T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['compass', 'archive'],
-    updated: '5 months ago',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Early feature brainstorm for Compass AI platform.',
+    updated: 'Nov 25',
     related: [],
   },
   {
     id: 'n5',
     title: 'Pricing meeting — 04/14',
-    excerpt:
-      'Mira: Plus at $39 is under-priced relative to Arc + Raycast. Consider $49 with a 30-day trial…',
+    body: 'Mira: Plus at $39 is under-priced relative to Arc + Raycast. Consider $49 with a 30-day trial…',
+    createdAt: '2026-04-14T00:00:00Z',
+    updatedAt: '2026-04-19T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['pricing'],
-    updated: 'last week',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Board meeting notes on pricing strategy for Q2.',
+    updated: 'Apr 19',
     related: [],
   },
   {
     id: 'n6',
     title: 'Running form cues',
-    excerpt: 'Cadence 178. Forefoot, light ankle. Exhale on the off-foot…',
+    body: 'Cadence 178. Forefoot, light ankle. Exhale on the off-foot…',
+    createdAt: '2026-04-12T00:00:00Z',
+    updatedAt: '2026-04-12T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['running'],
-    updated: '2 weeks ago',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Personal notes on running mechanics and cadence.',
+    updated: 'Apr 12',
     related: [],
   },
   {
     id: 'n7',
     title: 'Vision board — Q2',
-    excerpt: 'Ship AI upgrade. Sub-48 10k. Finish Seeing Like a State. One trip, offline…',
+    body: 'Ship AI upgrade. Sub-48 10k. Finish Seeing Like a State. One trip, offline…',
+    createdAt: '2026-04-05T00:00:00Z',
+    updatedAt: '2026-04-05T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['goals'],
-    updated: '3 weeks ago',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Q2 goals and vision statement.',
+    updated: 'Apr 5',
     related: [],
   },
   {
     id: 'n8',
     title: 'Auth — reality check on sign-in-with-ChatGPT',
-    excerpt:
-      'Not publicly shippable as of Apr 2026. Waitlist since May 2025. OpenRouter OAuth is the nearest analog…',
+    body: 'Not publicly shippable as of Apr 2026. Waitlist since May 2025. OpenRouter OAuth is the nearest analog…',
+    createdAt: '2026-03-26T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z',
+    manualLinks: [],
+    autoLinks: [],
     tags: ['compass', 'auth'],
-    updated: 'a month ago',
+    embeddingModel: 'all-MiniLM-L6-v2',
+    excerpt: 'Investigation into ChatGPT login and OpenRouter alternatives.',
+    updated: 'Mar 26',
     related: [],
   },
 ];
@@ -285,38 +348,38 @@ export const INBOX_ACTIONS: InboxAction[] = [
   },
 ];
 
-export const BLOCK_RULES: BlockRule[] = [
+export const BLOCK_RULES: Array<BlockRule & { note?: string }> = [
   {
     id: 'b1',
     pattern: 'reddit.com',
     mode: 'soft',
     source: 'adaptive',
+    createdAt: '2026-04-20T00:00:00Z',
     strikes: 4,
-    note: 'Triggered 8× during focus last week',
   },
   {
     id: 'b2',
     pattern: 'twitter.com, x.com',
     mode: 'soft',
     source: 'user',
+    createdAt: '2026-04-15T00:00:00Z',
     strikes: 2,
-    note: 'Workdays 9am–5pm',
   },
   {
     id: 'b3',
     pattern: 'news.ycombinator.com',
     mode: 'hard',
     source: 'user',
+    createdAt: '2026-04-10T00:00:00Z',
     strikes: 0,
-    note: 'Always',
   },
   {
     id: 'b4',
     pattern: 'youtube.com/shorts/*',
     mode: 'soft',
     source: 'adaptive',
+    createdAt: '2026-04-22T00:00:00Z',
     strikes: 1,
-    note: 'Precedes abandoned Pomodoros',
   },
 ];
 

@@ -1,2 +1,9 @@
-// @compass/embeddings — populated in a future phase. See README.md.
-export {};
+export { embed, ensureRuntimeReady } from './runtime';
+export {
+  ensureWeightsDownloaded,
+  OPFS_WEIGHTS_PATH,
+  MINILM_WEIGHTS_URL,
+  MINILM_WEIGHTS_SHA256,
+  WeightsUnavailableError,
+  WeightsCorruptedError,
+} from './weights';
