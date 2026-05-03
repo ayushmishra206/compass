@@ -12,7 +12,11 @@ export interface RouteConfig {
 export const ROUTING: ReadonlyArray<RouteConfig> = [
   {
     taskId: 'system.ping',
-    models: { openrouter: 'anthropic/claude-haiku-4-5' },
+    models: {
+      openrouter: 'anthropic/claude-haiku-4-5',
+      openai: 'gpt-4o-mini',
+      anthropic: 'claude-haiku-4-5',
+    },
     reasoningEffort: 'none',
     maxOutputTokens: 50,
     cacheable: false,
