@@ -139,6 +139,31 @@ Future encrypted-storage migration (Phase 1.5+) will be a one-function edit: swa
 
 ---
 
+## LLM provider and router
+
+### Multi-provider routing (Phase 1.5)
+
+The Phase 1 router was scoped to a single provider (OpenRouter). Phase 1.5 widens
+`getProviderInstance()` to dispatch by `ProviderId`, and `executeTask()` implements
+first-failure failover across providers in deterministic order
+`[default, openrouter, openai, anthropic]`. Trigger errors are `LlmKeyMissing`,
+`LlmRateLimited`, and `LlmUnavailable` (after `callWithSchema`'s in-provider 3-attempt
+retry exhausts on schema errors). Hard-fail errors (`LlmKeyInvalid`, `LlmTimeout`,
+`LlmSchemaError`) surface immediately without failover.
+
+Providers that lack a key in the active credentials are skipped during chain
+construction; tasks without a model entry for a given provider in the routing table
+are skipped silently mid-failover. The cost ledger writes one row per successful call
+(no row for failed providers). On all-fail, the last error is re-thrown.
+
+The `LlmProvider` interface itself remains identical to Phase 1 except for the
+addition of `model: string` to `LlmRequest` (replacing the Phase 1 `_model` cast).
+Anthropic-specific concerns (tool-use synthesis for structured output, system-as-top-level
+parameter, `input_tokens`/`output_tokens` usage shape, `stop_reason` mapping) are
+provider-internal and do not leak to the router.
+
+---
+
 ## Overlays
 
 Three fullscreen/portal overlays owned by the shell store:

@@ -1449,7 +1449,7 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
 - `packages/llm/providers/openai` direct + `packages/llm/providers/anthropic` direct, populating the multi-key shape shipped in Phase 1.
 - Settings affordance to add a second/third provider key.
 - Encrypted-storage opt-in wiring (crypto package shipped + tested in Phase 1; this sprint surfaces it in onboarding).
-- **Gate:** alarm fires at local time across browser restart in 3 browsers.
+- **Gate:** alarm fires at local time across browser restart in 3 browsers (full RPC chain verified in Chrome via `gate:alarms`; FF/Safari verify "alarm fires + listener runs" — full chain landing in the dedicated cross-browser sprint when FF/Safari `HeavyRuntime` impls land).
 
 ### Phase 2 — Daily Agent + Semantic Notes (6 weeks)
 
