@@ -1,5 +1,7 @@
 import { findRoute, getActiveCredentials, type ProviderId } from '@compass/core';
 import { createOpenRouterProvider } from './providers/openrouter';
+import { createOpenAiProvider } from './providers/openai';
+import { createAnthropicProvider } from './providers/anthropic';
 import type { LlmProvider, LlmRequest, LlmResponse } from './provider';
 import { LlmKeyMissing, LlmUnavailable } from './errors';
 import { recordCall } from './ledger';
@@ -56,12 +58,22 @@ async function getProviderInstance(
   id: ProviderId,
   creds: Awaited<ReturnType<typeof getActiveCredentials>>,
 ): Promise<LlmProvider> {
-  if (id !== 'openrouter') {
-    throw new LlmUnavailable(undefined, `Provider ${id} not implemented in Phase 1`);
+  if (id === 'openrouter') {
+    const entry = creds.openrouter;
+    if (!entry) throw new LlmKeyMissing();
+    return createOpenRouterProvider({ apiKey: entry.apiKey });
   }
-  const entry = creds.openrouter;
-  if (!entry) throw new LlmKeyMissing();
-  return createOpenRouterProvider({ apiKey: entry.apiKey });
+  if (id === 'openai') {
+    const entry = creds.openai;
+    if (!entry) throw new LlmKeyMissing();
+    return createOpenAiProvider({ apiKey: entry.apiKey });
+  }
+  if (id === 'anthropic') {
+    const entry = creds.anthropic;
+    if (!entry) throw new LlmKeyMissing();
+    return createAnthropicProvider({ apiKey: entry.apiKey });
+  }
+  throw new LlmUnavailable(undefined, `Unknown provider: ${String(id)}`);
 }
 
 // Cost estimation. Phase 1 uses a tiny static table; Phase 2+ refines.

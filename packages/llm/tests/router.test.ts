@@ -24,6 +24,31 @@ vi.mock('../src/providers/openrouter', () => ({
   }),
 }));
 
+const mockOpenAiComplete = vi.fn();
+const mockAnthropicComplete = vi.fn();
+
+vi.mock('../src/providers/openai', () => ({
+  createOpenAiProvider: () => ({
+    id: 'openai',
+    complete: mockOpenAiComplete,
+    stream: () => {
+      throw new Error('not used');
+    },
+    validateKey: () => Promise.resolve({ valid: true }),
+  }),
+}));
+
+vi.mock('../src/providers/anthropic', () => ({
+  createAnthropicProvider: () => ({
+    id: 'anthropic',
+    complete: mockAnthropicComplete,
+    stream: () => {
+      throw new Error('not used');
+    },
+    validateKey: () => Promise.resolve({ valid: true }),
+  }),
+}));
+
 vi.mock('../src/ledger', () => ({
   recordCall: mockRecordCall,
   getMonthlySpend: vi.fn(),
@@ -32,6 +57,8 @@ vi.mock('../src/ledger', () => ({
 beforeEach(() => {
   mockGetActiveCredentials.mockReset();
   mockComplete.mockReset();
+  mockOpenAiComplete.mockReset();
+  mockAnthropicComplete.mockReset();
   mockRecordCall.mockReset();
 });
 
@@ -101,5 +128,48 @@ describe('executeTask', () => {
       promptTok: 10,
       completionTok: 5,
     });
+  });
+
+  it('dispatches to OpenAI provider when default is openai', async () => {
+    mockGetActiveCredentials.mockResolvedValue({
+      default: 'openai',
+      openai: { apiKey: 'sk-openai-test', addedAt: '2026-05-03T00:00:00Z' },
+    });
+    mockOpenAiComplete.mockResolvedValue({
+      parsed: { pong: true, echo: 'hi' },
+      text: '',
+      usage: { promptTok: 10, cachedTok: 0, completionTok: 5 },
+      model: 'gpt-4o-mini',
+      finishReason: 'stop',
+    });
+    const out = await executeTask('system.ping', {
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+    expect(mockOpenAiComplete).toHaveBeenCalledTimes(1);
+    expect(mockOpenAiComplete.mock.calls[0]![0].model).toBe('gpt-4o-mini');
+    expect(mockComplete).not.toHaveBeenCalled();
+    expect(out.parsed).toEqual({ pong: true, echo: 'hi' });
+    expect(mockRecordCall.mock.calls[0]![0]).toMatchObject({ provider: 'openai' });
+  });
+
+  it('dispatches to Anthropic provider when default is anthropic', async () => {
+    mockGetActiveCredentials.mockResolvedValue({
+      default: 'anthropic',
+      anthropic: { apiKey: 'sk-ant-test', addedAt: '2026-05-03T00:00:00Z' },
+    });
+    mockAnthropicComplete.mockResolvedValue({
+      parsed: { pong: true, echo: 'hi' },
+      text: '',
+      usage: { promptTok: 10, cachedTok: 0, completionTok: 5 },
+      model: 'claude-haiku-4-5',
+      finishReason: 'stop',
+    });
+    const out = await executeTask('system.ping', {
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+    expect(mockAnthropicComplete).toHaveBeenCalledTimes(1);
+    expect(mockAnthropicComplete.mock.calls[0]![0].model).toBe('claude-haiku-4-5');
+    expect(out.parsed).toEqual({ pong: true, echo: 'hi' });
+    expect(mockRecordCall.mock.calls[0]![0]).toMatchObject({ provider: 'anthropic' });
   });
 });
