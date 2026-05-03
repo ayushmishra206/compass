@@ -8,43 +8,67 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-
 jobs:
-  review:
+  codex:
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
-      - name: Run Codex PR review
-        id: codex
+      - name: Pre-fetch base and head refs for the PR
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags origin \
+            "$PR_BASE_REF" \
+            "+refs/pull/$PR_NUMBER/head"
+
+      - name: Run Codex
+        id: run_codex
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt: |
-            Review this pull request like a strict senior engineer.
-            Focus on correctness, regressions, security, privacy invariants,
-            test gaps, and maintainability. Give concrete, actionable feedback.
+            This is PR #${{ github.event.pull_request.number }} for ${{ github.repository }}.
+            Review ONLY the changes introduced by the PR and call out concrete, actionable issues.
+
+            Focus on:
+            - correctness and regressions
+            - security/privacy concerns
+            - missing tests or edge cases
+            - maintainability and readability
+
+            Pull request title and body:
+            ----
+            ${{ github.event.pull_request.title }}
+            ${{ github.event.pull_request.body }}
           output-file: codex-review.md
 
-      - name: Post review summary comment
-        if: always()
+  post-feedback:
+    runs-on: ubuntu-latest
+    needs: codex
+    if: ${{ needs.codex.outputs.final_message != '' }}
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Report Codex feedback
         uses: actions/github-script@v7
         env:
-          REVIEW_OUTPUT: ${{ steps.codex.outputs.final-message }}
+          CODEX_FINAL_MESSAGE: ${{ needs.codex.outputs.final_message }}
         with:
           github-token: ${{ github.token }}
           script: |
-            const body = process.env.REVIEW_OUTPUT || 'Codex review completed. See workflow logs for details.';
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body,
+              body: process.env.CODEX_FINAL_MESSAGE,
             });
