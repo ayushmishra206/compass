@@ -125,13 +125,11 @@ async function readCachedPhoto(sha256: string): Promise<Blob | null> {
 async function writeCachedPhoto(sha256: string, bytes: ArrayBuffer): Promise<void> {
   const dir = await getScenesPhotoDir();
   const handle = await dir.getFileHandle(`${sha256}.jpg`, { create: true });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sync = await (handle as any).createSyncAccessHandle();
+  const writable = await handle.createWritable();
   try {
-    sync.write(bytes, { at: 0 });
-    sync.flush();
+    await writable.write(bytes);
   } finally {
-    sync.close();
+    await writable.close();
   }
 }
 
