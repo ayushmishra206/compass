@@ -101,3 +101,32 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm vitest run tests/gate/offline.test.ts
+
+  e2e:
+    name: e2e (advisory)
+    runs-on: ubuntu-latest
+    # Advisory until the suite has demonstrated stability on CI; promote to a
+    # required check once a clean run streak is established.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm --filter @compass/extension exec playwright install --with-deps chromium
+      - name: Run Playwright e2e
+        run: pnpm --filter @compass/extension exec playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/extension/playwright-report/
+            apps/extension/test-results/
+          retention-days: 7
