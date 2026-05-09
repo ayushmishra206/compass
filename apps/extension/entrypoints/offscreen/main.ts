@@ -104,6 +104,52 @@ function weatherSummary(code: number): string {
   return 'Mixed';
 }
 
+async function getScenesPhotoDir(): Promise<FileSystemDirectoryHandle> {
+  const root = await navigator.storage.getDirectory();
+  const compass = await root.getDirectoryHandle('compass.opfs', { create: true });
+  const scenes = await compass.getDirectoryHandle('scenes', { create: true });
+  return scenes.getDirectoryHandle('photos', { create: true });
+}
+
+async function readCachedPhoto(sha256: string): Promise<Blob | null> {
+  try {
+    const dir = await getScenesPhotoDir();
+    const handle = await dir.getFileHandle(`${sha256}.jpg`);
+    const file = await handle.getFile();
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCachedPhoto(sha256: string, bytes: ArrayBuffer): Promise<void> {
+  const dir = await getScenesPhotoDir();
+  const handle = await dir.getFileHandle(`${sha256}.jpg`, { create: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sync = await (handle as any).createSyncAccessHandle();
+  try {
+    sync.write(bytes, { at: 0 });
+    sync.flush();
+  } finally {
+    sync.close();
+  }
+}
+
+registry.register('scenes.fetchPhoto', async (req) => {
+  const cached = await readCachedPhoto(req.sha256);
+  if (cached) {
+    return { blobUrl: URL.createObjectURL(cached) };
+  }
+
+  const res = await fetch(req.url, { mode: 'cors', credentials: 'omit' });
+  if (!res.ok) throw new Error(`photo fetch failed: ${res.status}`);
+  const bytes = await res.arrayBuffer();
+  await writeCachedPhoto(req.sha256, bytes);
+  return {
+    blobUrl: URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' })),
+  };
+});
+
 installRequestListener(registry);
 
 console.log('Compass offscreen mounted; handlers registered.');
