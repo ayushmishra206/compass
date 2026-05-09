@@ -162,3 +162,64 @@ describe('getActiveCredentials — shape detection', () => {
     expect(creds.openai?.apiKey).toBe('sk-openai-test');
   });
 });
+
+import { EncryptedSecretSchema } from './keystore';
+
+describe('setActiveCredentials — shape-aware', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('writes raw shape when storage is empty', async () => {
+    const mock = installChromeStorageMock();
+    const creds = {
+      default: 'openrouter' as const,
+      openrouter: { apiKey: 'sk-or-1', addedAt: 't', lastValidatedAt: 't' },
+    };
+    await setActiveCredentials(creds);
+    const stored = (await mock.local.get('llm.creds.v1'))['llm.creds.v1'];
+    expect(stored).toEqual(creds);
+  });
+
+  it('writes raw shape when storage already holds raw', async () => {
+    const mock = installChromeStorageMock();
+    await mock.local.set({ 'llm.creds.v1': { default: null } });
+    const creds = {
+      default: 'openai' as const,
+      openai: { apiKey: 'sk-oa-1', addedAt: 't', lastValidatedAt: 't' },
+    };
+    await setActiveCredentials(creds);
+    const stored = (await mock.local.get('llm.creds.v1'))['llm.creds.v1'];
+    expect(stored).toEqual(creds);
+    expect(EncryptedSecretSchema.safeParse(stored).success).toBe(false);
+  });
+
+  it('re-encrypts and writes envelope when storage holds envelope and session has passphrase', async () => {
+    const mock = installChromeStorageMock();
+    const passphrase = 'a-test-passphrase-12c';
+    const initial = await encrypt(JSON.stringify({ default: null }), passphrase);
+    await mock.local.set({ 'llm.creds.v1': initial });
+    await mock.session.set({ 'llm.creds.v1.kek': passphrase });
+
+    const creds = {
+      default: 'anthropic' as const,
+      anthropic: { apiKey: 'sk-ant-1', addedAt: 't', lastValidatedAt: 't' },
+    };
+    await setActiveCredentials(creds);
+
+    const stored = (await mock.local.get('llm.creds.v1'))['llm.creds.v1'];
+    expect(EncryptedSecretSchema.safeParse(stored).success).toBe(true);
+  });
+
+  it('throws LlmCredentialsLocked when storage holds envelope but session is empty', async () => {
+    const mock = installChromeStorageMock();
+    const initial = await encrypt(JSON.stringify({ default: null }), 'a-test-passphrase-12c');
+    await mock.local.set({ 'llm.creds.v1': initial });
+
+    const creds = {
+      default: 'openrouter' as const,
+      openrouter: { apiKey: 'sk-or-1', addedAt: 't', lastValidatedAt: 't' },
+    };
+    await expect(setActiveCredentials(creds)).rejects.toBeInstanceOf(LlmCredentialsLocked);
+  });
+});
