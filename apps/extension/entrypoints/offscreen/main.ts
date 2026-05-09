@@ -1,4 +1,5 @@
 import { createHandlerRegistry, installRequestListener } from '@compass/runtime';
+import type { Routes } from '@compass/runtime';
 import { startDb } from '@compass/db';
 import { getActiveCredentials, PingOutputSchema } from '@compass/core';
 import {
@@ -54,6 +55,20 @@ registry.register('llm.validateKey', async ({ provider, apiKey }) => {
     return createAnthropicProvider({ apiKey }).validateKey(apiKey);
   }
   return { valid: false, error: `Unknown provider: ${String(provider)}` };
+});
+
+const SCENE_MANIFEST_URL = 'https://assets.compassdash.com/scenes/manifest.v1.json';
+
+registry.register('scenes.getManifest', async (req) => {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (req.etag) headers['If-None-Match'] = req.etag;
+
+  const res = await fetch(SCENE_MANIFEST_URL, { headers });
+  if (!res.ok) {
+    throw new Error(`scene manifest fetch failed: ${res.status}`);
+  }
+  const manifest = (await res.json()) as Routes['scenes.getManifest']['res']['manifest'];
+  return { manifest, fetchedAt: Date.now() };
 });
 
 installRequestListener(registry);
