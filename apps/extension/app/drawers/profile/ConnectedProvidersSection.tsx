@@ -377,11 +377,7 @@ function RemoveConfirm({
         <button type="button" style={btnGhost} onClick={onCancel}>
           Cancel
         </button>
-        <button
-          type="button"
-          style={btnAccent}
-          onClick={() => void onConfirmed(remaining.length > 0 ? remaining[0]! : null)}
-        >
+        <button type="button" style={btnAccent} onClick={() => void onConfirmed(pickedDefault)}>
           Remove
         </button>
       </div>
