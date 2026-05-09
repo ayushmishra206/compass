@@ -8,7 +8,15 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist', '.output', 'coverage', 'node_modules', 'web/', 'packages/*/dist'],
+    ignores: [
+      'dist',
+      '.output',
+      'coverage',
+      'node_modules',
+      'web/',
+      'packages/*/dist',
+      'docs/superpowers/specs/',
+    ],
   },
   {
     files: ['**/*.{ts,tsx}'],
