@@ -209,6 +209,29 @@ provider-internal and do not leak to the router.
 
 ---
 
+## Scheduling (`@compass/integrations/scheduling`)
+
+Phase 1.5 introduces a cross-browser alarm scheduler used by Phase 2's Daily Agent.
+
+**Module layout:**
+
+- `defaults.ts` — hardcoded `BRIEFING_HOUR=8`, `REFLECTION_HOUR=18`. Phase 2 swaps the body for `getUserProfile()` reads when UserProfile persistence ships.
+- `scheduler.ts` — `computeDesired()` returns `{ name, when }` pairs in local-time epoch ms. `ensureAlarms(api?)` lists existing alarms via `chrome.alarms.getAll()`, compares to desired, and creates / clears differentials with a 60-second drift tolerance to avoid churn on hour-aligned reschedules.
+- `handlers.ts` — `registerAlarmHandlers(events?)` wires `chrome.alarms.onAlarm` to dispatch `rpc('system.ping', { utterance: alarm.name })` inside `withHeavyDocAlive()`.
+
+**Bootstrap.** [`apps/extension/entrypoints/background.ts`](../apps/extension/entrypoints/background.ts) calls `registerAlarmHandlers()` and `void ensureAlarms()` at top level, plus on `chrome.runtime.onInstalled` and `chrome.runtime.onStartup` (when present). The reconcile is idempotent — running it on every SW wake / FF persistent-page reload / Safari SW wake costs nothing when alarms already match.
+
+**Keep-alive.** `withHeavyDocAlive(work)` (in [`packages/runtime/src/chrome-offscreen.ts`](../packages/runtime/src/chrome-offscreen.ts)) calls `ensureHeavyDoc()`, opens a `chrome.runtime.connect({ name: 'heavy-doc-keepalive' })` Port, runs the work, and disconnects in `finally`. Chrome will not evict the SW or offscreen while at least one Port is connected. The offscreen side accepts the Port via `chrome.runtime.onConnect` — the open Port itself is the contract; the listener body is empty.
+
+**Testing.** Unit tests in `packages/integrations/src/scheduling/*.test.ts` (≥95% coverage on scheduler, ≥90% on handlers). The `gate:alarms` CI job loads the built `chrome-mv3` extension in headless Chromium via Playwright (under `xvfb-run` to satisfy MV3 service-worker registration) and asserts `chrome.alarms.getAll()` returns the two expected entries. Cross-browser verification on FF and Safari is via the manual checklist embedded in the alarms-workstream plan doc.
+
+**Phase 2 swap surface.**
+
+- `defaults.ts` body → `getUserProfile()` reads.
+- `handlers.ts` → swap `'system.ping'` for `'brief.morning'` / `'brief.eod'` route names and the corresponding payload schemas. The scheduler module itself does not change.
+
+---
+
 ## Overlays
 
 Three fullscreen/portal overlays owned by the shell store:

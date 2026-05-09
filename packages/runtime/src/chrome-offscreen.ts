@@ -23,3 +23,13 @@ export async function ensureHeavyDoc(): Promise<void> {
   }
   await creating;
 }
+
+export async function withHeavyDocAlive<T>(work: () => Promise<T>): Promise<T> {
+  await ensureHeavyDoc();
+  const port = chrome.runtime.connect({ name: 'heavy-doc-keepalive' });
+  try {
+    return await work();
+  } finally {
+    port.disconnect();
+  }
+}
