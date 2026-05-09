@@ -21,10 +21,13 @@ const EXTENSION_PATH = path.resolve(
 );
 
 export const test = base.extend<ExtensionFixtures>({
-  context: async (_fixtures, use) => {
+  // eslint-disable-next-line no-empty-pattern
+  context: async ({}, use) => {
     const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'compass-pw-'));
+    // MV3 service workers do not activate in legacy headless mode.
+    // Use headless: false (or run under Xvfb in CI) to ensure the SW registers.
     const context = await chromium.launchPersistentContext(userDataDir, {
-      headless: true,
+      headless: false,
       args: [
         `--disable-extensions-except=${EXTENSION_PATH}`,
         `--load-extension=${EXTENSION_PATH}`,
