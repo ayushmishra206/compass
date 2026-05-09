@@ -114,6 +114,30 @@ export function Topbar({ initials = 'AY' }: { initials?: string }) {
         ))}
       </nav>
       <div style={rightStyle}>
+        {useShell((s) => s.encryptionEnabled && s.locked) && (
+          <button
+            type="button"
+            aria-label="Credentials locked. Click to unlock."
+            onClick={() => useShell.getState().requestUnlock()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: 999,
+              border: '1px solid var(--accent-soft)',
+              background: 'rgba(255,255,255,0.04)',
+              color: 'var(--color-ink-2)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            <span aria-hidden="true">🔒</span> Locked
+          </button>
+        )}
         <button style={cmdkBtnStyle} onClick={cmdkHotkey} aria-label="Open command palette">
           <span style={{ flex: 1, textAlign: 'left' }}>Ask Compass…</span>
           <span style={kbdStyle}>⌘K</span>
