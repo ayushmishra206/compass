@@ -11,7 +11,8 @@
     "typecheck": "wxt prepare && tsc --noEmit",
     "lint": "eslint 'app/**/*.{ts,tsx}' 'entrypoints/**/*.{ts,tsx}'",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@compass/agents": "workspace:*",
