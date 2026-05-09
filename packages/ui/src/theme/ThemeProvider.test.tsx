@@ -3,30 +3,38 @@ import { describe, it, expect } from 'vitest';
 import { ThemeProvider } from './ThemeProvider.js';
 
 describe('ThemeProvider', () => {
-  it('writes data-theme on mount', () => {
+  it('writes the accent OKLCH triple to <html> custom properties', () => {
     render(
-      <ThemeProvider theme="dark" accent="rose" density="spacious">
-        <div>child</div>
+      <ThemeProvider accent="rose">
+        <span>child</span>
       </ThemeProvider>,
     );
-    expect(document.documentElement.dataset['theme']).toBe('dark');
+    const root = document.documentElement;
+    expect(root.style.getPropertyValue('--accent-h')).toBe('18');
+    expect(root.style.getPropertyValue('--accent-c')).toBe('0.13');
+    expect(root.style.getPropertyValue('--accent-l')).toBe('0.66');
   });
 
-  it('writes accent CSS vars', () => {
-    render(
-      <ThemeProvider theme="dark" accent="mint" density="compact">
-        <div>child</div>
+  it('updates the triple when the accent prop changes', () => {
+    const { rerender } = render(
+      <ThemeProvider accent="amber">
+        <span />
+      </ThemeProvider>,
+    );
+    rerender(
+      <ThemeProvider accent="mint">
+        <span />
       </ThemeProvider>,
     );
     expect(document.documentElement.style.getPropertyValue('--accent-h')).toBe('160');
   });
 
-  it('writes data-density', () => {
-    render(
-      <ThemeProvider theme="dark" accent="amber" density="compact">
-        <div>child</div>
+  it('renders children unchanged', () => {
+    const { getByText } = render(
+      <ThemeProvider accent="sky">
+        <span>hello</span>
       </ThemeProvider>,
     );
-    expect(document.documentElement.dataset['density']).toBe('compact');
+    expect(getByText('hello')).toBeTruthy();
   });
 });

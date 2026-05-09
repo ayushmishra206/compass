@@ -7,7 +7,7 @@ describe('tokens', () => {
       bg: '#0e0c0a',
       ink: '#f4ede2',
     });
-    expect(Object.keys(COLORS).length).toBe(11);
+    expect(Object.keys(COLORS).length).toBe(12);
   });
 
   it('exposes three glass tiers', () => {
@@ -28,7 +28,7 @@ describe('tokens', () => {
 
   it('exposes radius + shadow + motion tokens', () => {
     expect(RADII.lg).toBe(20);
-    expect(SHADOWS.sh3).toContain('rgba(0, 0, 0, 0.7)');
+    expect(SHADOWS.sh3).toContain('rgba(0,0,0,0.7)');
     expect(MOTION.scenefade).toBe(1200);
   });
 });
