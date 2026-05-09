@@ -9,13 +9,25 @@ const REPO_ROOT = path.resolve(EXT_ROOT, '../..');
 const OUTPUT = path.join(EXT_ROOT, '.output/chrome-mv3');
 const MANIFEST = path.join(OUTPUT, 'manifest.json');
 
+const PACKAGES_DIR = path.resolve(REPO_ROOT, 'packages');
+
+function workspacePackageSrcRoots(): string[] {
+  // Watch every workspace package's src/ directory rather than enumerating —
+  // the extension bundles them transitively and any miss produces a stale
+  // build that silently passes the e2e suite.
+  if (!fs.existsSync(PACKAGES_DIR)) return [];
+  return fs
+    .readdirSync(PACKAGES_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(PACKAGES_DIR, entry.name, 'src'))
+    .filter((p) => fs.existsSync(p));
+}
+
 const SOURCE_ROOTS = [
   path.join(EXT_ROOT, 'entrypoints'),
   path.join(EXT_ROOT, 'app'),
   path.join(EXT_ROOT, 'wxt.config.ts'),
-  path.resolve(REPO_ROOT, 'packages/ui/src'),
-  path.resolve(REPO_ROOT, 'packages/core/src'),
-  path.resolve(REPO_ROOT, 'packages/runtime/src'),
+  ...workspacePackageSrcRoots(),
 ];
 
 function newestMtime(target: string): number {

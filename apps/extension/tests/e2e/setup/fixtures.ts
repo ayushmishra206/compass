@@ -29,7 +29,7 @@ async function resolveExtensionId(context: BrowserContext): Promise<string> {
    take a `use` parameter that is unrelated to React hooks. */
 export const test = base.extend<ExtensionFixtures>({
   // eslint-disable-next-line no-empty-pattern -- Playwright fixture signature
-  context: async ({}: Record<string, never>, use) => {
+  context: async ({}, use) => {
     // `channel: 'chromium'` selects the full Chromium binary; the default
     // `chromium-headless-shell` build does not support extensions.
     const context = await chromium.launchPersistentContext('', {
