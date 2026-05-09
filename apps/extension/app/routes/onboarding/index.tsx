@@ -17,29 +17,42 @@ import { setActiveCredentials } from '@compass/core';
 /**
  * Maps raw validation error messages to user-friendly text.
  */
-function humanizeValidationError(raw: string): string {
+function humanizeValidationError(
+  raw: string,
+  provider: 'openrouter' | 'openai' | 'anthropic',
+): string {
+  const name =
+    provider === 'openrouter' ? 'OpenRouter' : provider === 'openai' ? 'OpenAI' : 'Anthropic';
+  const helpUrl =
+    provider === 'openrouter'
+      ? 'openrouter.ai/keys'
+      : provider === 'openai'
+        ? 'platform.openai.com/api-keys'
+        : 'console.anthropic.com/settings/keys';
   if (raw.includes('401') || raw.includes('invalid')) {
-    return 'OpenRouter says this key is invalid. Try generating a new one at openrouter.ai/keys.';
+    return `${name} says this key is invalid. Try generating a new one at ${helpUrl}.`;
   }
   if (raw.includes('429') || raw.includes('rate')) {
-    return 'OpenRouter is rate-limiting validation requests. Try again in 60 seconds.';
+    return `${name} is rate-limiting validation requests. Try again in 60 seconds.`;
   }
   if (raw.includes('network') || raw.includes('fetch')) {
-    return 'Could not reach OpenRouter. Check your network connection.';
+    return `Could not reach ${name}. Check your network connection.`;
   }
-  return `OpenRouter validation failed: ${raw}`;
+  return `${name} validation failed: ${raw}`;
 }
 
 /**
  * Maps thrown errors to user-friendly messages.
  */
-function humanizeException(err: unknown): string {
+function humanizeException(err: unknown, provider: 'openrouter' | 'openai' | 'anthropic'): string {
+  const name =
+    provider === 'openrouter' ? 'OpenRouter' : provider === 'openai' ? 'OpenAI' : 'Anthropic';
   if (err instanceof Error) {
     if (err.name === 'LlmTimeout') {
-      return 'OpenRouter took too long to respond. Try again.';
+      return `${name} took too long to respond. Try again.`;
     }
     if (err.name === 'LlmUnavailable') {
-      return 'OpenRouter appears to be down. Try again in a few minutes.';
+      return `${name} appears to be down. Try again in a few minutes.`;
     }
     return err.message;
   }
@@ -48,6 +61,7 @@ function humanizeException(err: unknown): string {
 
 export function Onboarding({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
+  const [provider, setProvider] = useState<'openrouter' | 'openai' | 'anthropic'>('openrouter');
   const [key, setKey] = useState('');
   const [show, setShow] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -140,13 +154,49 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
               Bring your own model.
             </h1>
             <p className="font-serif text-[16px] italic text-[var(--ink-3)] max-w-[520px] mt-0 mb-7">
-              OpenRouter is the easiest way to get started. Coming in v0.2: direct OpenAI and
-              Anthropic support.
+              Choose a provider. OpenRouter is the easiest one-key path; OpenAI and Anthropic
+              connect direct.
             </p>
+
+            <div className="flex gap-2 mb-6" role="radiogroup" aria-label="LLM provider">
+              {(
+                [
+                  ['openrouter', 'OpenRouter', 'sk-or-…'],
+                  ['openai', 'OpenAI', 'sk-…'],
+                  ['anthropic', 'Anthropic', 'sk-ant-…'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  role="radio"
+                  aria-checked={provider === id}
+                  onClick={() => {
+                    setProvider(id);
+                    setKey('');
+                    setValid(false);
+                    setErrorMessage(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border text-[13px]"
+                  style={{
+                    background: provider === id ? 'var(--accent)' : 'transparent',
+                    color: provider === id ? '#fff' : 'var(--ink-3)',
+                    borderColor: provider === id ? 'var(--accent)' : 'var(--hair)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
             <Card padded className="mb-6">
               <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mb-3">
-                Paste your OpenRouter API key
+                Paste your{' '}
+                {provider === 'openrouter'
+                  ? 'OpenRouter'
+                  : provider === 'openai'
+                    ? 'OpenAI'
+                    : 'Anthropic'}{' '}
+                API key
               </div>
               <div className="flex gap-2 items-center">
                 <Input
@@ -157,8 +207,14 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
                     setErrorMessage(null);
                   }}
                   type={show ? 'text' : 'password'}
-                  placeholder="sk-or-…"
-                  aria-label="OpenRouter API key"
+                  placeholder={
+                    provider === 'openrouter'
+                      ? 'sk-or-…'
+                      : provider === 'openai'
+                        ? 'sk-…'
+                        : 'sk-ant-…'
+                  }
+                  aria-label={`${provider} API key`}
                   mono
                 />
                 <button
@@ -177,14 +233,14 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
                     setValidating(true);
                     setErrorMessage(null);
                     try {
-                      const result = await stubs.validateLlmKey('openrouter', key);
+                      const result = await stubs.validateLlmKey(provider, key);
                       setValidating(false);
                       if (result.valid) {
                         setValid(true);
                         const now = new Date().toISOString();
                         await setActiveCredentials({
-                          default: 'openrouter',
-                          openrouter: {
+                          default: provider,
+                          [provider]: {
                             apiKey: key,
                             addedAt: now,
                             lastValidatedAt: now,
@@ -192,11 +248,13 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
                         });
                         setTimeout(() => setStep(2), 500);
                       } else {
-                        setErrorMessage(humanizeValidationError(result.error || 'Unknown error'));
+                        setErrorMessage(
+                          humanizeValidationError(result.error || 'Unknown error', provider),
+                        );
                       }
                     } catch (err) {
                       setValidating(false);
-                      setErrorMessage(humanizeException(err));
+                      setErrorMessage(humanizeException(err, provider));
                     }
                   }}
                 >
@@ -209,8 +267,10 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               <div className="font-mono text-[10px] uppercase tracking-[0.02em] text-[var(--ink-4)] mt-3 leading-[1.6]">
-                Get your key at openrouter.ai/keys · stored in chrome.storage.local · validation
-                tests connectivity
+                {provider === 'openrouter' && 'Get your key at openrouter.ai/keys'}
+                {provider === 'openai' && 'Get your key at platform.openai.com/api-keys'}
+                {provider === 'anthropic' && 'Get your key at console.anthropic.com/settings/keys'}
+                {' · stored in chrome.storage.local · validation tests connectivity'}
               </div>
             </Card>
 

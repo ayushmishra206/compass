@@ -20,6 +20,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
     "@compass/core": "workspace:*",
     "@compass/db": "workspace:*",
     "openai": "^4",

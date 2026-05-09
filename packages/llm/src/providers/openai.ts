@@ -3,20 +3,15 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { LlmProvider, LlmRequest, LlmResponse, LlmStreamEvent } from '../provider';
 import { LlmKeyInvalid, LlmRateLimited, LlmTimeout, LlmUnavailable } from '../errors';
 
-export interface OpenRouterOpts {
+export interface OpenAiOpts {
   apiKey: string;
-  baseURL?: string; // defaults to openrouter.ai/api/v1
-  appUrl?: string; // optional X-Title / HTTP-Referer
+  baseURL?: string;
 }
 
-export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
+export function createOpenAiProvider(opts: OpenAiOpts): LlmProvider {
   const client = new OpenAI({
     apiKey: opts.apiKey,
-    baseURL: opts.baseURL ?? 'https://openrouter.ai/api/v1',
-    defaultHeaders: {
-      'HTTP-Referer': opts.appUrl ?? 'https://compassdash.com',
-      'X-Title': 'Compass',
-    },
+    baseURL: opts.baseURL ?? 'https://api.openai.com/v1',
     dangerouslyAllowBrowser: true,
   });
 
@@ -73,7 +68,7 @@ export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
   }
 
   return {
-    id: 'openrouter',
+    id: 'openai',
     async complete(req) {
       return complete(req);
     },
@@ -85,7 +80,7 @@ export function createOpenRouterProvider(opts: OpenRouterOpts): LlmProvider {
       try {
         const probe = new OpenAI({
           apiKey,
-          baseURL: opts.baseURL ?? 'https://openrouter.ai/api/v1',
+          baseURL: opts.baseURL ?? 'https://api.openai.com/v1',
           dangerouslyAllowBrowser: true,
         });
         await probe.models.list();
@@ -105,7 +100,7 @@ function mapHttpError(err: unknown): Error {
     return new LlmTimeout(0);
   }
   if (e.status === 401 || e.status === 403) {
-    return new LlmKeyInvalid('openrouter', e.message);
+    return new LlmKeyInvalid('openai', e.message);
   }
   if (e.status === 429) {
     return new LlmRateLimited();
