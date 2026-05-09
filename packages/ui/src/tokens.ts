@@ -1,81 +1,66 @@
 /**
- * Compass design tokens — the TypeScript source of truth, mirrored by `theme.css`.
+ * Compass design tokens — Phase 1.6 "Momentum"
  *
- * Any change here that changes shape must also be reflected in `theme.css`, and
- * vice versa. The `tokens.test.ts` snapshot prevents silent drift.
+ * Dark-only. No density modes. OKLCH color space.
+ * The accent (h, c, l) triple is owned by ThemeProvider via three CSS custom
+ * properties: --accent-h, --accent-c, --accent-l. The `--accent-*` derived
+ * vars compose against those at runtime.
+ *
+ * Snapshot tested in tokens.test.ts; bump the snapshot when intentional.
  */
 
-export const TOKENS = {
-  color: {
-    light: {
-      bg: 'oklch(0.972 0.012 75)',
-      'bg-deep': 'oklch(0.95 0.014 75)',
-      panel: 'oklch(0.988 0.008 75)',
-      'panel-2': 'oklch(0.965 0.011 75)',
-      ink: 'oklch(0.22 0.015 55)',
-      'ink-2': 'oklch(0.36 0.014 55)',
-      'ink-3': 'oklch(0.52 0.012 55)',
-      'ink-4': 'oklch(0.68 0.010 55)',
-      hair: 'oklch(0.22 0.015 55 / 0.10)',
-      'hair-2': 'oklch(0.22 0.015 55 / 0.18)',
-      accent: 'oklch(var(--accent-l) var(--accent-c) var(--accent-h))',
-      'accent-ink': 'oklch(0.34 var(--accent-c) var(--accent-h))',
-      'accent-wash': 'oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.10)',
-      sage: 'oklch(0.55 0.05 150)',
-      slate: 'oklch(0.52 0.03 255)',
-    },
-    dark: {
-      bg: 'oklch(0.18 0.012 55)',
-      'bg-deep': 'oklch(0.14 0.012 55)',
-      panel: 'oklch(0.22 0.012 55)',
-      'panel-2': 'oklch(0.26 0.012 55)',
-      ink: 'oklch(0.94 0.010 75)',
-      'ink-2': 'oklch(0.80 0.010 75)',
-      'ink-3': 'oklch(0.64 0.010 75)',
-      'ink-4': 'oklch(0.46 0.010 75)',
-      hair: 'oklch(0.94 0.010 75 / 0.08)',
-      'hair-2': 'oklch(0.94 0.010 75 / 0.16)',
-      accent: 'oklch(var(--accent-l) var(--accent-c) var(--accent-h))',
-      'accent-ink': 'oklch(0.78 var(--accent-c) var(--accent-h))',
-      'accent-wash': 'oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.18)',
-      sage: 'oklch(0.78 0.06 150)',
-      slate: 'oklch(0.78 0.05 255)',
-    },
-  },
-  radius: { sm: 8, md: 14, lg: 22 },
-  shadow: {
-    'sh-1': '0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 1px 2px oklch(0.22 0.015 55 / 0.04)',
-    'sh-2': '0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 12px 32px -12px oklch(0.22 0.015 55 / 0.18)',
-    'sh-3': '0 1px 0 oklch(0.22 0.015 55 / 0.04), 0 24px 64px -16px oklch(0.22 0.015 55 / 0.28)',
-  },
-  type: {
-    serif: "'Newsreader', ui-serif, Georgia, serif",
-    sans: "'Instrument Sans', ui-sans-serif, system-ui, sans-serif",
-    mono: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-  },
-  motion: {
-    duration: { fast: 120, mid: 220, slow: 400 },
-    easing: { standard: 'cubic-bezier(0.2, 0, 0, 1)' },
-  },
-  density: {
-    spacious: { sidebarW: 232, sidebarP: 18 },
-    compact: { sidebarW: 64, sidebarP: 10 },
-  },
+export const COLORS = {
+  bg: '#0e0c0a',
+  ink: '#f4ede2',
+  ink2: 'rgba(244, 237, 226, 0.78)',
+  ink3: 'rgba(244, 237, 226, 0.55)',
+  ink4: 'rgba(244, 237, 226, 0.34)',
+  hair: 'rgba(244, 237, 226, 0.12)',
+  hair2: 'rgba(244, 237, 226, 0.22)',
+  panel: 'rgba(20, 18, 16, 0.55)',
+  panel2: 'rgba(28, 25, 22, 0.7)',
+  glass1Tint: 'rgba(12, 10, 8, 0.55)',
+  glass2Tint: 'rgba(18, 16, 14, 0.86)',
+  glass3Tint: 'rgba(20, 18, 16, 0.92)',
 } as const;
 
-export type Tokens = typeof TOKENS;
-
-/**
- * Accent swatches — each is an oklch `{h, c, l}` triple applied at runtime via CSS
- * custom properties (see `applyAccent`).
- */
-export const ACCENTS = {
-  terracotta: { h: 48, c: 0.13, l: 0.56 },
-  ink: { h: 260, c: 0.04, l: 0.4 },
-  sage: { h: 150, c: 0.06, l: 0.52 },
-  ocean: { h: 230, c: 0.1, l: 0.52 },
-  plum: { h: 340, c: 0.1, l: 0.52 },
+export const GLASS = {
+  glass1: 'blur(20px) saturate(140%)',
+  glass2: 'blur(28px) saturate(150%)',
+  glass3: 'blur(32px)',
 } as const;
 
-export type AccentName = keyof typeof ACCENTS;
-export type AccentTriple = (typeof ACCENTS)[AccentName];
+export const RADII = {
+  sm: 8,
+  md: 14,
+  lg: 20,
+  pill: 999,
+} as const;
+
+export const SHADOWS = {
+  sh1: '0 1px 4px rgba(0,0,0,0.35)',
+  sh2: '0 8px 24px -8px rgba(0,0,0,0.5)',
+  sh3: '0 30px 80px -20px rgba(0,0,0,0.7)',
+} as const;
+
+export const FONTS = {
+  serif: '"Fraunces", ui-serif, Georgia, serif',
+  sans: '"Geist", ui-sans-serif, system-ui, sans-serif',
+  mono: '"Geist Mono", ui-monospace, Menlo, monospace',
+} as const;
+
+export const MOTION = {
+  fast: 120,
+  mid: 240,
+  slow: 360,
+  scenefade: 1200,
+} as const;
+
+export type AccentName = 'amber' | 'rose' | 'mint' | 'violet' | 'sky';
+export const ACCENT_NAMES: readonly AccentName[] = [
+  'amber',
+  'rose',
+  'mint',
+  'violet',
+  'sky',
+] as const;

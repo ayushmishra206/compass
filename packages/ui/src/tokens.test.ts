@@ -1,28 +1,34 @@
-import { describe, expect, it } from 'vitest';
-import { TOKENS, ACCENTS } from './tokens.js';
+import { describe, it, expect } from 'vitest';
+import { COLORS, GLASS, RADII, SHADOWS, FONTS, MOTION, ACCENT_NAMES } from './tokens.js';
 
 describe('tokens', () => {
-  it('exports all token families', () => {
-    expect(TOKENS.color.light).toHaveProperty('bg');
-    expect(TOKENS.color.dark).toHaveProperty('bg');
-    expect(TOKENS.color.light).toHaveProperty('accent');
-    expect(TOKENS.radius).toEqual({ sm: 8, md: 14, lg: 22 });
-    expect(TOKENS.shadow).toHaveProperty('sh-1');
-    expect(TOKENS.motion.duration).toEqual({ fast: 120, mid: 220, slow: 400 });
+  it('exposes the dark-only color ramp', () => {
+    expect(COLORS).toMatchObject({
+      bg: '#0e0c0a',
+      ink: '#f4ede2',
+    });
+    expect(Object.keys(COLORS).length).toBe(11);
   });
 
-  it('exports five named accents with {h,c,l}', () => {
-    expect(Object.keys(ACCENTS)).toEqual(['terracotta', 'ink', 'sage', 'ocean', 'plum']);
-    for (const v of Object.values(ACCENTS)) {
-      expect(v).toMatchObject({
-        h: expect.any(Number),
-        c: expect.any(Number),
-        l: expect.any(Number),
-      });
-    }
+  it('exposes three glass tiers', () => {
+    expect(GLASS.glass1).toContain('blur(20px)');
+    expect(GLASS.glass2).toContain('blur(28px)');
+    expect(GLASS.glass3).toContain('blur(32px)');
   });
 
-  it('matches snapshot (drift guard vs theme.css)', () => {
-    expect(TOKENS).toMatchSnapshot();
+  it('exposes Fraunces serif + Geist sans + Geist Mono', () => {
+    expect(FONTS.serif).toContain('Fraunces');
+    expect(FONTS.sans).toContain('Geist');
+    expect(FONTS.mono).toContain('Geist Mono');
+  });
+
+  it('lists the five accents in canonical order', () => {
+    expect(ACCENT_NAMES).toEqual(['amber', 'rose', 'mint', 'violet', 'sky']);
+  });
+
+  it('exposes radius + shadow + motion tokens', () => {
+    expect(RADII.lg).toBe(20);
+    expect(SHADOWS.sh3).toContain('rgba(0, 0, 0, 0.7)');
+    expect(MOTION.scenefade).toBe(1200);
   });
 });

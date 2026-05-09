@@ -2,7 +2,7 @@ import { ThemeProvider } from '@compass/ui';
 
 export function App() {
   return (
-    <ThemeProvider theme="dark" accent="terracotta" density="spacious">
+    <ThemeProvider theme="dark" accent="amber" density="spacious">
       <main
         style={{
           minHeight: '100vh',

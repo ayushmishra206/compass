@@ -5,8 +5,8 @@ describe('shell store', () => {
   beforeEach(() => {
     localStorage.clear();
     useShell.setState({
-      theme: 'light',
-      accent: 'terracotta',
+      theme: 'dark',
+      accent: 'amber',
       density: 'spacious',
       overlay: null,
       overlayPayload: undefined,
@@ -16,8 +16,8 @@ describe('shell store', () => {
 
   it('defaults', () => {
     const s = useShell.getState();
-    expect(s.theme).toBe('light');
-    expect(s.accent).toBe('terracotta');
+    expect(s.theme).toBe('dark');
+    expect(s.accent).toBe('amber');
     expect(s.density).toBe('spacious');
     expect(s.overlay).toBeNull();
   });

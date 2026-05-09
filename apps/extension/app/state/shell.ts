@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { AccentName, Density, Theme } from '@compass/ui';
+import type { AccentName } from '@compass/ui';
 
 /** Discriminator for which fullscreen/portal overlay is currently mounted. */
 export type OverlayKind =
@@ -14,15 +14,15 @@ export type OverlayKind =
   | 'tweaks';
 
 export interface ShellState {
-  theme: Theme;
+  theme: 'dark';
   accent: AccentName;
-  density: Density;
+  density: 'spacious';
   overlay: OverlayKind;
   overlayPayload: unknown;
   tweaksOpen: boolean;
-  setTheme: (t: Theme) => void;
+  setTheme: (t: 'dark') => void;
   setAccent: (a: AccentName) => void;
-  setDensity: (d: Density) => void;
+  setDensity: (d: 'spacious') => void;
   openOverlay: (kind: Exclude<OverlayKind, null>, payload?: unknown) => void;
   closeOverlay: () => void;
   setTweaksOpen: (v: boolean) => void;
@@ -35,8 +35,8 @@ export interface ShellState {
 export const useShell = create<ShellState>()(
   persist(
     (set) => ({
-      theme: 'light',
-      accent: 'terracotta',
+      theme: 'dark',
+      accent: 'amber',
       density: 'spacious',
       overlay: null,
       overlayPayload: undefined,
