@@ -34,4 +34,13 @@ describe('withHeavyDocAlive', () => {
     expect(work).toHaveBeenCalledTimes(1);
     expect(port.disconnect).toHaveBeenCalledTimes(1);
   });
+
+  it('disconnects the port even when the work throws', async () => {
+    const { port } = installChromeMock();
+    const boom = new Error('work failed');
+    const work = vi.fn().mockRejectedValue(boom);
+
+    await expect(withHeavyDocAlive(work)).rejects.toBe(boom);
+    expect(port.disconnect).toHaveBeenCalledTimes(1);
+  });
 });
