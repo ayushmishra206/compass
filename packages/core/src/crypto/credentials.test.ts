@@ -164,6 +164,7 @@ describe('getActiveCredentials — shape detection', () => {
 });
 
 import { EncryptedSecretSchema } from './keystore';
+import { enableEncryption, disableEncryption } from './credentials';
 
 describe('setActiveCredentials — shape-aware', () => {
   beforeEach(() => {
@@ -221,5 +222,84 @@ describe('setActiveCredentials — shape-aware', () => {
       openrouter: { apiKey: 'sk-or-1', addedAt: 't', lastValidatedAt: 't' },
     };
     await expect(setActiveCredentials(creds)).rejects.toBeInstanceOf(LlmCredentialsLocked);
+  });
+});
+
+describe('enableEncryption', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('encrypts existing raw creds and caches passphrase', async () => {
+    const mock = installChromeStorageMock();
+    const initial = {
+      default: 'openrouter' as const,
+      openrouter: { apiKey: 'sk-or-1', addedAt: 't', lastValidatedAt: 't' },
+    };
+    await mock.local.set({ 'llm.creds.v1': initial });
+
+    await enableEncryption('a-test-passphrase-12c');
+
+    const stored = (await mock.local.get('llm.creds.v1'))['llm.creds.v1'];
+    expect(EncryptedSecretSchema.safeParse(stored).success).toBe(true);
+    const cached = (await mock.session.get('llm.creds.v1.kek'))['llm.creds.v1.kek'];
+    expect(cached).toBe('a-test-passphrase-12c');
+  });
+
+  it('encrypts default-null creds when storage was empty', async () => {
+    const mock = installChromeStorageMock();
+    await enableEncryption('a-test-passphrase-12c');
+    const stored = (await mock.local.get('llm.creds.v1'))['llm.creds.v1'];
+    expect(EncryptedSecretSchema.safeParse(stored).success).toBe(true);
+  });
+
+  it('throws when storage already holds an envelope', async () => {
+    const mock = installChromeStorageMock();
+    const initial = await encrypt(JSON.stringify({ default: null }), 'p1234567890ab');
+    await mock.local.set({ 'llm.creds.v1': initial });
+
+    await expect(enableEncryption('p2234567890ab')).rejects.toThrow(/already encrypted/i);
+  });
+});
+
+describe('disableEncryption', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('decrypts envelope, writes raw, removes session cache', async () => {
+    const mock = installChromeStorageMock();
+    const passphrase = 'a-test-passphrase-12c';
+    const original = {
+      default: 'openai' as const,
+      openai: { apiKey: 'sk-oa-1', addedAt: 't', lastValidatedAt: 't' },
+    };
+    const envelope = await encrypt(JSON.stringify(original), passphrase);
+    await mock.local.set({ 'llm.creds.v1': envelope });
+    await mock.session.set({ 'llm.creds.v1.kek': passphrase });
+
+    await disableEncryption(passphrase);
+
+    const stored = (await mock.local.get('llm.creds.v1'))['llm.creds.v1'];
+    expect(stored).toEqual(original);
+    const cached = (await mock.session.get('llm.creds.v1.kek'))['llm.creds.v1.kek'];
+    expect(cached).toBeUndefined();
+  });
+
+  it('throws on wrong passphrase', async () => {
+    const mock = installChromeStorageMock();
+    const passphrase = 'a-test-passphrase-12c';
+    const envelope = await encrypt(JSON.stringify({ default: null }), passphrase);
+    await mock.local.set({ 'llm.creds.v1': envelope });
+
+    await expect(disableEncryption('wrong-passphrase-9c')).rejects.toThrow();
+  });
+
+  it('throws when storage is not currently encrypted', async () => {
+    const mock = installChromeStorageMock();
+    await mock.local.set({ 'llm.creds.v1': { default: null } });
+    await expect(disableEncryption('a-test-passphrase-12c')).rejects.toThrow(
+      /not currently encrypted/i,
+    );
   });
 });

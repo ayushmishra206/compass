@@ -53,3 +53,28 @@ export async function setActiveCredentials(creds: LlmCredentials): Promise<void>
 export async function clearActiveCredentials(): Promise<void> {
   await chrome.storage.local.remove(STORAGE_KEY);
 }
+
+export async function enableEncryption(passphrase: string): Promise<void> {
+  const current = await chrome.storage.local.get(STORAGE_KEY);
+  const value = current[STORAGE_KEY];
+  if (EncryptedSecretSchema.safeParse(value).success) {
+    throw new Error('Credentials are already encrypted');
+  }
+  const creds = LlmCredentialsSchema.safeParse(value).success
+    ? (value as LlmCredentials)
+    : { default: null };
+  const envelope = await encrypt(JSON.stringify(creds), passphrase);
+  await chrome.storage.local.set({ [STORAGE_KEY]: envelope });
+  await chrome.storage.session.set({ [SESSION_KEK_KEY]: passphrase });
+}
+
+export async function disableEncryption(currentPassphrase: string): Promise<void> {
+  const current = await chrome.storage.local.get(STORAGE_KEY);
+  const env = EncryptedSecretSchema.safeParse(current[STORAGE_KEY]);
+  if (!env.success) throw new Error('Credentials are not currently encrypted');
+  // Will throw on wrong passphrase (AES-GCM auth-tag mismatch)
+  const plaintext = await decrypt(env.data, currentPassphrase);
+  const creds = LlmCredentialsSchema.parse(JSON.parse(plaintext));
+  await chrome.storage.local.set({ [STORAGE_KEY]: creds });
+  await chrome.storage.session.remove(SESSION_KEK_KEY);
+}
