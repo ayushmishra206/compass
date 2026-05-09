@@ -62,6 +62,25 @@ All stubs are typed against `@compass/core` entity types, so real implementation
 
 ---
 
+## Network topology and approved third-party endpoints
+
+The service worker is a thin event router. All heavy compute (LLM calls, DB queries, embeddings, OPFS writes) runs in the offscreen document. The new-tab UI communicates with the service worker via `postMessage`; the service worker forwards to offscreen via `rpc()`.
+
+**Approved third-party endpoints** reachable from the service worker or offscreen runtime:
+
+| Endpoint                 | Purpose                                                              | Data sent                                   |
+| ------------------------ | -------------------------------------------------------------------- | ------------------------------------------- |
+| `api.openai.com`         | LLM inference (user's own key / OAuth)                               | User's prompt + key                         |
+| `api.anthropic.com`      | LLM inference (user's own key)                                       | User's prompt + key                         |
+| Gmail / Calendar APIs    | Integration (user's OAuth token)                                     | OAuth-scoped requests                       |
+| `assets.compassdash.com` | Compass-curated scene manifest (JSON, ~30 KB, 7-day TTL)             | No user data                                |
+| `images.unsplash.com`    | Unsplash photo CDN (image bytes, hotlinked per Unsplash API terms)   | No user data                                |
+| `api.open-meteo.com`     | Open-Meteo weather API (no key required, current weather + WMO code) | Rounded coordinates only, when user opts in |
+
+`navigator.geolocation` access in the new-tab UI thread is gated by the user opting into weather-aware scenes via the Profile drawer (default OFF). When enabled, coordinates are rounded to 3 decimal places (~10 km radius) before storage and before any transmission to Open-Meteo. No content data transits the three new endpoints above.
+
+---
+
 ## Routing & state
 
 ### Routing (`wouter`)
@@ -98,7 +117,7 @@ The service worker spins up an **offscreen document** (Chrome MV3 API) that runs
 **Key contracts:**
 
 - `HeavyRuntime` — interface exposed by offscreen; all methods async, no callbacks.
-- `Routes` — registry mapping `'system.ping' | 'llm.validate_key' | ...` to typed handlers.
+- `Routes` — registry mapping `'system.ping' | 'llm.validate_key' | 'scenes.getManifest' | 'scenes.fetchPhoto' | 'weather.getCurrent' | ...` to typed handlers.
 - `ensureHeavyDoc()` — idempotent opener; checks if offscreen exists, creates if not.
 - **Request-ID correlation:** every RPC gets a UUID; responses carry it back, allowing parallel in-flight calls.
 - **Eviction safety:** offscreen is not guaranteed to stay alive (browser can kill it for memory); RPC timeout falls back to `ensure` + retry.
@@ -110,6 +129,32 @@ Example flow (`rpc('system.ping', {})`):
 3. Offscreen handler runs, returns `{ status: 'ok' }`.
 4. Offscreen sends `{ id: 'req-123', result: { status: 'ok' } }` back.
 5. RPC promise resolves with result.
+
+**RPC routes registry** (all routes in `packages/runtime/src/routes.ts`):
+
+| Route                    | Runs in   | Request                           | Response                                                              |
+| ------------------------ | --------- | --------------------------------- | --------------------------------------------------------------------- |
+| `system.ping`            | offscreen | `{}`                              | `{ status: 'ok' }`                                                    |
+| `llm.validateKey`        | offscreen | `{ provider, key }`               | `{ valid, error? }`                                                   |
+| `llm.complete`           | offscreen | `LlmRequest`                      | `LlmResponse`                                                         |
+| `ledger.getMonthlySpend` | offscreen | `{ month }`                       | `{ usdEstimated }`                                                    |
+| `scenes.getManifest`     | SW        | `{ etag?: string }`               | `{ manifest: SceneManifest, fetchedAt: number }`                      |
+| `scenes.fetchPhoto`      | offscreen | `{ url: string, sha256: string }` | `{ blobUrl: string }` (cached or fresh)                               |
+| `weather.getCurrent`     | SW        | `{ lat: number, lon: number }`    | `{ code: number, tempC: number, summary: string, fetchedAt: number }` |
+
+---
+
+## Stage pipeline
+
+The new-tab page renders a full-bleed photo backdrop ("Stage") that reacts to time-of-day and (optionally) weather. Three caches live in OPFS under `compass.opfs/scenes/`:
+
+- `manifest.json` — Compass-curated scene manifest (TTL 7 days, stale-while-revalidate). Hosted at `assets.compassdash.com/scenes/manifest.v1.json`.
+- `weather.json` — last weather lookup (TTL 90 minutes). Source: Open-Meteo.
+- `photos/<sha256>.jpg` — immutable photo cache (LRU evicted at 50 MB target). Source URL hotlinked from `images.unsplash.com`.
+
+**Picker** ([packages/core/src/scenes/picker.ts](../packages/core/src/scenes/picker.ts)): pure function `pickScene(now, weather, manifest, dateSeed) → Scene`. Time-of-day maps to a mood band (dawn / fog / ocean / alpine / desert); weather narrows the mood pool by affinity tag; FNV-1a hash of `dateSeed + mood` selects deterministically within the pool. Same `(date, mood, weather)` tuple always produces the same scene.
+
+**Privacy gate.** Weather-aware scenes are OFF by default. When the user toggles them ON in the Profile drawer, `navigator.geolocation` is prompted; coordinates are rounded to 3 decimals (~10 km) before storage and transmission to Open-Meteo. No content data ever transits these third-party endpoints.
 
 ---
 
