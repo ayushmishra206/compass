@@ -1,12 +1,39 @@
 import { LlmCredentialsSchema, type LlmCredentials } from '../types/credentials';
+import { EncryptedSecretSchema, decrypt } from './keystore';
 
 const STORAGE_KEY = 'llm.creds.v1';
+const SESSION_KEK_KEY = 'llm.creds.v1.kek';
+
+export class LlmCredentialsLocked extends Error {
+  constructor() {
+    super('Credentials are encrypted; call unlockCredentials() first');
+    this.name = 'LlmCredentialsLocked';
+  }
+}
+
+async function getCachedPassphrase(): Promise<string | null> {
+  const r = await chrome.storage.session.get(SESSION_KEK_KEY);
+  const v = r[SESSION_KEK_KEY];
+  return typeof v === 'string' ? v : null;
+}
 
 export async function getActiveCredentials(): Promise<LlmCredentials> {
   const raw = await chrome.storage.local.get(STORAGE_KEY);
-  const parsed = LlmCredentialsSchema.safeParse(raw[STORAGE_KEY]);
-  if (parsed.success) return parsed.data;
-  return { default: null };
+  const value = raw[STORAGE_KEY];
+  if (!value) return { default: null };
+
+  // Try encrypted envelope first
+  const env = EncryptedSecretSchema.safeParse(value);
+  if (env.success) {
+    const passphrase = await getCachedPassphrase();
+    if (!passphrase) throw new LlmCredentialsLocked();
+    const plaintext = await decrypt(env.data, passphrase);
+    return LlmCredentialsSchema.parse(JSON.parse(plaintext));
+  }
+
+  // Fall through to raw shape
+  const rawParsed = LlmCredentialsSchema.safeParse(value);
+  return rawParsed.success ? rawParsed.data : { default: null };
 }
 
 export async function setActiveCredentials(creds: LlmCredentials): Promise<void> {
