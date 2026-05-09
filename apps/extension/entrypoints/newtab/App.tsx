@@ -69,6 +69,10 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [cmdkHotkey, esc]);
 
+  useEffect(() => {
+    void useShell.getState().refreshLockState();
+  }, []);
+
   return (
     <ThemeProvider accent={accent}>
       <Stage imageUrl={scene.imageUrl} />
