@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { rpc } from '@compass/runtime';
+import { setActiveCredentials } from '@compass/core';
 import { useShell } from '../state/shell.js';
 
 type Step = 1 | 2 | 3;
@@ -60,8 +61,16 @@ export function OnboardingDrawer() {
         setError(res.error ?? 'Invalid key');
         return;
       }
-      // TODO: Phase 1.5 settings workstream stores the validated key in the
-      // credentials envelope. For Phase 1.6 we mark BYOK as configured.
+      // Persist credential under llm.creds.v1; Phase 1.5 settings workstream
+      // will add encryption opt-in + multi-key UX on top.
+      await setActiveCredentials({
+        default: provider,
+        [provider]: {
+          apiKey,
+          addedAt: new Date().toISOString(),
+          lastValidatedAt: new Date().toISOString(),
+        },
+      });
       await chrome.storage.local.set({ 'profile.byokConfigured': true });
       setStep(3);
     } catch (e) {
