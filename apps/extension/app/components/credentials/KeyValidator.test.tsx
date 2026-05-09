@@ -56,8 +56,12 @@ describe('KeyValidator', () => {
   });
 
   it('disables submit while validating', async () => {
-    let resolveRpc: (v: unknown) => void;
-    vi.mocked(rpc).mockReturnValueOnce(new Promise((r) => (resolveRpc = r)));
+    let resolveRpc: (value: { valid: boolean; error?: string }) => void;
+    vi.mocked(rpc).mockReturnValueOnce(
+      new Promise((r) => {
+        resolveRpc = r as typeof resolveRpc;
+      }),
+    );
     render(<KeyValidator providers={['openrouter']} onValidated={vi.fn()} />);
     fireEvent.change(screen.getByPlaceholderText(/sk-/i), {
       target: { value: 'sk-or-1234567890' },
