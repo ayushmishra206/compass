@@ -5,6 +5,7 @@ import { KeyValidator } from '../../components/credentials/KeyValidator';
 import {
   getActiveCredentials,
   setActiveCredentials,
+  clearActiveCredentials,
   type LlmCredentials,
   type ProviderId,
 } from '@compass/core';
@@ -386,13 +387,42 @@ function RemoveConfirm({
 }
 
 function ForgotPassphrasePrompt({ onCancel }: { onCancel: () => void }) {
-  // Implemented in Task 19.
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleErase = async () => {
+    setSubmitting(true);
+    await clearActiveCredentials();
+    await chrome.storage.session.remove('llm.creds.v1.kek');
+    await chrome.storage.local.remove('profile.byokConfigured');
+    useShell.setState({
+      encryptionEnabled: false,
+      locked: false,
+      unlockHint: false,
+      drawer: { open: false, kind: null },
+      onboardingLocked: true,
+    });
+  };
+
   return (
-    <div style={{ fontSize: 12, color: 'var(--color-ink-3)' }}>
-      Wired in Task 19.{' '}
-      <button type="button" style={linkStyle} onClick={onCancel}>
-        Back
-      </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 12, color: 'var(--color-ink-2)' }}>
+        This will permanently erase your saved API keys from this browser. You will see the
+        onboarding screen and need to re-paste your keys. There is no recovery — this device cannot
+        decrypt the keys without your passphrase.
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="button" style={btnGhost} onClick={onCancel} disabled={submitting}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          style={btnAccent}
+          onClick={() => void handleErase()}
+          disabled={submitting}
+        >
+          {submitting ? 'Erasing…' : 'Erase keys and start over'}
+        </button>
+      </div>
     </div>
   );
 }

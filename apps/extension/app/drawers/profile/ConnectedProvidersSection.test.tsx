@@ -10,12 +10,18 @@ vi.mock('@compass/core', async (importOriginal) => {
     ...actual,
     getActiveCredentials: vi.fn(async () => ({ default: null })),
     setActiveCredentials: vi.fn(async () => undefined),
+    clearActiveCredentials: vi.fn(async () => undefined),
     isEncryptionEnabled: vi.fn(async () => false),
     isLocked: vi.fn(async () => false),
     unlockCredentials: vi.fn(async () => undefined),
   };
 });
-import { unlockCredentials, getActiveCredentials, setActiveCredentials } from '@compass/core';
+import {
+  unlockCredentials,
+  getActiveCredentials,
+  setActiveCredentials,
+  clearActiveCredentials,
+} from '@compass/core';
 
 describe('ConnectedProvidersSection — locked branch', () => {
   beforeEach(() => {
@@ -140,5 +146,36 @@ describe('ConnectedProvidersSection — unlocked branch', () => {
     // anthropic is the only un-added provider
     expect(screen.getByRole('button', { name: 'anthropic' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'openrouter' })).not.toBeInTheDocument();
+  });
+});
+
+describe('ConnectedProvidersSection — forgotten passphrase recovery', () => {
+  beforeEach(() => {
+    useShell.setState({
+      encryptionEnabled: true,
+      locked: true,
+      unlockHint: false,
+      drawer: { open: true, kind: 'profile' },
+      onboardingLocked: false,
+    });
+    vi.mocked(clearActiveCredentials).mockReset().mockResolvedValue(undefined);
+  });
+
+  it('Forgot passphrase link → confirm prompt → wipe sequence', async () => {
+    render(<ConnectedProvidersSection />);
+    fireEvent.click(screen.getByRole('button', { name: /forgot passphrase/i }));
+    expect(screen.getByText(/permanently erase/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /erase keys and start over/i }));
+    await waitFor(() => expect(clearActiveCredentials).toHaveBeenCalled());
+    await waitFor(() => expect(useShell.getState().onboardingLocked).toBe(true));
+    expect(useShell.getState().drawer).toEqual({ open: false, kind: null });
+    expect(useShell.getState().encryptionEnabled).toBe(false);
+  });
+
+  it('Cancel returns to unlock form', () => {
+    render(<ConnectedProvidersSection />);
+    fireEvent.click(screen.getByRole('button', { name: /forgot passphrase/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(screen.getByRole('button', { name: /unlock/i })).toBeInTheDocument();
   });
 });
