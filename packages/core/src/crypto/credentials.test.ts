@@ -303,3 +303,104 @@ describe('disableEncryption', () => {
     );
   });
 });
+
+import { unlockCredentials, lockCredentials, isEncryptionEnabled, isLocked } from './credentials';
+
+describe('unlockCredentials', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('caches passphrase in session on correct passphrase', async () => {
+    const mock = installChromeStorageMock();
+    const envelope = await encrypt(JSON.stringify({ default: null }), 'a-test-passphrase-12c');
+    await mock.local.set({ 'llm.creds.v1': envelope });
+
+    await unlockCredentials('a-test-passphrase-12c');
+
+    const cached = (await mock.session.get('llm.creds.v1.kek'))['llm.creds.v1.kek'];
+    expect(cached).toBe('a-test-passphrase-12c');
+  });
+
+  it('throws on wrong passphrase, leaves session empty', async () => {
+    const mock = installChromeStorageMock();
+    const envelope = await encrypt(JSON.stringify({ default: null }), 'a-test-passphrase-12c');
+    await mock.local.set({ 'llm.creds.v1': envelope });
+
+    await expect(unlockCredentials('wrong-passphrase-9c')).rejects.toThrow();
+
+    const cached = (await mock.session.get('llm.creds.v1.kek'))['llm.creds.v1.kek'];
+    expect(cached).toBeUndefined();
+  });
+
+  it('throws when storage is not encrypted', async () => {
+    const mock = installChromeStorageMock();
+    await mock.local.set({ 'llm.creds.v1': { default: null } });
+    await expect(unlockCredentials('a-test-passphrase-12c')).rejects.toThrow(/not encrypted/i);
+  });
+});
+
+describe('lockCredentials', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('removes session passphrase cache', async () => {
+    const mock = installChromeStorageMock();
+    await mock.session.set({ 'llm.creds.v1.kek': 'cached' });
+    await lockCredentials();
+    const cached = (await mock.session.get('llm.creds.v1.kek'))['llm.creds.v1.kek'];
+    expect(cached).toBeUndefined();
+  });
+
+  it('is a no-op when session was already empty', async () => {
+    installChromeStorageMock();
+    await expect(lockCredentials()).resolves.toBeUndefined();
+  });
+});
+
+describe('isEncryptionEnabled', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('returns false when storage is empty', async () => {
+    installChromeStorageMock();
+    expect(await isEncryptionEnabled()).toBe(false);
+  });
+  it('returns false when storage holds raw shape', async () => {
+    const mock = installChromeStorageMock();
+    await mock.local.set({ 'llm.creds.v1': { default: null } });
+    expect(await isEncryptionEnabled()).toBe(false);
+  });
+  it('returns true when storage holds envelope', async () => {
+    const mock = installChromeStorageMock();
+    const envelope = await encrypt(JSON.stringify({ default: null }), 'a-test-passphrase-12c');
+    await mock.local.set({ 'llm.creds.v1': envelope });
+    expect(await isEncryptionEnabled()).toBe(true);
+  });
+});
+
+describe('isLocked', () => {
+  beforeEach(() => {
+    delete (globalThis as { chrome?: unknown }).chrome;
+  });
+
+  it('returns false when encryption is not enabled', async () => {
+    installChromeStorageMock();
+    expect(await isLocked()).toBe(false);
+  });
+  it('returns true when encryption is enabled and no session cache', async () => {
+    const mock = installChromeStorageMock();
+    const envelope = await encrypt(JSON.stringify({ default: null }), 'a-test-passphrase-12c');
+    await mock.local.set({ 'llm.creds.v1': envelope });
+    expect(await isLocked()).toBe(true);
+  });
+  it('returns false when encryption is enabled and session has cache', async () => {
+    const mock = installChromeStorageMock();
+    const envelope = await encrypt(JSON.stringify({ default: null }), 'a-test-passphrase-12c');
+    await mock.local.set({ 'llm.creds.v1': envelope });
+    await mock.session.set({ 'llm.creds.v1.kek': 'a-test-passphrase-12c' });
+    expect(await isLocked()).toBe(false);
+  });
+});

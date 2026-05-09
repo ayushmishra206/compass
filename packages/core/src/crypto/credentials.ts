@@ -78,3 +78,28 @@ export async function disableEncryption(currentPassphrase: string): Promise<void
   await chrome.storage.local.set({ [STORAGE_KEY]: creds });
   await chrome.storage.session.remove(SESSION_KEK_KEY);
 }
+
+export async function unlockCredentials(passphrase: string): Promise<void> {
+  const current = await chrome.storage.local.get(STORAGE_KEY);
+  const env = EncryptedSecretSchema.safeParse(current[STORAGE_KEY]);
+  if (!env.success) throw new Error('Credentials are not encrypted');
+  // Validate by attempting one decrypt — throws on wrong passphrase
+  await decrypt(env.data, passphrase);
+  await chrome.storage.session.set({ [SESSION_KEK_KEY]: passphrase });
+}
+
+export async function lockCredentials(): Promise<void> {
+  await chrome.storage.session.remove(SESSION_KEK_KEY);
+}
+
+export async function isEncryptionEnabled(): Promise<boolean> {
+  const r = await chrome.storage.local.get(STORAGE_KEY);
+  return EncryptedSecretSchema.safeParse(r[STORAGE_KEY]).success;
+}
+
+export async function isLocked(): Promise<boolean> {
+  const enabled = await isEncryptionEnabled();
+  if (!enabled) return false;
+  const passphrase = await getCachedPassphrase();
+  return !passphrase;
+}
