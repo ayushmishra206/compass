@@ -49,13 +49,13 @@ describe('pickMoodByHour', () => {
 
 describe('pickScene', () => {
   it('picks from the mood pool when weather is null', () => {
-    const now = new Date('2026-05-03T07:00:00Z');
+    const now = new Date(2026, 4, 3, 7, 0, 0);
     const scene = pickScene(now, null, manifest, '2026-05-03');
     expect(scene.mood).toBe('dawn');
   });
 
   it('narrows the pool by weather affinity when provided', () => {
-    const now = new Date('2026-05-03T09:00:00Z'); // fog band
+    const now = new Date(2026, 4, 3, 9, 0, 0); // fog band
     const scene = pickScene(now, 'rain', manifest, '2026-05-03');
     expect(scene.mood).toBe('fog');
     expect(scene.weather).toContain('rain');
@@ -63,21 +63,21 @@ describe('pickScene', () => {
   });
 
   it('falls back to the full mood pool when the weather subset is empty', () => {
-    const now = new Date('2026-05-03T20:00:00Z'); // desert band
+    const now = new Date(2026, 4, 3, 20, 0, 0); // desert band
     const scene = pickScene(now, 'snow', manifest, '2026-05-03');
     expect(scene.mood).toBe('desert');
     expect(scene.id).toBe('x1'); // only desert photo, no snow affinity
   });
 
   it('is deterministic for the same (date, mood) seed', () => {
-    const now = new Date('2026-05-03T13:00:00Z'); // ocean
+    const now = new Date(2026, 4, 3, 13, 0, 0); // ocean
     const a = pickScene(now, 'clear', manifest, '2026-05-03');
     const b = pickScene(now, 'clear', manifest, '2026-05-03');
     expect(a.id).toBe(b.id);
   });
 
   it('changes pick when the date seed changes', () => {
-    const now = new Date('2026-05-03T13:00:00Z');
+    const now = new Date(2026, 4, 3, 13, 0, 0);
     const a = pickScene(now, null, manifest, '2026-05-03');
     const b = pickScene(now, null, manifest, '2026-05-04');
     expect(typeof a.id).toBe('string');

@@ -34,7 +34,7 @@ export function pickScene(
   manifest: SceneManifest,
   dateSeed: string,
 ): Scene {
-  const mood = pickMoodByHour(now.getUTCHours());
+  const mood = pickMoodByHour(now.getHours());
   const moodPool = manifest.scenes.filter((s) => s.mood === mood);
   if (moodPool.length === 0) {
     throw new Error(`scene manifest has no scenes for mood "${mood}"`);
