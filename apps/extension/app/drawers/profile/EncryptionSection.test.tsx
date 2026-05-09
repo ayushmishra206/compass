@@ -22,7 +22,7 @@ describe('EncryptionSection — Off state', () => {
 
   it('renders Off label and Enable button', () => {
     render(<EncryptionSection />);
-    expect(screen.getByText(/off/i)).toBeInTheDocument();
+    expect(screen.getByText(/Off — keys are stored unencrypted/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable encryption/i })).toBeInTheDocument();
   });
 
@@ -50,7 +50,7 @@ describe('EncryptionSection — On state', () => {
 
   it('renders On label, Lock now (when unlocked), and Disable button', () => {
     render(<EncryptionSection />);
-    expect(screen.getByText(/on/i)).toBeInTheDocument();
+    expect(screen.getByText(/On — keys are encrypted/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /lock now/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /disable encryption/i })).toBeInTheDocument();
   });

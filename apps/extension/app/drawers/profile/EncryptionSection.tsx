@@ -66,7 +66,7 @@ export function EncryptionSection() {
 
   return (
     <div style={sectionWrap}>
-      <div style={sectionLabelStyle}>Encrypt</div>
+      <div style={sectionLabelStyle}>Encryption</div>
       <div style={{ fontSize: 12, color: 'var(--color-ink-3)', marginBottom: 10 }}>
         On — keys are encrypted at rest with your passphrase.
       </div>
@@ -77,13 +77,8 @@ export function EncryptionSection() {
           </button>
         )}
         {expanded !== 'disable' && (
-          <button
-            type="button"
-            aria-label="Disable encryption"
-            style={btnGhost}
-            onClick={() => setExpanded('disable')}
-          >
-            Disable
+          <button type="button" style={btnGhost} onClick={() => setExpanded('disable')}>
+            Disable encryption
           </button>
         )}
       </div>
