@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AccentName } from '@compass/ui';
 import type { Mood } from '@compass/core';
+import { isEncryptionEnabled, isLocked, unlockCredentials, lockCredentials } from '@compass/core';
 
 export type DrawerKind =
   | 'brief'
@@ -20,6 +21,9 @@ export interface ShellState {
   pinnedScene: Mood | null;
   accent: AccentName;
   weatherEnabled: boolean;
+  encryptionEnabled: boolean;
+  locked: boolean;
+  unlockHint: boolean;
 
   navClick: (kind: DrawerKind) => void;
   avatarClick: () => void;
@@ -32,6 +36,12 @@ export interface ShellState {
   setWeatherEnabled: (b: boolean) => void;
   closeDrawer: () => void;
   closeCmdk: () => void;
+  refreshLockState: () => Promise<void>;
+  unlock: (passphrase: string) => Promise<void>;
+  lock: () => Promise<void>;
+  requestUnlock: () => void;
+  setEncryptionState: (enabled: boolean, locked: boolean) => void;
+  clearUnlockHint: () => void;
 }
 
 export const useShell = create<ShellState>()(
@@ -43,6 +53,9 @@ export const useShell = create<ShellState>()(
       pinnedScene: null,
       accent: 'amber',
       weatherEnabled: false,
+      encryptionEnabled: false,
+      locked: false,
+      unlockHint: false,
 
       navClick: (kind) => set({ drawer: { open: true, kind } }),
       avatarClick: () => {
@@ -68,6 +81,27 @@ export const useShell = create<ShellState>()(
       setWeatherEnabled: (b) => set({ weatherEnabled: b }),
       closeDrawer: () => set((s) => ({ drawer: { ...s.drawer, open: false } })),
       closeCmdk: () => set({ cmdkOpen: false }),
+
+      refreshLockState: async () => {
+        const [enabled, locked] = await Promise.all([isEncryptionEnabled(), isLocked()]);
+        set({ encryptionEnabled: enabled, locked });
+      },
+
+      unlock: async (passphrase: string) => {
+        await unlockCredentials(passphrase);
+        set({ locked: false, unlockHint: false });
+      },
+
+      lock: async () => {
+        await lockCredentials();
+        set({ locked: true });
+      },
+
+      requestUnlock: () => set({ drawer: { open: true, kind: 'profile' }, unlockHint: true }),
+
+      setEncryptionState: (enabled, locked) => set({ encryptionEnabled: enabled, locked }),
+
+      clearUnlockHint: () => set({ unlockHint: false }),
     }),
     {
       name: 'compass.shell.v1',
@@ -75,6 +109,7 @@ export const useShell = create<ShellState>()(
         accent: s.accent,
         pinnedScene: s.pinnedScene,
         weatherEnabled: s.weatherEnabled,
+        // intentionally NOT: encryptionEnabled, locked, unlockHint (re-derived on boot)
       }),
     },
   ),
