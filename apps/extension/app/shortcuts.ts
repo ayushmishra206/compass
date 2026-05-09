@@ -4,25 +4,20 @@ import { useShell } from '@app/state/shell.js';
 /**
  * Register the global keyboard shortcuts:
  * - `⌘ + K` — toggle CmdK semantic search
- * - `Esc`   — close any open overlay
- * - `? + d` — toggle Tweaks panel
+ * - `Esc`   — close drawers and cmd palette
  */
 export function useGlobalShortcuts() {
   const shell = useShell();
   const shortcuts: Shortcut[] = [
     {
       keys: ['⌘', 'k'],
-      handler: () => (shell.overlay === 'cmdK' ? shell.closeOverlay() : shell.openOverlay('cmdK')),
+      handler: () => shell.cmdkHotkey(),
     },
     {
       keys: ['escape'],
       handler: () => {
-        if (shell.overlay) shell.closeOverlay();
+        shell.esc();
       },
-    },
-    {
-      keys: ['?', 'd'],
-      handler: () => shell.setTweaksOpen(!shell.tweaksOpen),
     },
   ];
   useShortcuts(shortcuts);
