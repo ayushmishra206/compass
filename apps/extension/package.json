@@ -17,6 +17,7 @@
     "@compass/agents": "workspace:*",
     "@compass/core": "workspace:*",
     "@compass/db": "workspace:*",
+    "@compass/integrations": "workspace:^",
     "@compass/llm": "workspace:*",
     "@compass/runtime": "workspace:*",
     "@compass/ui": "workspace:*",

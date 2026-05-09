@@ -68,6 +68,9 @@ importers:
       '@compass/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@compass/integrations':
+        specifier: workspace:^
+        version: link:../../packages/integrations
       '@compass/llm':
         specifier: workspace:*
         version: link:../../packages/llm
