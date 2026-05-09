@@ -2,28 +2,22 @@ import { useShortcuts, type Shortcut } from '@compass/ui';
 import { useShell } from '@app/state/shell.js';
 
 /**
- * Register the global keyboard shortcuts:
- * - `⌘ + K` — toggle CmdK semantic search
- * - `Esc`   — close any open overlay
- * - `? + d` — toggle Tweaks panel
+ * Global shortcut bindings for the Phase 1.6 shell.
+ * - ⌘+K / Ctrl+K → toggle command palette
+ * - ?+b / ?+t / ?+g / ?+n / ?+i / ?+f → open the matching drawer
+ * - Esc closes drawer + cmdk
  */
 export function useGlobalShortcuts() {
   const shell = useShell();
   const shortcuts: Shortcut[] = [
-    {
-      keys: ['⌘', 'k'],
-      handler: () => (shell.overlay === 'cmdK' ? shell.closeOverlay() : shell.openOverlay('cmdK')),
-    },
-    {
-      keys: ['escape'],
-      handler: () => {
-        if (shell.overlay) shell.closeOverlay();
-      },
-    },
-    {
-      keys: ['?', 'd'],
-      handler: () => shell.setTweaksOpen(!shell.tweaksOpen),
-    },
+    { keys: ['⌘', 'k'], handler: () => shell.cmdkHotkey() },
+    { keys: ['escape'], handler: () => shell.esc() },
+    { keys: ['?', 'b'], handler: () => shell.navClick('brief') },
+    { keys: ['?', 't'], handler: () => shell.navClick('today') },
+    { keys: ['?', 'g'], handler: () => shell.navClick('goals') },
+    { keys: ['?', 'n'], handler: () => shell.navClick('notes') },
+    { keys: ['?', 'i'], handler: () => shell.navClick('inbox') },
+    { keys: ['?', 'f'], handler: () => shell.navClick('focus') },
   ];
   useShortcuts(shortcuts);
 }

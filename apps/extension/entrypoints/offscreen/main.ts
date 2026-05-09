@@ -1,6 +1,7 @@
 import { createHandlerRegistry, installRequestListener } from '@compass/runtime';
+import type { Routes } from '@compass/runtime';
 import { startDb } from '@compass/db';
-import { getActiveCredentials, PingOutputSchema } from '@compass/core';
+import { getActiveCredentials, PingOutputSchema, codeToAffinity } from '@compass/core';
 import {
   callWithSchema,
   createAnthropicProvider,
@@ -54,6 +55,97 @@ registry.register('llm.validateKey', async ({ provider, apiKey }) => {
     return createAnthropicProvider({ apiKey }).validateKey(apiKey);
   }
   return { valid: false, error: `Unknown provider: ${String(provider)}` };
+});
+
+const SCENE_MANIFEST_URL = 'https://assets.compassdash.com/scenes/manifest.v1.json';
+
+registry.register('scenes.getManifest', async (req) => {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (req.etag) headers['If-None-Match'] = req.etag;
+
+  const res = await fetch(SCENE_MANIFEST_URL, { headers });
+  if (!res.ok) {
+    throw new Error(`scene manifest fetch failed: ${res.status}`);
+  }
+  const manifest = (await res.json()) as Routes['scenes.getManifest']['res']['manifest'];
+  return { manifest, fetchedAt: Date.now() };
+});
+
+registry.register('weather.getCurrent', async (req) => {
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.searchParams.set('latitude', req.lat.toFixed(3));
+  url.searchParams.set('longitude', req.lon.toFixed(3));
+  url.searchParams.set('current', 'weather_code,temperature_2m');
+
+  const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(`open-meteo fetch failed: ${res.status}`);
+  const json = (await res.json()) as {
+    current: { weather_code: number; temperature_2m: number };
+  };
+
+  const code = json.current.weather_code;
+  return {
+    code,
+    tempC: json.current.temperature_2m,
+    summary: weatherSummary(code),
+    affinity: codeToAffinity(code),
+    fetchedAt: Date.now(),
+  };
+});
+
+function weatherSummary(code: number): string {
+  if (code === 0 || code === 1) return 'Clear';
+  if (code === 2 || code === 3) return 'Cloudy';
+  if (code === 45 || code === 48) return 'Foggy';
+  if (code >= 51 && code <= 67) return 'Rainy';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'Snowy';
+  if (code >= 80 && code <= 82) return 'Showers';
+  if (code >= 95) return 'Stormy';
+  return 'Mixed';
+}
+
+async function getScenesPhotoDir(): Promise<FileSystemDirectoryHandle> {
+  const root = await navigator.storage.getDirectory();
+  const compass = await root.getDirectoryHandle('compass.opfs', { create: true });
+  const scenes = await compass.getDirectoryHandle('scenes', { create: true });
+  return scenes.getDirectoryHandle('photos', { create: true });
+}
+
+async function readCachedPhoto(sha256: string): Promise<Blob | null> {
+  try {
+    const dir = await getScenesPhotoDir();
+    const handle = await dir.getFileHandle(`${sha256}.jpg`);
+    const file = await handle.getFile();
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCachedPhoto(sha256: string, bytes: ArrayBuffer): Promise<void> {
+  const dir = await getScenesPhotoDir();
+  const handle = await dir.getFileHandle(`${sha256}.jpg`, { create: true });
+  const writable = await handle.createWritable();
+  try {
+    await writable.write(bytes);
+  } finally {
+    await writable.close();
+  }
+}
+
+registry.register('scenes.fetchPhoto', async (req) => {
+  const cached = await readCachedPhoto(req.sha256);
+  if (cached) {
+    return { blobUrl: URL.createObjectURL(cached) };
+  }
+
+  const res = await fetch(req.url, { mode: 'cors', credentials: 'omit' });
+  if (!res.ok) throw new Error(`photo fetch failed: ${res.status}`);
+  const bytes = await res.arrayBuffer();
+  await writeCachedPhoto(req.sha256, bytes);
+  return {
+    blobUrl: URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' })),
+  };
 });
 
 installRequestListener(registry);

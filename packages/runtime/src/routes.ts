@@ -3,7 +3,7 @@
 //
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
-import type { ProviderId } from '@compass/core';
+import type { ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
   'system.ping': {
@@ -21,6 +21,24 @@ export interface Routes {
   'ledger.getMonthlySpend': {
     req: { monthStartIso: string };
     res: { usd: number; calls: number };
+  };
+  'scenes.getManifest': {
+    req: { etag?: string };
+    res: { manifest: SceneManifest; fetchedAt: number };
+  };
+  'scenes.fetchPhoto': {
+    req: { url: string; sha256: string };
+    res: { blobUrl: string };
+  };
+  'weather.getCurrent': {
+    req: { lat: number; lon: number };
+    res: {
+      code: number;
+      tempC: number;
+      summary: string;
+      affinity: WxAffinity;
+      fetchedAt: number;
+    };
   };
 }
 

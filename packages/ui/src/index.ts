@@ -1,7 +1,8 @@
 export { cn } from './utils/cn.js';
 export * from './tokens.js';
-export { applyAccent } from './theme/accents.js';
-export { ThemeProvider, type Theme, type Density } from './theme/ThemeProvider.js';
+export { ACCENTS, applyAccent } from './theme/accents.js';
+export type { AccentName } from './tokens.js';
+export { ThemeProvider } from './theme/ThemeProvider.js';
 export * from './icons/index.js';
 export * from './components/Button.js';
 export * from './components/IconButton.js';
@@ -20,5 +21,6 @@ export * from './components/Modal.js';
 export * from './components/Segmented.js';
 export * from './components/Toggle.js';
 export * from './components/BrandMark.js';
+export * from './components/GlassCard.js';
 export * from './hooks/index.js';
-export * from './layout/index.js';
+export * from './shell/index.js';

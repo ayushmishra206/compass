@@ -8,7 +8,17 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist', '.output', 'coverage', 'node_modules', 'web/', 'packages/*/dist'],
+    ignores: [
+      'dist',
+      '.output',
+      'coverage',
+      'node_modules',
+      'web/',
+      'packages/*/dist',
+      // Reference JSX/TS extracted from design bundles (via scripts/extract-design-bundle.mjs)
+      // — uses Babel-only globals (React, window.MOCK, window.__resources) that fail normal lint.
+      'docs/superpowers/specs/',
+    ],
   },
   {
     files: ['**/*.{ts,tsx}'],
