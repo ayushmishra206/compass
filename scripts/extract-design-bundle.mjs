@@ -17,10 +17,17 @@ if (!manifestMatch || !templateMatch) {
   process.exit(1);
 }
 
-const manifest = JSON.parse(manifestMatch[1]);
-const template = JSON.parse(templateMatch[1]);
+let manifest;
+let template;
+try {
+  manifest = JSON.parse(manifestMatch[1]);
+  template = JSON.parse(templateMatch[1]);
+} catch (err) {
+  console.error('failed to parse manifest/template JSON:', err.message);
+  process.exit(1);
+}
 
-const babelUuids = [...template.matchAll(/<script type="text\/babel" src="([0-9a-f-]+)"/g)].map((m) => m[1]);
+const babelUuids = [...template.matchAll(/<script type="text\/babel" src="([0-9a-fA-F-]+)"/g)].map((m) => m[1]);
 console.error('babel UUIDs:', babelUuids);
 
 mkdirSync(OUT_DIR, { recursive: true });
