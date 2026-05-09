@@ -112,3 +112,12 @@ textarea {
     transition-duration: 0.001ms !important;
   }
 }
+
+@keyframes compass-ken {
+  0% {
+    transform: scale(1.04) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.12) translate(-1.5%, -1%);
+  }
+}

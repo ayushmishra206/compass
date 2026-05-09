@@ -22,3 +22,4 @@ export * from './components/Segmented.js';
 export * from './components/Toggle.js';
 export * from './components/BrandMark.js';
 export * from './hooks/index.js';
+export * from './shell/index.js';
