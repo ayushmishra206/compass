@@ -148,6 +148,15 @@ registry.register('scenes.fetchPhoto', async (req) => {
   };
 });
 
+// Phase 1.5 alarms: accept the heavy-doc-keepalive Port from withHeavyDocAlive().
+// The Port being open is itself the keepalive — Chrome will not evict either side
+// while at least one Port is connected. No work to do in the listener.
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'heavy-doc-keepalive') {
+    // intentionally empty — open Port is the contract
+  }
+});
+
 installRequestListener(registry);
 
 console.log('Compass offscreen mounted; handlers registered.');
