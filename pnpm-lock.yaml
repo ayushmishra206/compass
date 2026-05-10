@@ -71,6 +71,9 @@ importers:
       '@compass/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@compass/embeddings':
+        specifier: workspace:*
+        version: link:../../packages/embeddings
       '@compass/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations

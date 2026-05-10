@@ -6,8 +6,11 @@ import {
   createBriefRepo,
   createPomodoroRepo,
   createCostLedgerRepo,
+  createNotesRepo,
 } from '@compass/db';
-import type { StoredBriefing } from '@compass/db';
+import type { StoredBriefing, NotesRepo } from '@compass/db';
+import { embed, embedBatch } from '@compass/embeddings';
+import { chunkNote, isMinorEdit } from './notes';
 import {
   getActiveCredentials,
   LlmCredentialsLocked,
@@ -23,7 +26,13 @@ import {
   executeTask as llmExecuteTask,
 } from '@compass/llm';
 import type { LlmRequest } from '@compass/llm';
-import { generateMorningBrief, generateEodReflection, type LlmRouter } from '@compass/agents';
+import {
+  generateMorningBrief,
+  generateEodReflection,
+  generateAutolinkSummary,
+  askGrounded,
+  type LlmRouter,
+} from '@compass/agents';
 
 void startDb();
 
@@ -409,6 +418,209 @@ registry.register('pomodoro.complete', async ({ id }) => {
 registry.register('pomodoro.abandon', async ({ id }) => {
   const repo = await getPomodoroRepo();
   await repo.abandon(id);
+  return { ok: true as const };
+});
+
+// ── Notes handlers ────────────────────────────────────────────────────────────
+
+const EMBEDDING_MODEL = 'minilm-l6-v2';
+const AUTOLINK_THRESHOLD = 0.78;
+const FORGOTTEN_THRESHOLD = 0.82;
+const FORGOTTEN_DAYS = 45;
+const FORGOTTEN_SESSION_FLAG = 'notes.forgotten.shownThisSession';
+
+let _notesRepo: NotesRepo | null = null;
+async function getNotesRepo(): Promise<NotesRepo> {
+  if (_notesRepo) return _notesRepo;
+  const db = await getDb();
+  _notesRepo = createNotesRepo(db);
+  return _notesRepo;
+}
+
+async function embedAndStoreChunks(
+  repo: NotesRepo,
+  noteId: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  const chunks = chunkNote(title, body);
+  const embeddings = await embedBatch(chunks);
+  await repo.upsertChunks(
+    noteId,
+    chunks.map((text, i) => ({ text, embedding: embeddings[i]! })),
+  );
+}
+
+async function detectForgotten(
+  repo: NotesRepo,
+  neighbors: Array<{ noteId: string; similarity: number }>,
+): Promise<{ noteId: string; sim: number; title: string } | null> {
+  const session = await chrome.storage.session.get(FORGOTTEN_SESSION_FLAG);
+  if (session[FORGOTTEN_SESSION_FLAG]) return null;
+  const cutoff = Date.now() - FORGOTTEN_DAYS * 24 * 60 * 60 * 1000;
+  for (const n of neighbors) {
+    if (n.similarity < FORGOTTEN_THRESHOLD) continue;
+    const note = await repo.getById(n.noteId);
+    if (!note) continue;
+    if (new Date(note.updatedAt).getTime() < cutoff) {
+      await chrome.storage.session.set({ [FORGOTTEN_SESSION_FLAG]: true });
+      return { noteId: n.noteId, sim: n.similarity, title: note.title };
+    }
+  }
+  return null;
+}
+
+registry.register('notes.create', async ({ title, body, tags }) => {
+  const repo = await getNotesRepo();
+  const id = await repo.create({ title, body, tags, embeddingModel: EMBEDDING_MODEL });
+  await embedAndStoreChunks(repo, id, title, body);
+  return { id };
+});
+
+registry.register('notes.update', async (req) => {
+  const repo = await getNotesRepo();
+  const cur = await repo.getById(req.id);
+  if (!cur) throw new Error('not-found');
+  await repo.update(req.id, {
+    title: req.title,
+    body: req.body,
+    tags: req.tags,
+    autolinkEnabled: req.autolinkEnabled,
+  });
+  const next = await repo.getById(req.id);
+  if (!next) throw new Error('not-found');
+  const minor = isMinorEdit(cur.body, next.body) && cur.title === next.title;
+  if (minor) return { ok: true as const };
+
+  await embedAndStoreChunks(repo, next.id, next.title, next.body);
+
+  const profile = await getUserProfile();
+  if (profile.autoLinkEnabled && next.autolinkEnabled) {
+    const neighbors = await repo.findNeighbors(next.id, { k: 5, threshold: AUTOLINK_THRESHOLD });
+    await repo.rebuildAutoLinks(next.id, neighbors);
+    const forgotten = await detectForgotten(repo, neighbors);
+    return forgotten ? { ok: true as const, forgotten } : { ok: true as const };
+  }
+  // Auto-link disabled — drop any existing pairs for this note.
+  await repo.rebuildAutoLinks(next.id, []);
+  return { ok: true as const };
+});
+
+registry.register('notes.delete', async ({ id }) => {
+  const repo = await getNotesRepo();
+  await repo.delete(id);
+  return { ok: true as const };
+});
+
+registry.register('notes.list', async ({ limit, offset }) => {
+  const repo = await getNotesRepo();
+  const all = await repo.list({ limit: limit ?? 100, offset: offset ?? 0 });
+  return {
+    notes: all.map((n) => ({
+      id: n.id,
+      title: n.title,
+      excerpt: n.body.slice(0, 160),
+      updatedAt: n.updatedAt,
+      tags: n.tags,
+    })),
+  };
+});
+
+registry.register('notes.get', async ({ id }) => {
+  const repo = await getNotesRepo();
+  const note = await repo.getById(id);
+  if (!note) throw new Error('not-found');
+  const links = await repo.listAutoLinksForNote(note.id);
+  const titles = await Promise.all(
+    links.map((l) => repo.getById(l.targetNoteId).then((n) => n?.title ?? '')),
+  );
+  return {
+    note: {
+      id: note.id,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+      title: note.title,
+      body: note.body,
+      tags: note.tags,
+      autolinkEnabled: note.autolinkEnabled,
+    },
+    autoLinks: links.map((l, i) => ({
+      targetNoteId: l.targetNoteId,
+      targetTitle: titles[i] ?? '',
+      similarity: l.similarity,
+      rationale: l.rationale,
+    })),
+  };
+});
+
+registry.register('notes.search', async ({ query, limit }) => {
+  const repo = await getNotesRepo();
+  const queryEmbedding = await embed(query);
+  const hits = await repo.hybridSearch({ query, queryEmbedding, limit: limit ?? 20 });
+  return { hits };
+});
+
+registry.register('notes.askGrounded', async ({ query }) => {
+  const repo = await getNotesRepo();
+  const queryEmbedding = await embed(query);
+  const hits = await repo.hybridSearch({ query, queryEmbedding, limit: 5 });
+  if (hits.length === 0) {
+    return { answer: null, citations: [], reason: 'no-notes' as const };
+  }
+  try {
+    await getActiveCredentials();
+  } catch (e) {
+    if (e instanceof LlmCredentialsLocked) {
+      return { answer: null, citations: [], reason: 'locked' as const };
+    }
+    throw e;
+  }
+  try {
+    const result = await askGrounded({ router, query, hits });
+    if (result.answer === null) {
+      return { answer: null, citations: [], reason: 'error' as const };
+    }
+    const citTitles = await Promise.all(
+      result.citations.map(async (c) => {
+        const n = await repo.getById(c.noteId);
+        return { id: c.id, noteId: c.noteId, title: n?.title ?? '' };
+      }),
+    );
+    return { answer: result.answer, citations: citTitles, reason: null };
+  } catch {
+    return { answer: null, citations: [], reason: 'error' as const };
+  }
+});
+
+registry.register('notes.autolink.rationale', async ({ srcId, targetId }) => {
+  const repo = await getNotesRepo();
+  const cached = await repo.getAutoLinkRationale(srcId, targetId);
+  if (cached) return { rationale: cached };
+  const a = await repo.getById(srcId);
+  const b = await repo.getById(targetId);
+  if (!a || !b) throw new Error('not-found');
+  try {
+    await getActiveCredentials();
+  } catch (e) {
+    if (e instanceof LlmCredentialsLocked) return { rationale: null, reason: 'locked' as const };
+    throw e;
+  }
+  try {
+    const out = await generateAutolinkSummary({
+      router,
+      noteA: { title: a.title, body: a.body },
+      noteB: { title: b.title, body: b.body },
+    });
+    await repo.setAutoLinkRationale(srcId, targetId, out.rationale);
+    return { rationale: out.rationale };
+  } catch {
+    return { rationale: null, reason: 'error' as const };
+  }
+});
+
+registry.register('notes.autolink.dismiss', async ({ srcId, targetId }) => {
+  const repo = await getNotesRepo();
+  await repo.dismissAutoLink(srcId, targetId);
   return { ok: true as const };
 });
 
