@@ -63,7 +63,13 @@ export default [
   },
   {
     files: ['**/*.{ts,tsx}'],
-    ignores: ['packages/core/src/crypto/credentials.ts', '**/*.test.ts', '**/*.test.tsx'],
+    ignores: [
+      'packages/core/src/crypto/credentials.ts',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+    ],
     rules: {
       'no-restricted-syntax': [
         'error',
