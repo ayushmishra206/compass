@@ -1930,7 +1930,7 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
 - BriefDrawer empty-state branches: `loading` / `have-brief` / `locked-no-brief` / `too-early` / `error`.
 - **Gate (closed):** brief generation round-trip green in `brief-pipeline` integration test; e2e `daily-agent.spec.ts` 3/3 passing on structural path.
 
-### Phase 2 semantic-notes — Semantic Notes (complete, closed 2026-05-11 via PR #TBD)
+### Phase 2 semantic-notes — Semantic Notes (complete, closed 2026-05-11 via PR #10)
 
 - Notes CRUD with CodeMirror 6 markdown editor.
 - Local embedding pipeline (MiniLM-L6-v2, 384 dims; offscreen).
