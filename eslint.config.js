@@ -103,4 +103,32 @@ export default [
       ],
     },
   },
+  // Notes pipeline must not leak content into logs. Blocks console.{log,warn,...}
+  // calls whose arguments reach into `.body`, `.title`, `.text`, `.context`,
+  // `.answer`, `.rationale`, or `.query` member access. Scoped to notes
+  // pipeline files; tests exempt.
+  {
+    files: [
+      'apps/extension/entrypoints/offscreen/notes.ts',
+      'apps/extension/entrypoints/offscreen/main.ts',
+      'apps/extension/app/drawers/notes/**/*.{ts,tsx}',
+      'apps/extension/app/drawers/NotesDrawer.tsx',
+      'apps/extension/app/components/CmdK.tsx',
+      'apps/extension/app/hooks/useNotes.ts',
+      'packages/agents/src/notes.*.ts',
+      'packages/db/src/repositories/notes.ts',
+    ],
+    ignores: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.object.name='console'][callee.property.name=/^(log|warn|error|info|debug)$/] MemberExpression[property.name=/^(body|title|text|context|answer|rationale|query)$/]",
+          message:
+            'Notes pipeline must not log content fields (body/title/text/context/answer/rationale/query). Strip content fields before logging.',
+        },
+      ],
+    },
+  },
 ];

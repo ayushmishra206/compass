@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { rpc } from '@compass/runtime';
 import { useShell } from '../state/shell.js';
 import type { DrawerKind } from '../state/shell.js';
+import { useNotesStore } from '../state/notesStore';
 
 const NAV_ITEMS: { label: string; kind: DrawerKind }[] = [
   { label: 'Open brief', kind: 'brief' },
@@ -83,6 +85,8 @@ const answerStyle: CSSProperties = {
   color: 'var(--color-ink)',
 };
 
+type Citation = { id: string; noteId: string; title: string };
+
 export function CmdK() {
   const open = useShell((s) => s.cmdkOpen);
   const close = useShell((s) => s.closeCmdk);
@@ -90,6 +94,8 @@ export function CmdK() {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [citations, setCitations] = useState<Citation[]>([]);
+  const [reason, setReason] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -98,6 +104,8 @@ export function CmdK() {
     } else {
       setQ('');
       setAnswer(null);
+      setCitations([]);
+      setReason(null);
       setBusy(false);
     }
   }, [open]);
@@ -110,11 +118,22 @@ export function CmdK() {
   const onAsk = async () => {
     setBusy(true);
     setAnswer(null);
-    await new Promise((r) => setTimeout(r, 1200));
-    setAnswer(
-      'From your notes: yes — keep the offscreen runtime. Cross-origin isolation only enables WebGPU and SharedArrayBuffer; the OPFS sync handles that gate the SQLite-vec write path are unaffected. Notes n1, n2, n8 all converge on this.',
-    );
-    setBusy(false);
+    setCitations([]);
+    setReason(null);
+    try {
+      const r = (await rpc('notes.askGrounded', { query: q })) as
+        | { answer: string; citations: Citation[]; reason: null }
+        | { answer: null; citations: []; reason: 'no-notes' | 'locked' | 'error' };
+      setAnswer(r.answer);
+      setCitations(r.citations);
+      setReason(r.reason);
+    } catch {
+      setAnswer(null);
+      setCitations([]);
+      setReason('error');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -182,14 +201,45 @@ export function CmdK() {
                   marginBottom: 10,
                 }}
               >
-                Answer · grounded in 3 notes
+                Answer · grounded in {citations.length} {citations.length === 1 ? 'note' : 'notes'}
               </div>
               <p style={{ margin: '0 0 12px' }}>{answer}</p>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <span style={kbdStyle}>n1 architecture</span>
-                <span style={kbdStyle}>n2 offscreen runtime</span>
-                <span style={kbdStyle}>n8 auth reality</span>
-              </div>
+              {citations.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {citations.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        useNotesStore.getState().select(c.noteId);
+                        navClick('notes');
+                        close();
+                      }}
+                      style={{
+                        ...kbdStyle,
+                        cursor: 'pointer',
+                        background: 'rgba(255,255,255,0.10)',
+                      }}
+                    >
+                      {c.id}: {c.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {!busy && answer === null && reason === 'no-notes' && (
+            <div style={{ padding: '24px 18px', color: 'var(--color-ink-3)', fontSize: 12 }}>
+              Write some notes first.
+            </div>
+          )}
+          {!busy && answer === null && reason === 'locked' && (
+            <div style={{ padding: '24px 18px', color: 'var(--color-ink-3)', fontSize: 12 }}>
+              Unlock to ask.
+            </div>
+          )}
+          {!busy && answer === null && reason === 'error' && (
+            <div style={{ padding: '24px 18px', color: 'var(--color-ink-3)', fontSize: 12 }}>
+              Something went wrong. Try again.
             </div>
           )}
         </div>

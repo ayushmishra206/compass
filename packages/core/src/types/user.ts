@@ -27,6 +27,7 @@ export const UserProfileSchema = z.object({
   }),
   briefingHour: z.number().int(),
   reflectionHour: z.number().int(),
+  autoLinkEnabled: z.boolean().default(true),
   featureFlags: z.record(z.string(), z.boolean()).optional(),
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;

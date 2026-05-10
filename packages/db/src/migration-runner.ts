@@ -55,9 +55,67 @@ CREATE INDEX pomodoros_started ON pomodoros(started_at DESC);
 UPDATE meta SET value = '2' WHERE key = 'schema_version';
 `;
 
+const MIGRATION_0003_NOTES = `
+CREATE TABLE notes (
+  id              TEXT PRIMARY KEY,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  body            TEXT NOT NULL,
+  tags_json       TEXT NOT NULL DEFAULT '[]',
+  manual_links    TEXT NOT NULL DEFAULT '[]',
+  embedding_model TEXT NOT NULL,
+  autolink_enabled INTEGER NOT NULL DEFAULT 1,
+  reembed_pending INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX notes_updated ON notes(updated_at DESC);
+
+CREATE TABLE note_chunks (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_id      TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  chunk_index  INTEGER NOT NULL,
+  text         TEXT NOT NULL,
+  embedding    BLOB NOT NULL,
+  UNIQUE(note_id, chunk_index)
+);
+CREATE INDEX note_chunks_note ON note_chunks(note_id);
+
+CREATE VIRTUAL TABLE notes_fts USING fts5(
+  title, body, note_id UNINDEXED, tokenize='porter unicode61'
+);
+
+CREATE TABLE auto_links (
+  src_note_id    TEXT NOT NULL,
+  target_note_id TEXT NOT NULL,
+  similarity     REAL NOT NULL,
+  detected_at    TEXT NOT NULL,
+  rationale      TEXT,
+  rationale_at   TEXT,
+  user_feedback  TEXT,
+  dismissed      INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (src_note_id, target_note_id),
+  CHECK (src_note_id < target_note_id)
+);
+CREATE INDEX auto_links_src ON auto_links(src_note_id);
+CREATE INDEX auto_links_target ON auto_links(target_note_id);
+
+CREATE TRIGGER notes_fts_ai AFTER INSERT ON notes BEGIN
+  INSERT INTO notes_fts(rowid, title, body, note_id) VALUES (new.rowid, new.title, new.body, new.id);
+END;
+CREATE TRIGGER notes_fts_au AFTER UPDATE ON notes BEGIN
+  UPDATE notes_fts SET title=new.title, body=new.body, note_id=new.id WHERE rowid=old.rowid;
+END;
+CREATE TRIGGER notes_fts_ad AFTER DELETE ON notes BEGIN
+  DELETE FROM notes_fts WHERE rowid=old.rowid;
+END;
+
+UPDATE meta SET value = '3' WHERE key = 'schema_version';
+`;
+
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
   { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
+  { version: 3, name: 'notes', sql: MIGRATION_0003_NOTES },
 ];
 
 export function getSchemaVersion(db: Db): number {

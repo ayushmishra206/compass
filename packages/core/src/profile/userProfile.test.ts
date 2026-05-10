@@ -66,4 +66,17 @@ describe('UserProfile', () => {
     await getUserProfile();
     await expect(setUserProfile({ briefingHour: 'invalid' as never })).rejects.toThrow();
   });
+
+  it('default profile has autoLinkEnabled=true', async () => {
+    installChromeStorageMock();
+    const profile = await getUserProfile();
+    expect(profile.autoLinkEnabled).toBe(true);
+  });
+
+  it('setUserProfile can flip autoLinkEnabled', async () => {
+    installChromeStorageMock();
+    await getUserProfile();
+    const updated = await setUserProfile({ autoLinkEnabled: false });
+    expect(updated.autoLinkEnabled).toBe(false);
+  });
 });

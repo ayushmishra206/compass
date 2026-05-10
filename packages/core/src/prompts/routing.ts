@@ -45,6 +45,30 @@ export const ROUTING: ReadonlyArray<RouteConfig> = [
     cacheable: true,
     temperature: 0.5,
   },
+  {
+    taskId: 'notes.autolink.summary',
+    models: {
+      openrouter: 'anthropic/claude-haiku-4-5',
+      openai: 'gpt-4o-mini',
+      anthropic: 'claude-haiku-4-5',
+    },
+    reasoningEffort: 'none',
+    maxOutputTokens: 80,
+    cacheable: false,
+    temperature: 0.3,
+  },
+  {
+    taskId: 'notes.askGrounded',
+    models: {
+      openrouter: 'anthropic/claude-sonnet-4-6',
+      openai: 'gpt-5.4-mini',
+      anthropic: 'claude-sonnet-4-6',
+    },
+    reasoningEffort: 'low',
+    maxOutputTokens: 400,
+    cacheable: false,
+    temperature: 0.2,
+  },
   // Phase 2+ adds rows here as features ship.
 ];
 

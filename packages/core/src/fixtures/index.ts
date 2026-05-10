@@ -19,6 +19,7 @@ export const USER: UserProfile & { name: string } = {
   workHours: { start: '09:00', end: '17:00' },
   briefingHour: 8,
   reflectionHour: 18,
+  autoLinkEnabled: true,
   name: 'Casey',
 };
 
