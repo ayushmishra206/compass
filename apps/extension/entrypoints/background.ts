@@ -4,7 +4,11 @@ import { ensureAlarms, registerAlarmHandlers } from '@compass/integrations';
 export default defineBackground(() => {
   console.log('Compass service worker online');
 
-  chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg?.kind === 'rpc.request' && msg?.route === 'alarms.refresh') {
+      void ensureAlarms().then(() => sendResponse({ ok: true }));
+      return true; // async response
+    }
     if (msg?.kind === 'rpc.request') {
       void ensureHeavyDoc();
       // Do not call sendResponse — offscreen replies via its own sendMessage.
