@@ -1,4 +1,4 @@
-export { embed, ensureRuntimeReady } from './runtime';
+export { embed, embedBatch, ensureRuntimeReady } from './runtime';
 export {
   ensureWeightsDownloaded,
   OPFS_WEIGHTS_PATH,
