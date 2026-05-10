@@ -1919,7 +1919,7 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
   - Encrypted-storage opt-in flow round-trips ✅ (this PR)
   - Forgotten passphrase clears credentials and routes to onboarding ✅ (this PR)
 
-### Phase 2 daily-agent — Daily Agent slice (complete, closed 2026-05-10 via PR #TBD)
+### Phase 2 daily-agent — Daily Agent slice (complete, closed 2026-05-10 via PR #8)
 
 - Brief drawer: real LLM morning brief + EOD reflection via `brief.morning` / `brief.eod` agents.
 - Hero glass card + Ticker: real TLDR / streak / watchouts sourced from `useBrief()`.
