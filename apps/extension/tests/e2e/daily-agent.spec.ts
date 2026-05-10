@@ -144,8 +144,11 @@ test('DailyTimesSection saves briefingHour to storage; BriefDrawer renders if RP
 // ---------------------------------------------------------------------------
 
 test('locked vault shows locked-no-brief in BriefDrawer; unlock clears it', async ({
-  extensionPage: page,
+  freshExtensionPage: page,
 }) => {
+  // Mark BYOK as configured so onboarding stays out of the way.
+  await page.evaluate(() => chrome.storage.local.set({ 'profile.byokConfigured': true }));
+  await page.reload();
   // Seed a provider so EncryptionSection has creds to encrypt
   const now = new Date().toISOString();
   await page.evaluate((ts) => {
@@ -213,26 +216,35 @@ test('locked vault shows locked-no-brief in BriefDrawer; unlock clears it', asyn
 
   // --- Infrastructure assertion after unlock ---
   // chrome.storage.session should now have the KEK
-  const hasKek = await page.evaluate(() =>
-    chrome.storage.session
-      .get('llm.creds.v1.kek')
-      .then((r) => typeof r['llm.creds.v1.kek'] === 'string'),
-  );
-  expect(hasKek).toBe(true);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          chrome.storage.session
+            .get('llm.creds.v1.kek')
+            .then((r) => typeof r['llm.creds.v1.kek'] === 'string'),
+        ),
+      { timeout: 5_000 },
+    )
+    .toBe(true);
+
+  // Reopen Brief drawer and assert the locked-no-brief state has cleared.
+  // This runs on both paths (live key and structural) — the locked text is
+  // produced by client-side state, not the LLM, so it is testable without
+  // a real key.
+  await page.getByRole('button', { name: 'Close drawer' }).click();
+  await expect(page.locator('aside.drawer.on')).toHaveCount(0);
+
+  await openBriefDrawer(page);
+  await expect(
+    page.locator(BRIEF_DRAWER).getByText(/Your daily brief is waiting\. Unlock to generate\./i),
+  ).not.toBeVisible({ timeout: 5_000 });
 
   if (process.env.COMPASS_E2E_OPENROUTER_KEY) {
-    // Full path: reopen Brief and verify locked state is gone
-    await page.getByRole('button', { name: 'Close drawer' }).click();
-    await expect(page.locator('aside.drawer.on')).toHaveCount(0);
-
-    await openBriefDrawer(page);
+    // Full path: wait for Loading… to clear and a real brief to land.
     await expect(page.locator(BRIEF_DRAWER).getByText('Loading…')).not.toBeVisible({
       timeout: 30_000,
     });
-    await expect(
-      page.locator(BRIEF_DRAWER).getByText(/Your daily brief is waiting\. Unlock to generate\./i),
-    ).not.toBeVisible({ timeout: 5_000 });
-    // Regenerate button appears after real LLM generation
     await expect(
       page.locator(BRIEF_DRAWER).getByRole('button', { name: 'Regenerate' }),
     ).toBeVisible({ timeout: 60_000 });
@@ -240,10 +252,19 @@ test('locked vault shows locked-no-brief in BriefDrawer; unlock clears it', asyn
 });
 
 // ---------------------------------------------------------------------------
-// Test 3 — Pomodoro lifecycle persists across tab close
+// Test 3 — Pomodoro start dispatches RPC and FocusDrawer recovers after close
+//
+// Note: the FocusDrawer timer state is intentionally ephemeral (no
+// page-load recovery), and FocusDrawer does not surface a historical
+// session count.  True persistence of the `pomodoros` SQLite row across
+// tab close is verified by the `brief-pipeline` integration test
+// (focusSummary14d aggregation).  This e2e test verifies the user-visible
+// half of "lifecycle persists": the RPC fires, the in-flight UI transition
+// happens (with live key), and a new tab opens cleanly into Focus mode
+// after the previous tab is killed mid-session.
 // ---------------------------------------------------------------------------
 
-test('pomodoro start persists to storage and survives tab close/reopen', async ({
+test('pomodoro start dispatches RPC; new tab recovers cleanly after mid-session close', async ({
   context,
   extensionId,
 }) => {
@@ -255,43 +276,40 @@ test('pomodoro start persists to storage and survives tab close/reopen', async (
 
   await openFocusDrawer(page);
 
-  // FocusDrawer renders the Start button (text "▶ Start") and theme input
-  // when no pomodoro is active.
   const startBtn = page.locator(FOCUS_DRAWER).getByRole('button', { name: /Start/ });
   await expect(startBtn).toBeVisible({ timeout: 5_000 });
 
   const themeInput = page.locator(FOCUS_DRAWER).getByLabel('Pomodoro theme');
   await expect(themeInput).toBeVisible();
   await themeInput.fill('e2e test session');
-
-  // --- Structural assertion: timer input renders correctly before start ---
   await expect(themeInput).toHaveValue('e2e test session');
 
-  // Click the Start button — this fires rpc('pomodoro.start') async.
-  // The button itself is clickable before the RPC resolves.
+  // Fire the start. FocusDrawer awaits rpc('pomodoro.start') before
+  // flipping into the running state, so the UI transition is itself the
+  // signal that the RPC resolved.
   await startBtn.click();
 
-  // The Start button should disappear immediately as the UI enters the running
-  // state (React state update happens synchronously with the async RPC).
-  // FocusDrawer sets running=true AFTER the RPC resolves (inside startPomo).
-  // Without a live offscreen doc, the RPC won't resolve within a short window.
-  // We assert the structural transition only when the RPC is available.
   if (process.env.COMPASS_E2E_OPENROUTER_KEY) {
-    // Full stack: pomodoro.start resolves; Pause and Stop appear
+    // Full stack: rpc resolves, theme input disappears, Pause/Stop appear.
     await expect(page.locator(FOCUS_DRAWER).getByRole('button', { name: /Pause/ })).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.locator(FOCUS_DRAWER).getByRole('button', { name: 'Stop' })).toBeVisible({
       timeout: 5_000,
     });
-
-    // Allow the rpc round-trip to complete before closing
-    await page.waitForTimeout(1_000);
+    // Wait for the running state to be reflected before killing the tab —
+    // this guarantees the rpc round-trip has resolved and the row was
+    // committed to SQLite. Polling on the UI rather than a fixed sleep.
+    await expect
+      .poll(() => page.locator(FOCUS_DRAWER).getByLabel('Pomodoro theme').count(), {
+        timeout: 5_000,
+      })
+      .toBe(0);
   }
-  // Without a live key we proceed directly — the click was issued, which is
-  // enough to validate the button is interactive.
+  // Without a live key the click is issued but the rpc may not resolve;
+  // tab-close is still a valid stress on the SW and offscreen lifecycle.
 
-  // Close the tab — simulates user navigating away mid-pomodoro
+  // Kill the tab mid-session
   await page.close();
 
   // Open a new extension page
@@ -300,20 +318,10 @@ test('pomodoro start persists to storage and survives tab close/reopen', async (
   await page2.evaluate(() => chrome.storage.local.set({ 'profile.byokConfigured': true }));
   await page2.reload();
 
-  // Open the Focus drawer on the new tab
+  // FocusDrawer mounts cleanly on the new tab
   await openFocusDrawer(page2);
-  await expect(page2.locator(FOCUS_DRAWER)).toBeVisible();
-
-  // FocusDrawer timer state is ephemeral (not persisted across page loads).
-  // After reload the Start button should be available again.
   await expect(page2.locator(FOCUS_DRAWER).getByRole('button', { name: /Start/ })).toBeVisible({
     timeout: 5_000,
   });
-
-  // The theme input should be empty on a fresh load
-  await expect(page2.locator(FOCUS_DRAWER).getByLabel('Pomodoro theme')).toBeVisible();
   await expect(page2.locator(FOCUS_DRAWER).getByLabel('Pomodoro theme')).toHaveValue('');
-
-  // Focus drawer is fully functional on the new tab — structural correctness confirmed
-  await expect(page2.locator(FOCUS_DRAWER)).toBeVisible();
 });
