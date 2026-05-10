@@ -35,7 +35,7 @@ export function RelatedPill({
       setLoading(true);
       setError(null);
       const r = await onFetchRationale(srcId, targetId);
-      if (r.rationale) setRationale(r.rationale);
+      if (r.rationale !== null) setRationale(r.rationale);
       else setError(r.reason === 'locked' ? 'Unlock to load reason' : 'Reason unavailable');
       setLoading(false);
     }

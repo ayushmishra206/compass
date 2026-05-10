@@ -5,6 +5,7 @@ import { ACCENTS } from '@compass/ui';
 import type { Mood } from '@compass/core';
 import { ConnectedProvidersSection } from './profile/ConnectedProvidersSection';
 import { DailyTimesSection } from './profile/DailyTimesSection';
+import { NotesSection } from './profile/NotesSection';
 import { EncryptionSection } from './profile/EncryptionSection';
 
 const sectionLabelStyle: CSSProperties = {
@@ -134,6 +135,7 @@ export function ProfileDrawer() {
       </div>
 
       <DailyTimesSection />
+      <NotesSection />
       <ConnectedProvidersSection />
       <EncryptionSection />
     </>
