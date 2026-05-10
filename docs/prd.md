@@ -1908,7 +1908,7 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
 - Offscreen keep-alive for in-flight tasks.
 - **Gate:** alarm fires at local time across browser restart in 3 browsers. ✅
 
-### Phase 1.5 settings — Profile drawer + Onboarding real wiring (complete, closed 2026-05-09 via PR #TBD)
+### Phase 1.5 settings — Profile drawer + Onboarding real wiring (complete, closed 2026-05-09 via PR #7)
 
 - Fills Profile drawer BYOK CRUD, encryption opt-in, passphrase, recovery.
 - OnboardingDrawer step 3: real passphrase flow.
