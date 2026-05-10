@@ -39,7 +39,7 @@ describe('registerAlarmHandlers', () => {
     expect(events.addListener).toHaveBeenCalledTimes(1);
   });
 
-  it('on alarm fire, calls rpc("system.ping", { utterance: alarm.name }) inside withHeavyDocAlive', async () => {
+  it('morning-brief alarm dispatches rpc("brief.morning", { trigger: "alarm" }) inside withHeavyDocAlive', async () => {
     const events = makeAlarmEventsMock();
     registerAlarmHandlers(events);
 
@@ -48,16 +48,28 @@ describe('registerAlarmHandlers', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     expect(withHeavyDocAlive).toHaveBeenCalledTimes(1);
-    expect(rpc).toHaveBeenCalledWith('system.ping', { utterance: 'morning-brief' });
+    expect(rpc).toHaveBeenCalledWith('brief.morning', { trigger: 'alarm' });
   });
 
-  it('eod-reflection alarm name flows through to the rpc utterance', async () => {
+  it('eod-reflection alarm dispatches rpc("brief.eod", { trigger: "alarm" })', async () => {
     const events = makeAlarmEventsMock();
     registerAlarmHandlers(events);
 
     events.fire({ name: 'eod-reflection' });
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(rpc).toHaveBeenCalledWith('system.ping', { utterance: 'eod-reflection' });
+    expect(withHeavyDocAlive).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('brief.eod', { trigger: 'alarm' });
+  });
+
+  it('unknown alarm name is dropped silently — no rpc call', async () => {
+    const events = makeAlarmEventsMock();
+    registerAlarmHandlers(events);
+
+    events.fire({ name: 'legacy-alarm-from-v0' });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(withHeavyDocAlive).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

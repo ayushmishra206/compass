@@ -1,5 +1,4 @@
 export { validateLlmKey, type Provider, type ValidationResult } from './validateLlmKey.js';
-export { generateMorningBrief, type BriefInputs } from './generateMorningBrief.js';
 export { semanticSearch, type NoteHit } from './semanticSearch.js';
 export { detectAutoLinks } from './detectAutoLinks.js';
 export { decomposeGoal } from './decomposeGoal.js';

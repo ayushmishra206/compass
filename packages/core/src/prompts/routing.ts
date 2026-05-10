@@ -21,6 +21,30 @@ export const ROUTING: ReadonlyArray<RouteConfig> = [
     maxOutputTokens: 50,
     cacheable: false,
   },
+  {
+    taskId: 'brief.morning',
+    models: {
+      openrouter: 'anthropic/claude-sonnet-4-6',
+      openai: 'gpt-5.4-mini',
+      anthropic: 'claude-sonnet-4-6',
+    },
+    reasoningEffort: 'low',
+    maxOutputTokens: 800,
+    cacheable: true,
+    temperature: 0.4,
+  },
+  {
+    taskId: 'brief.eod',
+    models: {
+      openrouter: 'anthropic/claude-sonnet-4-6',
+      openai: 'gpt-5.4-mini',
+      anthropic: 'claude-sonnet-4-6',
+    },
+    reasoningEffort: 'low',
+    maxOutputTokens: 600,
+    cacheable: true,
+    temperature: 0.5,
+  },
   // Phase 2+ adds rows here as features ship.
 ];
 

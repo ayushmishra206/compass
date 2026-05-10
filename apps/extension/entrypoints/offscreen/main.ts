@@ -1,13 +1,29 @@
 import { createHandlerRegistry, installRequestListener } from '@compass/runtime';
 import type { Routes } from '@compass/runtime';
-import { startDb } from '@compass/db';
-import { getActiveCredentials, PingOutputSchema, codeToAffinity } from '@compass/core';
+import {
+  startDb,
+  getDb,
+  createBriefRepo,
+  createPomodoroRepo,
+  createCostLedgerRepo,
+} from '@compass/db';
+import type { StoredBriefing } from '@compass/db';
+import {
+  getActiveCredentials,
+  LlmCredentialsLocked,
+  getUserProfile,
+  PingOutputSchema,
+  codeToAffinity,
+} from '@compass/core';
 import {
   callWithSchema,
   createAnthropicProvider,
   createOpenAiProvider,
   createOpenRouterProvider,
+  executeTask as llmExecuteTask,
 } from '@compass/llm';
+import type { LlmRequest } from '@compass/llm';
+import { generateMorningBrief, generateEodReflection, type LlmRouter } from '@compass/agents';
 
 void startDb();
 
@@ -146,6 +162,254 @@ registry.register('scenes.fetchPhoto', async (req) => {
   return {
     blobUrl: URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' })),
   };
+});
+
+// ── Brief handlers ────────────────────────────────────────────────────────────
+
+async function getBriefRepo() {
+  const db = await getDb();
+  return createBriefRepo(db);
+}
+async function getPomodoroRepo() {
+  const db = await getDb();
+  return createPomodoroRepo(db);
+}
+async function getCostLedger() {
+  const db = await getDb();
+  return createCostLedgerRepo(db);
+}
+
+const router: LlmRouter = {
+  executeTask: async (req) => {
+    // schema is typed unknown on LlmRouter but ZodTypeAny on llmExecuteTask;
+    // both accept undefined and the runtime value is always a Zod schema.
+    const schema = req.schema as LlmRequest['schema'];
+    const res = await llmExecuteTask(
+      req.taskId,
+      { system: req.system, messages: req.messages, schema },
+      { trusted: req.trusted },
+    );
+    // LlmResponse.parsed is optional; LlmRouter contract requires parsed: unknown.
+    return { ...res, parsed: res.parsed as unknown };
+  },
+};
+
+function todayLocalIso(timezone: string): string {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: timezone });
+}
+
+function nextOccurrenceAtHour(hour: number): string {
+  const next = new Date();
+  next.setHours(hour, 0, 0, 0);
+  if (next.getTime() <= Date.now()) next.setDate(next.getDate() + 1);
+  return next.toISOString();
+}
+
+registry.register('brief.morning', async ({ trigger: _t, force }) => {
+  const briefRepo = await getBriefRepo();
+  const profile = await getUserProfile();
+  const today = todayLocalIso(profile.timezone);
+
+  if (!force) {
+    const existing = await briefRepo.getByDate(today, 'morning');
+    if (existing) return { stored: existing };
+  }
+
+  try {
+    await getActiveCredentials();
+  } catch (e) {
+    if (e instanceof LlmCredentialsLocked) return { skipped: 'locked' as const };
+    throw e;
+  }
+
+  const result = await generateMorningBrief({
+    briefRepo,
+    pomodoroRepo: await getPomodoroRepo(),
+    weatherRpc: async () => null, // Phase 1.6 weather wired in shell hook; offscreen call deferred
+    router,
+    costLedger: await getCostLedger(),
+    now: () => new Date(),
+    userProfile: profile,
+  });
+
+  const stored: StoredBriefing = {
+    dateLocal: today,
+    kind: 'morning',
+    generatedAt: new Date().toISOString(),
+    output: result.output,
+    openedAt: null,
+    userRating: null,
+    providerUsed: result.providerUsed,
+    costUsd: result.costUsd,
+  };
+  await briefRepo.upsert(stored);
+  return { stored };
+});
+
+registry.register('brief.eod', async ({ trigger: _t, force }) => {
+  const briefRepo = await getBriefRepo();
+  const profile = await getUserProfile();
+  const today = todayLocalIso(profile.timezone);
+
+  if (!force) {
+    const existing = await briefRepo.getByDate(today, 'eod');
+    if (existing) return { stored: existing };
+  }
+
+  const morning = await briefRepo.getByDate(today, 'morning');
+  if (!morning) return { skipped: 'no-morning-brief' as const };
+
+  try {
+    await getActiveCredentials();
+  } catch (e) {
+    if (e instanceof LlmCredentialsLocked) return { skipped: 'locked' as const };
+    throw e;
+  }
+
+  const result = await generateEodReflection({
+    briefRepo,
+    pomodoroRepo: await getPomodoroRepo(),
+    router,
+    costLedger: await getCostLedger(),
+    now: () => new Date(),
+    userProfile: profile,
+  });
+
+  const stored: StoredBriefing = {
+    dateLocal: today,
+    kind: 'eod',
+    generatedAt: new Date().toISOString(),
+    output: result.output,
+    openedAt: null,
+    userRating: null,
+    providerUsed: result.providerUsed,
+    costUsd: result.costUsd,
+  };
+  await briefRepo.upsert(stored);
+  return { stored };
+});
+
+registry.register('brief.getOrGenerate', async ({ kind }) => {
+  const briefRepo = await getBriefRepo();
+  const profile = await getUserProfile();
+  const today = todayLocalIso(profile.timezone);
+
+  const existing = await briefRepo.getByDate(today, kind);
+  if (existing) return { kind: 'have-brief' as const, brief: existing };
+
+  const targetHour = kind === 'morning' ? profile.briefingHour : profile.reflectionHour;
+  if (new Date().getHours() < targetHour) {
+    return { kind: 'too-early' as const, readyAt: nextOccurrenceAtHour(targetHour) };
+  }
+
+  try {
+    await getActiveCredentials();
+  } catch (e) {
+    if (e instanceof LlmCredentialsLocked) return { kind: 'locked-no-brief' as const };
+    throw e;
+  }
+
+  if (kind === 'morning') {
+    const result = await generateMorningBrief({
+      briefRepo,
+      pomodoroRepo: await getPomodoroRepo(),
+      weatherRpc: async () => null,
+      router,
+      costLedger: await getCostLedger(),
+      now: () => new Date(),
+      userProfile: profile,
+    });
+    const stored: StoredBriefing = {
+      dateLocal: today,
+      kind: 'morning',
+      generatedAt: new Date().toISOString(),
+      output: result.output,
+      openedAt: null,
+      userRating: null,
+      providerUsed: result.providerUsed,
+      costUsd: result.costUsd,
+    };
+    await briefRepo.upsert(stored);
+    return { kind: 'have-brief' as const, brief: stored };
+  } else {
+    const morning = await briefRepo.getByDate(today, 'morning');
+    if (!morning) return { kind: 'locked-no-brief' as const };
+    const result = await generateEodReflection({
+      briefRepo,
+      pomodoroRepo: await getPomodoroRepo(),
+      router,
+      costLedger: await getCostLedger(),
+      now: () => new Date(),
+      userProfile: profile,
+    });
+    const stored: StoredBriefing = {
+      dateLocal: today,
+      kind: 'eod',
+      generatedAt: new Date().toISOString(),
+      output: result.output,
+      openedAt: null,
+      userRating: null,
+      providerUsed: result.providerUsed,
+      costUsd: result.costUsd,
+    };
+    await briefRepo.upsert(stored);
+    return { kind: 'have-brief' as const, brief: stored };
+  }
+});
+
+registry.register('brief.recordOpen', async ({ dateLocal, kind }) => {
+  const briefRepo = await getBriefRepo();
+  await briefRepo.recordOpen(dateLocal, kind, new Date().toISOString());
+  return { ok: true as const };
+});
+
+registry.register('brief.recordRating', async ({ dateLocal, kind, rating }) => {
+  const briefRepo = await getBriefRepo();
+  await briefRepo.recordRating(dateLocal, kind, rating);
+  return { ok: true as const };
+});
+
+registry.register('brief.streak', async () => {
+  const briefRepo = await getBriefRepo();
+  const status = await briefRepo.recentOpenStatus(60);
+  let days = 0;
+  let lastDate: string | null = null;
+  for (const day of status) {
+    if (day.opened) {
+      days++;
+      if (lastDate === null) lastDate = day.dateLocal;
+    } else {
+      break;
+    }
+  }
+  return { days, lastDate };
+});
+
+// ── Ledger handlers ──────────────────────────────────────────────────────────
+
+registry.register('ledger.getMonthlySpend', async ({ monthStartIso }) => {
+  const repo = await getCostLedger();
+  return await repo.monthlySpend(monthStartIso);
+});
+
+// ── Pomodoro handlers ─────────────────────────────────────────────────────────
+
+registry.register('pomodoro.start', async ({ id, durationMin, theme }) => {
+  const repo = await getPomodoroRepo();
+  await repo.start({ id, durationMin, theme });
+  return { ok: true as const };
+});
+
+registry.register('pomodoro.complete', async ({ id }) => {
+  const repo = await getPomodoroRepo();
+  await repo.complete(id);
+  return { ok: true as const };
+});
+
+registry.register('pomodoro.abandon', async ({ id }) => {
+  const repo = await getPomodoroRepo();
+  await repo.abandon(id);
+  return { ok: true as const };
 });
 
 // Phase 1.5 alarms: accept the heavy-doc-keepalive Port from withHeavyDocAlive().

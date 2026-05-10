@@ -43,6 +43,15 @@ Four non-negotiable rules from [PRD §1](docs/prd.md#1-executive-summary-and-sco
 
 ---
 
+## ESLint rules
+
+Custom `no-restricted-syntax` rules that enforce architectural boundaries. Violations are build errors.
+
+- `no-direct-credentials-storage` — `chrome.storage.local` access with the `llm.creds` key is scoped to `packages/core/src/crypto/credentials.ts`. All other code uses `getActiveCredentials()` from `@compass/core/crypto`.
+- `no-direct-profile-storage` — `chrome.storage.local['profile.user.v1']` access scoped to `packages/core/src/profile/userProfile.ts`. All other code uses `getUserProfile()` / `setUserProfile()`.
+
+---
+
 ## Testing expectations
 
 - Every new UI primitive: `.test.tsx` covering render, variants, keyboard/a11y, and `jest-axe` with zero violations.

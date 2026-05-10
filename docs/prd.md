@@ -1919,14 +1919,24 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
   - Encrypted-storage opt-in flow round-trips ✅ (this PR)
   - Forgotten passphrase clears credentials and routes to onboarding ✅ (this PR)
 
-### Phase 2 — Daily Agent + Semantic Notes (6 weeks)
+### Phase 2 daily-agent — Daily Agent slice (complete, closed 2026-05-10 via PR #8)
 
-- Brief drawer: real LLM morning brief + EOD reflection. Hero glass card: real TLDR.
+- Brief drawer: real LLM morning brief + EOD reflection via `brief.morning` / `brief.eod` agents.
+- Hero glass card + Ticker: real TLDR / streak / watchouts sourced from `useBrief()`.
+- UserProfile persistence (`profile.user.v1`): briefingHour / reflectionHour / workHours wired to ProfileDrawer DailyTimesSection → `alarms.refresh` SW route.
+- Pomodoros: real `start/complete/abandon` lifecycle persisted to sqlite `pomodoros` table; `focusSummary14d` aggregation feeds the morning brief.
+- Cost ledger: every brief generation writes a `feature='brief.morning'` / `'brief.eod'` row with token + USD.
+- Eval suite `brief.morning.yaml` placeholder (3 fixture days; 50-fixture + ≥4/5 human gate deferred to Phase 4–5).
+- BriefDrawer empty-state branches: `loading` / `have-brief` / `locked-no-brief` / `too-early` / `error`.
+- **Gate (closed):** brief generation round-trip green in `brief-pipeline` integration test; e2e `daily-agent.spec.ts` 3/3 passing on structural path.
+
+### Phase 2 semantic-notes — Semantic Notes (deferred)
+
 - Notes drawer: real auto-link pipeline, hybrid semantic search, forgotten-context surfacing.
 - ⌘K ask mode: real `notes.askGrounded` RAG response.
-- Eval suites `brief.morning.yaml`, `notes.autolink.yaml`.
-- `streakDays` and `streakLastDate` populated by EOD pipeline.
-- **Gate:** all DoD in §8.7 and §11.8; Playwright scenarios 1–3 and 9–10 green.
+- Eval suite `notes.autolink.yaml`.
+- `streakDays` / `streakLastDate` already populated by Phase 2 daily-agent EOD pipeline; the Ticker sources from sqlite.
+- **Gate:** all DoD in §11.8; Playwright scenarios 9–10 green.
 
 ### Phase 3 — Personalization + Smart Blocker (4 weeks)
 

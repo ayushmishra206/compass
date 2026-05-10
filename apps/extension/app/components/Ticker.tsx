@@ -1,6 +1,13 @@
 import type { CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
+import { rpc } from '@compass/runtime';
 import { useShell } from '../state/shell.js';
+import { useBrief } from '../hooks/useBrief.js';
 import { MOCK } from '../mocks/index.js';
+
+interface BriefingOutput {
+  watchouts?: string[];
+}
 
 const tickerStyle: CSSProperties = {
   display: 'grid',
@@ -73,6 +80,19 @@ const dotWarnStyle: CSSProperties = {
 export function Ticker() {
   const navClick = useShell((s) => s.navClick);
   const v = MOCK.vitals;
+  const { state } = useBrief('morning');
+  const [streak, setStreak] = useState<{ days: number; lastDate: string | null }>({
+    days: 0,
+    lastDate: null,
+  });
+
+  useEffect(() => {
+    void rpc('brief.streak', {}).then(setStreak);
+  }, []);
+
+  const watchouts =
+    state.kind === 'have-brief' ? ((state.brief.output as BriefingOutput).watchouts ?? []) : [];
+
   return (
     <div style={tickerStyle}>
       <div style={vitalsStyle}>
@@ -91,20 +111,25 @@ export function Ticker() {
           <span style={valStyle}>{v.rhr}</span>
           <span style={subStyle}>bpm</span>
         </div>
-        <div style={vitalStyle}>
-          <span style={lblStyle}>Streak</span>
-          <span style={valStyle}>14</span>
-          <span style={subStyle}>days</span>
-        </div>
+        {streak.days > 0 && (
+          <div style={vitalStyle}>
+            <span style={lblStyle}>Streak</span>
+            <span style={valStyle}>{streak.days}</span>
+            <span style={subStyle}>days</span>
+          </div>
+        )}
       </div>
       <div style={centerStyle}>&quot;{MOCK.brief.quotedGoal}&quot;</div>
       <div style={rightStyle}>
         <button style={pillStyle} onClick={() => navClick('inbox')}>
           <span style={dotStyle} />2 inbox actions
         </button>
-        <button style={pillStyle} onClick={() => navClick('today')}>
-          <span style={dotWarnStyle} />3 back-to-backs after 1pm
-        </button>
+        {watchouts.map((w, i) => (
+          <button key={i} style={pillStyle} onClick={() => navClick('today')}>
+            <span style={dotWarnStyle} />
+            {w}
+          </button>
+        ))}
       </div>
     </div>
   );

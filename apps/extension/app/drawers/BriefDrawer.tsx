@@ -1,145 +1,68 @@
-import { MOCK } from '../mocks/index.js';
+import { useEffect } from 'react';
+import { useBrief } from '../hooks/useBrief';
+import { BriefTLDR } from './brief/BriefTLDR';
+import { PomodorosSection } from './brief/PomodorosSection';
+import { WatchoutsSection } from './brief/WatchoutsSection';
+import { RecoverySection } from './brief/RecoverySection';
+import { QuotedGoalSection } from './brief/QuotedGoalSection';
+import { BriefFooter } from './brief/BriefFooter';
+import { LockedEmpty } from './brief/LockedEmpty';
+import { TooEarlyEmpty } from './brief/TooEarlyEmpty';
+import { ErrorEmpty } from './brief/ErrorEmpty';
+
+interface BriefingOutput {
+  oneLineMood?: string;
+  tldr: string;
+  topPriority?: { title: string; why: string; suggestedFocusMinutes: number };
+  pomodoros?: Array<{ startLocal: string; endLocal: string; theme: string; taskId?: string }>;
+  watchouts?: string[];
+  recovery?: { note: string; suggestBreak: boolean };
+  quotedGoal?: string | null;
+}
 
 export function BriefDrawer() {
-  const b = MOCK.brief;
+  const { state, regenerate, recordOpen, recordRating } = useBrief('morning');
+
+  useEffect(() => {
+    if (state.kind === 'have-brief' && state.brief.openedAt === null) {
+      void recordOpen();
+    }
+  }, [state, recordOpen]);
+
+  if (state.kind === 'loading') {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-ink-3)' }}>Loading…</div>
+    );
+  }
+
+  if (state.kind === 'too-early') {
+    return <TooEarlyEmpty readyAt={state.readyAt} />;
+  }
+
+  if (state.kind === 'locked-no-brief') {
+    return <LockedEmpty />;
+  }
+
+  if (state.kind === 'error') {
+    return <ErrorEmpty message={state.message} onRetry={regenerate} />;
+  }
+
+  // 'have-brief'
+  const o = state.brief.output as BriefingOutput;
   return (
     <>
-      <p
-        style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: 17,
-          lineHeight: 1.55,
-          color: 'var(--color-ink-2)',
-          margin: '0 0 22px',
-        }}
-      >
-        {b.tldr}
-      </p>
-
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'var(--color-ink-3)',
-          marginBottom: 10,
-        }}
-      >
-        Pomodoros
-      </div>
-      <div style={{ marginBottom: 24 }}>
-        {b.pomodoros.map((p, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              padding: '10px 0',
-              gap: 14,
-              fontSize: 13,
-              alignItems: 'center',
-              borderBottom: i < b.pomodoros.length - 1 ? '1px solid var(--color-hair)' : 'none',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                width: 90,
-                color: 'var(--color-ink-2)',
-              }}
-            >
-              {p.startLocal}–{p.endLocal}
-            </span>
-            <span style={{ flex: 1 }}>{p.theme}</span>
-            <button
-              style={{
-                padding: '4px 10px',
-                fontSize: 10,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 999,
-                color: 'var(--color-ink)',
-              }}
-            >
-              ▶ Start
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'var(--color-ink-3)',
-          marginBottom: 10,
-        }}
-      >
-        Watchouts
-      </div>
-      <ul
-        style={{
-          margin: 0,
-          padding: 0,
-          listStyle: 'none',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}
-      >
-        {b.watchouts.map((w, i) => (
-          <li
-            key={i}
-            style={{
-              fontSize: 13,
-              color: 'var(--color-ink-2)',
-              display: 'flex',
-              gap: 12,
-              lineHeight: 1.55,
-              fontFamily: 'var(--font-serif)',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                flex: '0 0 18px',
-                color: 'var(--color-ink-4)',
-                paddingTop: 3,
-              }}
-            >
-              0{i + 1}
-            </span>
-            <span>{w}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'var(--color-ink-3)',
-          marginTop: 30,
-          marginBottom: 10,
-        }}
-      >
-        Recovery note
-      </div>
-      <p
-        style={{
-          fontSize: 13,
-          lineHeight: 1.6,
-          color: 'var(--color-ink-2)',
-          margin: 0,
-          fontFamily: 'var(--font-serif)',
-        }}
-      >
-        {b.recovery.note}
-      </p>
+      <BriefTLDR text={o.tldr} mood={o.oneLineMood} />
+      <PomodorosSection items={o.pomodoros} />
+      <WatchoutsSection items={o.watchouts} />
+      <RecoverySection note={o.recovery ?? null} />
+      <QuotedGoalSection goal={o.quotedGoal ?? null} />
+      <BriefFooter
+        provider={state.brief.providerUsed}
+        cost={state.brief.costUsd}
+        rating={state.brief.userRating}
+        onRate={(r) => void recordRating(r)}
+        onRegenerate={() => void regenerate()}
+      />
     </>
   );
 }

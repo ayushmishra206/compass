@@ -3,6 +3,12 @@ import { GlassCard } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 import { MOCK } from '../mocks/index.js';
+import { useBrief } from '../hooks/useBrief.js';
+
+interface BriefingOutput {
+  tldr: string;
+  oneLineMood?: string;
+}
 
 const MOOD_TEXT: Record<string, string> = {
   dawn: 'Clear ridge, slow climb, low cloud.',
@@ -116,6 +122,20 @@ export function Hero() {
   const navClick = useShell((s) => s.navClick);
   const scene = useScene();
   const b = MOCK.brief;
+  const { state } = useBrief('morning');
+
+  let tldr = '';
+  if (state.kind === 'have-brief') {
+    tldr = (state.brief.output as BriefingOutput).tldr;
+  } else if (state.kind === 'too-early') {
+    const ready = new Date(state.readyAt).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    tldr = `Your morning brief will be ready at ${ready}.`;
+  } else if (state.kind === 'locked-no-brief') {
+    tldr = '🔒 Your daily brief is waiting. Unlock to generate.';
+  }
 
   return (
     <section style={sectionStyle}>
@@ -129,7 +149,7 @@ export function Hero() {
           .
         </h1>
         <p style={whereStyle}>
-          {MOOD_TEXT[scene.mood] ?? ''} {b.tldr}
+          {MOOD_TEXT[scene.mood] ?? ''} {tldr}
         </p>
       </div>
       <GlassCard tier={1} style={cardWrapStyle}>

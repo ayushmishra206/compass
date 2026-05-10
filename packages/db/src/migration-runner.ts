@@ -27,8 +27,37 @@ CREATE TABLE llm_cost_ledger (
 CREATE INDEX idx_ledger_ts ON llm_cost_ledger(ts);
 `;
 
+const MIGRATION_0002_BRIEFINGS_POMODOROS = `
+CREATE TABLE briefings (
+  date_local    TEXT NOT NULL,
+  kind          TEXT NOT NULL CHECK (kind IN ('morning', 'eod')),
+  generated_at  TEXT NOT NULL,
+  output_json   TEXT NOT NULL,
+  opened_at     TEXT,
+  user_rating   INTEGER CHECK (user_rating IN (-1, 1)),
+  provider_used TEXT NOT NULL,
+  cost_usd      REAL NOT NULL DEFAULT 0,
+  PRIMARY KEY (date_local, kind)
+);
+CREATE INDEX briefings_kind_date ON briefings(kind, date_local DESC);
+
+CREATE TABLE pomodoros (
+  id              TEXT PRIMARY KEY,
+  started_at      TEXT NOT NULL,
+  ended_at        TEXT,
+  duration_min    INTEGER NOT NULL,
+  completed       INTEGER NOT NULL DEFAULT 0,
+  interrupt_count INTEGER NOT NULL DEFAULT 0,
+  theme           TEXT
+);
+CREATE INDEX pomodoros_started ON pomodoros(started_at DESC);
+
+UPDATE meta SET value = '2' WHERE key = 'schema_version';
+`;
+
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
+  { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
 ];
 
 export function getSchemaVersion(db: Db): number {

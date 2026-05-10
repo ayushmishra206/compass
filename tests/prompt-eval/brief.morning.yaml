@@ -1,0 +1,89 @@
+# Brief.morning eval suite — Phase 2 placeholder.
+#
+# Three minimal fixture days to anchor the schema. Phase 2 ships honestly
+# sparse — calendar/Gmail/goals/Fitbit fields stay empty until Phases 4-5.
+# Promptfoo CI hardening (≥4/5 human rating gate, 50+ fixtures) is deferred
+# to Phase 4-5 when the snapshot transformers actually populate those
+# arrays. Until then, this file documents the eval entrypoint and shape.
+#
+# Run locally with:
+#   pnpm dlx promptfoo eval -c tests/prompt-eval/brief.morning.yaml
+
+description: Brief.morning eval suite (Phase 2 placeholder)
+
+prompts:
+  - file://../../packages/core/src/prompts/brief.morning.md
+
+providers:
+  - openrouter:anthropic/claude-sonnet-4-6
+
+tests:
+  - description: Cold start — fresh install, no historical data
+    vars:
+      snapshot:
+        locale: en-US
+        dateLocal: '2026-05-10'
+        dayOfWeek: Sunday
+        nowHHMM: '08:00'
+        weather: null
+        calendarToday: []
+        unreadAttention: []
+        topGoals: []
+        focusSummary14d:
+          totalMinutes: 0
+          dailyAverageMin: 0
+          peakHourLocal: null
+          trend: flat
+        recovery: null
+    assert:
+      - type: is-json
+      - type: javascript
+        value: 'output.pomodoros && output.pomodoros.suggested.length === 0'
+
+  - description: Partial data — weather only (Phase 2 surface today)
+    vars:
+      snapshot:
+        locale: en-US
+        dateLocal: '2026-05-10'
+        dayOfWeek: Sunday
+        nowHHMM: '08:00'
+        weather:
+          tempC: 22
+          condition: 'partly cloudy'
+          high: 26
+          low: 18
+        calendarToday: []
+        unreadAttention: []
+        topGoals: []
+        focusSummary14d:
+          totalMinutes: 0
+          dailyAverageMin: 0
+          peakHourLocal: null
+          trend: flat
+        recovery: null
+    assert:
+      - type: is-json
+      - type: contains-any
+        value: ['partly cloudy', 'cloudy', 'weather', '22', '26']
+
+  - description: Focus trend declining — pomodoros table populated
+    vars:
+      snapshot:
+        locale: en-US
+        dateLocal: '2026-05-10'
+        dayOfWeek: Sunday
+        nowHHMM: '08:00'
+        weather: null
+        calendarToday: []
+        unreadAttention: []
+        topGoals: []
+        focusSummary14d:
+          totalMinutes: 380
+          dailyAverageMin: 27
+          peakHourLocal: 10
+          trend: declining
+        recovery: null
+    assert:
+      - type: is-json
+      - type: contains-any
+        value: ['focus', 'declining', 'last week', 'down', 'less']
