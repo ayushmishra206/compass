@@ -109,7 +109,7 @@ function cosine(a: Float32Array, b: Float32Array): number {
   // cosine reduces to dot product. Guard against any drift with a fallback.
   if (a.length !== b.length) return 0;
   let dot = 0;
-  for (let i = 0; i < a.length; i++) dot += a[i] * b[i];
+  for (let i = 0; i < a.length; i++) dot += (a[i] as number) * (b[i] as number);
   return dot;
 }
 
@@ -193,11 +193,12 @@ export function createNotesRepo(db: Db): NotesRepo {
       try {
         exec('DELETE FROM note_chunks WHERE note_id=?', [noteId]);
         for (let i = 0; i < chunks.length; i++) {
+          const c = chunks[i] as ChunkInput;
           exec(`INSERT INTO note_chunks(note_id, chunk_index, text, embedding) VALUES(?,?,?,?)`, [
             noteId,
             i,
-            chunks[i].text,
-            f32ToBlob(chunks[i].embedding),
+            c.text,
+            f32ToBlob(c.embedding),
           ]);
         }
         db.exec('COMMIT');
@@ -215,7 +216,7 @@ export function createNotesRepo(db: Db): NotesRepo {
         true,
       ) as Array<[Uint8Array]>;
       if (qRows.length === 0) return [];
-      const q = blobToF32(qRows[0][0]);
+      const q = blobToF32((qRows[0] as [Uint8Array])[0]);
 
       // Pull every other note's chunks; aggregate by note_id keeping the max similarity.
       const rows = exec(

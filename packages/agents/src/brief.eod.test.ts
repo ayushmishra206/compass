@@ -10,6 +10,7 @@ const fakeProfile: UserProfile = {
   workHours: { start: '09:00', end: '17:00' },
   briefingHour: 8,
   reflectionHour: 18,
+  autoLinkEnabled: true,
 };
 
 const fakeMorning = {

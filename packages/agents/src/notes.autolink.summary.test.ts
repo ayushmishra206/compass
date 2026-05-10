@@ -24,7 +24,7 @@ describe('generateAutolinkSummary', () => {
     });
     expect(result.rationale).toContain('Q2');
     expect(router.executeTask).toHaveBeenCalledOnce();
-    const call = (router.executeTask as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const call = (router.executeTask as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(call.taskId).toBe('notes.autolink.summary');
     expect(call.trusted).toBe(true);
   });
@@ -37,7 +37,7 @@ describe('generateAutolinkSummary', () => {
       noteA: { title: 'A', body: longBody },
       noteB: { title: 'B', body: longBody },
     });
-    const call = (router.executeTask as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const call = (router.executeTask as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     const messageText = JSON.stringify(call.messages);
     expect(messageText.length).toBeLessThan(8_000);
   });

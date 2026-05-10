@@ -31,7 +31,7 @@ describe('askGrounded', () => {
     });
     expect(result.answer).toContain('[n1]');
     expect(result.citations).toEqual([{ id: 'n1', noteId: 'noteA' }]);
-    const userMsg = (router.executeTask as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0]
+    const userMsg = (router.executeTask as ReturnType<typeof vi.fn>).mock.calls[0]![0].messages[0]
       .content as string;
     expect(userMsg).toContain('<note id="n1">');
     expect(userMsg).toContain('<note id="n2">');

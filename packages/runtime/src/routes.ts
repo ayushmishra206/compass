@@ -67,6 +67,81 @@ export interface Routes {
   'pomodoro.complete': { req: { id: string }; res: { ok: true } };
   'pomodoro.abandon': { req: { id: string }; res: { ok: true } };
   'alarms.refresh': { req: Record<string, never>; res: { ok: true } };
+  'notes.create': {
+    req: { title: string; body: string; tags: string[] };
+    res: { id: string };
+  };
+  'notes.update': {
+    req: {
+      id: string;
+      title?: string;
+      body?: string;
+      tags?: string[];
+      autolinkEnabled?: boolean;
+    };
+    res: {
+      ok: true;
+      embeddingPending?: boolean;
+      forgotten?: { noteId: string; sim: number; title: string };
+    };
+  };
+  'notes.delete': { req: { id: string }; res: { ok: true } };
+  'notes.list': {
+    req: { limit?: number; offset?: number };
+    res: {
+      notes: Array<{
+        id: string;
+        title: string;
+        excerpt: string;
+        updatedAt: string;
+        tags: string[];
+      }>;
+    };
+  };
+  'notes.get': {
+    req: { id: string };
+    res: {
+      note: {
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        title: string;
+        body: string;
+        tags: string[];
+        autolinkEnabled: boolean;
+      };
+      autoLinks: Array<{
+        targetNoteId: string;
+        targetTitle: string;
+        similarity: number;
+        rationale: string | null;
+      }>;
+    };
+  };
+  'notes.search': {
+    req: { query: string; limit?: number };
+    res: {
+      hits: Array<{ noteId: string; title: string; excerpt: string; score: number }>;
+    };
+  };
+  'notes.askGrounded': {
+    req: { query: string };
+    res:
+      | {
+          answer: string;
+          citations: Array<{ id: string; noteId: string; title: string }>;
+          reason: null;
+        }
+      | { answer: null; citations: []; reason: 'no-notes' | 'locked' | 'error' };
+  };
+  'notes.autolink.rationale': {
+    req: { srcId: string; targetId: string };
+    res: { rationale: string } | { rationale: null; reason: 'locked' | 'error' };
+  };
+  'notes.autolink.dismiss': {
+    req: { srcId: string; targetId: string };
+    res: { ok: true };
+  };
 }
 
 export type RouteKind = keyof Routes;
