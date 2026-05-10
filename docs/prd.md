@@ -1881,12 +1881,12 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
 - Onboarding flow: pick provider, paste key, validate.
 - **Gate:** any `LlmProvider` method can be called from offscreen end-to-end; crypto unit tests at 100%; sample `ping` task returns structured output.
 
-### Phase 1.5 providers — Multi-provider routing (complete, merged)
+### Phase 1.5 providers — Multi-provider routing (complete, closed 2026-05-09 via PR #3)
 
 - `packages/llm/providers/openai` direct + `packages/llm/providers/anthropic` direct.
 - First-failure failover across providers in deterministic order.
 - Settings affordance to add a second/third provider key.
-- **Gate:** all three provider paths (`openai`, `anthropic`, `openrouter`) round-trip from UI to offscreen.
+- **Gate:** all three provider paths (`openai`, `anthropic`, `openrouter`) round-trip from UI to offscreen. ✅
 
 ### Phase 1.6 — Shell pivot "Momentum" (THIS BRANCH)
 
@@ -1901,18 +1901,23 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
 - `docs/design-system.md`, `docs/architecture.md`, `docs/prd.md` rewrites committed alongside.
 - **Gate:** all 8 drawers render mock data correctly in Chrome; Stage photo loads within 3 s on warm cache; ⌘K nav mode works; onboarding cannot be dismissed until BYOK valid; CI green.
 
-### Phase 1.5 alarms — Agent scheduler (parallel branch from master)
+### Phase 1.5 alarms — Agent scheduler (complete, closed 2026-05-09 via PR #6)
 
 - `chrome.alarms` wrapper with idempotent rescheduling.
 - Cross-browser alarm shim (Firefox/Safari rebuild on startup).
 - Offscreen keep-alive for in-flight tasks.
-- **Gate:** alarm fires at local time across browser restart in 3 browsers.
+- **Gate:** alarm fires at local time across browser restart in 3 browsers. ✅
 
-### Phase 1.5 settings — Profile drawer + Onboarding real wiring (after shell pivot merges)
+### Phase 1.5 settings — Profile drawer + Onboarding real wiring (complete, closed 2026-05-09 via PR #7)
 
 - Fills Profile drawer BYOK CRUD, encryption opt-in, passphrase, recovery.
 - OnboardingDrawer step 3: real passphrase flow.
-- **Gate:** all §7.5 DoD items met; encrypted storage round-trip unit tests at 100%.
+- **Gate:** all §7.5 DoD items met; encrypted storage round-trip unit tests at 100%. ✅
+  - `chrome.alarms` scheduler ✅ (PR #6)
+  - Direct OpenAI + Anthropic providers ✅ (PR #3)
+  - Settings shows real connected-providers data ✅ (this PR)
+  - Encrypted-storage opt-in flow round-trips ✅ (this PR)
+  - Forgotten passphrase clears credentials and routes to onboarding ✅ (this PR)
 
 ### Phase 2 — Daily Agent + Semantic Notes (6 weeks)
 

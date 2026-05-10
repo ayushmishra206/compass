@@ -232,6 +232,35 @@ Phase 1.5 introduces a cross-browser alarm scheduler used by Phase 2's Daily Age
 
 ---
 
+## Settings + encrypted storage (`packages/core/src/crypto/`)
+
+Phase 1.5 settings closes the Phase 1.5 gate by giving users multi-key BYOK CRUD + opt-in passphrase encryption.
+
+**Module layout:**
+
+- `keystore.ts` — AES-GCM + PBKDF2 envelope. Shipped in Phase 1; unchanged.
+- `passphrase.ts` — `MIN_PASSPHRASE_LENGTH = 12`, `passphraseStrength`, `passphraseError`. Length-only rules per NIST SP 800-63B.
+- `credentials.ts` — `getActiveCredentials()` shape-detects raw `LlmCredentials` JSON vs `EncryptedSecret` envelope at the same `chrome.storage.local['llm.creds.v1']` key. `setActiveCredentials()` is shape-aware (re-encrypts when storage holds envelope). New helpers: `enableEncryption(passphrase)`, `disableEncryption(currentPassphrase)`, `unlockCredentials(passphrase)`, `lockCredentials()`, `isEncryptionEnabled()`, `isLocked()`. Throws `LlmCredentialsLocked` when storage holds envelope and `chrome.storage.session['llm.creds.v1.kek']` is empty.
+
+**Caching choice.** `chrome.storage.session` caches the raw passphrase string, not a derived KEK. `keystore.encrypt`/`decrypt` accept passphrases directly; caching the passphrase avoids `crypto.subtle.exportKey/importKey` round-trips on every read. Same security posture as caching a KEK (session storage is in-memory only, not on disk).
+
+**Shell store lock-state slice.** [`apps/extension/app/state/shell.ts`](../apps/extension/app/state/shell.ts) carries `encryptionEnabled`, `locked`, `unlockHint` plus six actions (`refreshLockState`, `unlock`, `lock`, `requestUnlock`, `setEncryptionState`, `clearUnlockHint`). The fields are NOT persisted by Zustand `persist` — they're refreshed on App mount via `refreshLockState()` to match `chrome.storage.*` truth.
+
+**UI surface.** Drawer-paradigm-native; no modal primitive introduced.
+
+- ProfileDrawer: thin orchestrator. New extracted sections at [`apps/extension/app/drawers/profile/`](../apps/extension/app/drawers/profile/) — `ConnectedProvidersSection` (locked branch with PassphraseConfirmForm + Forgot passphrase link; unlocked branch with row list + ⋯ actions + Add another) and `EncryptionSection` (Off/On + Enable/Disable/Lock now).
+- OnboardingDrawer: step 2 uses `<KeyValidator>`; step 3 ships real `<PassphraseSetForm>` opt-in alongside Skip.
+- Topbar: lock chip on the right end, visible iff `encryptionEnabled && locked`. Click → `requestUnlock()` opens ProfileDrawer with `unlockHint=true`.
+- Shared widgets at [`apps/extension/app/components/credentials/`](../apps/extension/app/components/credentials/): `<KeyValidator>`, `<PassphraseSetForm>`, `<PassphraseConfirmForm>`. Pure data-flow — never call `setActiveCredentials` directly; persistence is the parent's responsibility.
+
+**Forgotten-passphrase recovery.** Inline confirmation in `ConnectedProvidersSection`'s locked branch. Clears `llm.creds.v1` + session cache + `profile.byokConfigured`, sets `onboardingLocked=true` → OnboardingDrawer pops up via the existing gate.
+
+**Lazy unlock.** Components catching `LlmCredentialsLocked` call `useShell.getState().requestUnlock()`. The original action does not auto-retry; user re-clicks after unlock (form state is preserved).
+
+**Phase 2 swap surface.** UserProfile persistence + `briefingHour`/`reflectionHour` controls land in ProfileDrawer as a new section alongside accent/scene/weather. The existing alarms scheduler swaps `defaults.ts` body for `getUserProfile()` reads. Encryption envelope already shipped — OAuth refresh tokens (Phase 4) reuse the same `encrypt`/`decrypt` helpers.
+
+---
+
 ## Overlays
 
 Three fullscreen/portal overlays owned by the shell store:

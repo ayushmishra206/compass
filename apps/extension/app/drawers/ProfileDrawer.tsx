@@ -3,6 +3,8 @@ import { useShell } from '../state/shell.js';
 import type { AccentName } from '@compass/ui';
 import { ACCENTS } from '@compass/ui';
 import type { Mood } from '@compass/core';
+import { ConnectedProvidersSection } from './profile/ConnectedProvidersSection';
+import { EncryptionSection } from './profile/EncryptionSection';
 
 const sectionLabelStyle: CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -130,19 +132,8 @@ export function ProfileDrawer() {
         </div>
       </div>
 
-      <div style={sectionWrap}>
-        <div style={sectionLabelStyle}>Connected providers</div>
-        <div style={{ fontSize: 12, color: 'var(--color-ink-3)', fontStyle: 'italic' }}>
-          Connected-providers management lands with Phase 1.5 settings workstream.
-        </div>
-      </div>
-
-      <div style={sectionWrap}>
-        <div style={sectionLabelStyle}>Encryption</div>
-        <div style={{ fontSize: 12, color: 'var(--color-ink-3)', fontStyle: 'italic' }}>
-          Passphrase-based encryption opt-in lands with Phase 1.5 settings workstream.
-        </div>
-      </div>
+      <ConnectedProvidersSection />
+      <EncryptionSection />
     </>
   );
 }

@@ -1,10 +1,11 @@
 import { useState, type CSSProperties } from 'react';
-import { rpc } from '@compass/runtime';
-import { setActiveCredentials } from '@compass/core';
+import { setActiveCredentials, enableEncryption } from '@compass/core';
+import type { ProviderId } from '@compass/core';
 import { useShell } from '../state/shell.js';
+import { KeyValidator } from '../components/credentials/KeyValidator';
+import { PassphraseSetForm } from '../components/credentials/PassphraseSetForm';
 
 type Step = 1 | 2 | 3;
-type Provider = 'openrouter' | 'openai' | 'anthropic';
 
 const titleStyle: CSSProperties = {
   fontFamily: 'var(--font-serif)',
@@ -34,6 +35,7 @@ const btnAccent: CSSProperties = {
   border: 0,
   fontSize: 13,
   fontWeight: 500,
+  cursor: 'pointer',
 };
 const btnGhost: CSSProperties = {
   padding: '10px 16px',
@@ -42,42 +44,32 @@ const btnGhost: CSSProperties = {
   color: 'var(--color-ink)',
   border: '1px solid rgba(255,255,255,0.08)',
   fontSize: 13,
+  cursor: 'pointer',
 };
 
 export function OnboardingDrawer() {
   const byokSetupComplete = useShell((s) => s.byokSetupComplete);
+  const setEncryptionState = useShell((s) => s.setEncryptionState);
   const [step, setStep] = useState<Step>(1);
-  const [provider, setProvider] = useState<Provider>('openrouter');
-  const [apiKey, setApiKey] = useState('');
-  const [validating, setValidating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [showEncryptForm, setShowEncryptForm] = useState(false);
 
-  const validateAndAdvance = async () => {
-    setValidating(true);
-    setError(null);
-    try {
-      const res = await rpc('llm.validateKey', { provider, apiKey });
-      if (!res.valid) {
-        setError(res.error ?? 'Invalid key');
-        return;
-      }
-      // Persist credential under llm.creds.v1; Phase 1.5 settings workstream
-      // will add encryption opt-in + multi-key UX on top.
-      await setActiveCredentials({
-        default: provider,
-        [provider]: {
-          apiKey,
-          addedAt: new Date().toISOString(),
-          lastValidatedAt: new Date().toISOString(),
-        },
-      });
-      await chrome.storage.local.set({ 'profile.byokConfigured': true });
-      setStep(3);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Validation failed');
-    } finally {
-      setValidating(false);
-    }
+  const handleValidated = async (provider: ProviderId, apiKey: string) => {
+    await setActiveCredentials({
+      default: provider,
+      [provider]: {
+        apiKey,
+        addedAt: new Date().toISOString(),
+        lastValidatedAt: new Date().toISOString(),
+      },
+    });
+    await chrome.storage.local.set({ 'profile.byokConfigured': true });
+    setStep(3);
+  };
+
+  const handleEncrypt = async (passphrase: string) => {
+    await enableEncryption(passphrase);
+    setEncryptionState(true, false);
+    byokSetupComplete();
   };
 
   return (
@@ -109,56 +101,12 @@ export function OnboardingDrawer() {
             Choose a provider and paste your API key. Compass calls the provider directly from your
             browser — keys never transit our servers.
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {(['openai', 'anthropic', 'openrouter'] as Provider[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setProvider(p)}
-                style={{
-                  padding: '8px 14px',
-                  fontSize: 12,
-                  borderRadius: 999,
-                  background: provider === p ? 'var(--accent-wash)' : 'rgba(255,255,255,0.05)',
-                  color: 'var(--color-ink)',
-                  border:
-                    provider === p
-                      ? '1px solid var(--accent-soft)'
-                      : '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-…"
-            style={{
-              padding: '10px 14px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              borderRadius: 8,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              color: 'var(--color-ink)',
-              outline: 'none',
-            }}
+          <KeyValidator
+            providers={['openrouter', 'openai', 'anthropic']}
+            onValidated={handleValidated}
+            onCancel={() => setStep(1)}
+            submitLabel="Validate & continue"
           />
-          {error && <div style={{ color: 'oklch(0.82 0.13 30)', fontSize: 12 }}>{error}</div>}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button style={btnGhost} onClick={() => setStep(1)} disabled={validating}>
-              Back
-            </button>
-            <button
-              style={btnAccent}
-              onClick={validateAndAdvance}
-              disabled={validating || apiKey.length < 10}
-            >
-              {validating ? 'Validating…' : 'Validate & continue'}
-            </button>
-          </div>
         </>
       )}
 
@@ -167,17 +115,24 @@ export function OnboardingDrawer() {
           <h2 style={titleStyle}>Optional: encryption</h2>
           <p style={proseStyle}>
             You can lock your stored API keys with a passphrase so they&rsquo;re encrypted at rest.
-            This step is optional and can be enabled later from Profile.
+            This step is optional — you can enable it later from Profile → Encryption.
           </p>
-          <p style={{ ...proseStyle, fontSize: 12.5, fontStyle: 'italic' }}>
-            Passphrase setup ships with Phase 1.5 settings &mdash; for now this step is a stub. You
-            can finish without enabling encryption.
-          </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button style={btnAccent} onClick={byokSetupComplete}>
-              Finish setup
-            </button>
-          </div>
+          {!showEncryptForm ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={btnAccent} onClick={() => setShowEncryptForm(true)}>
+                Encrypt with passphrase
+              </button>
+              <button style={btnGhost} onClick={byokSetupComplete}>
+                Skip for now
+              </button>
+            </div>
+          ) : (
+            <PassphraseSetForm
+              onSet={handleEncrypt}
+              onCancel={() => setShowEncryptForm(false)}
+              submitLabel="Encrypt and finish"
+            />
+          )}
         </>
       )}
     </div>
