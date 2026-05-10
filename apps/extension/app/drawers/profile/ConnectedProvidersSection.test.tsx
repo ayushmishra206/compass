@@ -168,7 +168,7 @@ describe('ConnectedProvidersSection — forgotten passphrase recovery', () => {
     fireEvent.click(screen.getByRole('button', { name: /erase keys and start over/i }));
     await waitFor(() => expect(clearActiveCredentials).toHaveBeenCalled());
     await waitFor(() => expect(useShell.getState().onboardingLocked).toBe(true));
-    expect(useShell.getState().drawer).toEqual({ open: false, kind: null });
+    expect(useShell.getState().drawer).toEqual({ open: true, kind: 'onboarding' });
     expect(useShell.getState().encryptionEnabled).toBe(false);
   });
 

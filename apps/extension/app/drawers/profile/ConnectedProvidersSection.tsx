@@ -416,7 +416,7 @@ function ForgotPassphrasePrompt({ onCancel }: { onCancel: () => void }) {
       encryptionEnabled: false,
       locked: false,
       unlockHint: false,
-      drawer: { open: false, kind: null },
+      drawer: { open: true, kind: 'onboarding' },
       onboardingLocked: true,
     });
   };
