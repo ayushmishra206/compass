@@ -1,4 +1,3 @@
-import { rpc } from '@compass/runtime';
 import { UserProfileSchema, type UserProfile } from '../types/user';
 
 const STORAGE_KEY = 'profile.user.v1';
@@ -25,13 +24,5 @@ export async function setUserProfile(patch: Partial<UserProfile>): Promise<UserP
   const current = await getUserProfile();
   const next = UserProfileSchema.parse({ ...current, ...patch });
   await chrome.storage.local.set({ [STORAGE_KEY]: next });
-  if (patch.briefingHour !== undefined || patch.reflectionHour !== undefined) {
-    // Best-effort fire-and-forget; tolerate route not being declared yet
-    try {
-      await rpc('alarms.refresh' as never, {} as never);
-    } catch {
-      // Route may not exist yet during incremental rollout
-    }
-  }
   return next;
 }

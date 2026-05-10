@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-vi.mock('@compass/runtime', () => ({ rpc: vi.fn(async () => ({ ok: true })) }));
-
 interface ChromeStorage {
   local: {
     get: ReturnType<typeof vi.fn>;

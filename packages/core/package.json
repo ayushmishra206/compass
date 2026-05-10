@@ -21,7 +21,6 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@compass/runtime": "workspace:*",
     "zod": "^4.3.6"
   }
 }
