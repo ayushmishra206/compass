@@ -179,3 +179,18 @@ describe('ConnectedProvidersSection — forgotten passphrase recovery', () => {
     expect(screen.getByRole('button', { name: /unlock/i })).toBeInTheDocument();
   });
 });
+
+describe('ConnectedProvidersSection — unlockHint', () => {
+  beforeEach(() => {
+    useShell.setState({
+      encryptionEnabled: true,
+      locked: true,
+      unlockHint: true,
+    });
+  });
+
+  it('clears unlockHint after focusing the passphrase input', async () => {
+    render(<ConnectedProvidersSection />);
+    await waitFor(() => expect(useShell.getState().unlockHint).toBe(false));
+  });
+});

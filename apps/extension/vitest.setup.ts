@@ -2,6 +2,11 @@ import '@testing-library/jest-dom/vitest';
 import 'jest-axe/extend-expect';
 
 // Minimal chrome API stub for unit tests running in jsdom (no real extension context).
+// jsdom doesn't implement Element.scrollIntoView; stub as a no-op.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 if (typeof globalThis.chrome === 'undefined') {
   globalThis.chrome = {
     storage: {

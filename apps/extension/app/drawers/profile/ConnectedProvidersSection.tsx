@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useShell } from '../../state/shell';
 import { PassphraseConfirmForm } from '../../components/credentials/PassphraseConfirmForm';
 import { KeyValidator } from '../../components/credentials/KeyValidator';
@@ -108,6 +108,20 @@ export function ConnectedProvidersSection() {
   const encryptionEnabled = useShell((s) => s.encryptionEnabled);
   const locked = useShell((s) => s.locked);
   const unlock = useShell((s) => s.unlock);
+  const unlockHint = useShell((s) => s.unlockHint);
+  const clearUnlockHint = useShell((s) => s.clearUnlockHint);
+  const passphraseRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (encryptionEnabled && locked && unlockHint) {
+      passphraseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = passphraseRef.current?.querySelector(
+        'input[type="password"]',
+      ) as HTMLInputElement | null;
+      input?.focus();
+      clearUnlockHint();
+    }
+  }, [encryptionEnabled, locked, unlockHint, clearUnlockHint]);
 
   const [creds, setCreds] = useState<LlmCredentials | null>(null);
   const [showForgot, setShowForgot] = useState(false);
@@ -128,7 +142,9 @@ export function ConnectedProvidersSection() {
             <div style={{ fontSize: 12, color: 'var(--color-ink-3)', marginBottom: 10 }}>
               🔒 Locked. Enter your passphrase to manage providers.
             </div>
-            <PassphraseConfirmForm onConfirm={(p) => unlock(p)} submitLabel="Unlock" />
+            <div ref={passphraseRef}>
+              <PassphraseConfirmForm onConfirm={(p) => unlock(p)} submitLabel="Unlock" />
+            </div>
             <button type="button" style={linkStyle} onClick={() => setShowForgot(true)}>
               Forgot passphrase?
             </button>
