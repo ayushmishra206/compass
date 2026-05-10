@@ -427,7 +427,12 @@ const EMBEDDING_MODEL = 'minilm-l6-v2';
 const AUTOLINK_THRESHOLD = 0.78;
 const FORGOTTEN_THRESHOLD = 0.82;
 const FORGOTTEN_DAYS = 45;
-const FORGOTTEN_SESSION_FLAG = 'notes.forgotten.shownThisSession';
+// One-callout-per-session is approximated by an offscreen-lifetime in-memory
+// flag. AGENTS.md forbids `chrome.*` APIs in the offscreen document, and a
+// module-level flag has the same semantics here: when the offscreen document
+// is evicted (SW idle), the flag resets — which is exactly when the user's
+// browsing "session" effectively restarts.
+let forgottenShownThisSession = false;
 
 let _notesRepo: NotesRepo | null = null;
 async function getNotesRepo(): Promise<NotesRepo> {
@@ -455,15 +460,14 @@ async function detectForgotten(
   repo: NotesRepo,
   neighbors: Array<{ noteId: string; similarity: number }>,
 ): Promise<{ noteId: string; sim: number; title: string } | null> {
-  const session = await chrome.storage.session.get(FORGOTTEN_SESSION_FLAG);
-  if (session[FORGOTTEN_SESSION_FLAG]) return null;
+  if (forgottenShownThisSession) return null;
   const cutoff = Date.now() - FORGOTTEN_DAYS * 24 * 60 * 60 * 1000;
   for (const n of neighbors) {
     if (n.similarity < FORGOTTEN_THRESHOLD) continue;
     const note = await repo.getById(n.noteId);
     if (!note) continue;
     if (new Date(note.updatedAt).getTime() < cutoff) {
-      await chrome.storage.session.set({ [FORGOTTEN_SESSION_FLAG]: true });
+      forgottenShownThisSession = true;
       return { noteId: n.noteId, sim: n.similarity, title: note.title };
     }
   }
@@ -489,12 +493,30 @@ registry.register('notes.update', async (req) => {
   });
   const next = await repo.getById(req.id);
   if (!next) throw new Error('not-found');
+
+  // Per-note autolink toggle changed: clear existing pairs immediately when
+  // turning off; compute fresh pairs when turning on (against current chunks).
+  // We handle this BEFORE the minor-edit short-circuit so a toggle-only update
+  // (no title/body change) still has the correct effect.
+  const profile = await getUserProfile();
+  const autolinkFlipped = cur.autolinkEnabled !== next.autolinkEnabled;
+  if (autolinkFlipped) {
+    if (!profile.autoLinkEnabled || !next.autolinkEnabled) {
+      await repo.rebuildAutoLinks(next.id, []);
+    } else {
+      const neighbors = await repo.findNeighbors(next.id, {
+        k: 5,
+        threshold: AUTOLINK_THRESHOLD,
+      });
+      await repo.rebuildAutoLinks(next.id, neighbors);
+    }
+  }
+
   const minor = isMinorEdit(cur.body, next.body) && cur.title === next.title;
   if (minor) return { ok: true as const };
 
   await embedAndStoreChunks(repo, next.id, next.title, next.body);
 
-  const profile = await getUserProfile();
   if (profile.autoLinkEnabled && next.autolinkEnabled) {
     const neighbors = await repo.findNeighbors(next.id, { k: 5, threshold: AUTOLINK_THRESHOLD });
     await repo.rebuildAutoLinks(next.id, neighbors);

@@ -53,7 +53,13 @@ export function MarkdownEditor({
     const view = new EditorView({ state, parent: ref.current });
     viewRef.current = view;
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+        // Flush the latest doc through onChange before unmount so unsaved
+        // edits aren't dropped when the user navigates away mid-debounce.
+        onChangeRef.current(view.state.doc.toString());
+      }
       view.destroy();
       viewRef.current = null;
     };
