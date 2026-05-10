@@ -385,6 +385,26 @@ registry.register('brief.streak', async () => {
   return { days, lastDate };
 });
 
+// ── Pomodoro handlers ─────────────────────────────────────────────────────────
+
+registry.register('pomodoro.start', async ({ id, durationMin, theme }) => {
+  const repo = await getPomodoroRepo();
+  await repo.start({ id, durationMin, theme });
+  return { ok: true as const };
+});
+
+registry.register('pomodoro.complete', async ({ id }) => {
+  const repo = await getPomodoroRepo();
+  await repo.complete(id);
+  return { ok: true as const };
+});
+
+registry.register('pomodoro.abandon', async ({ id }) => {
+  const repo = await getPomodoroRepo();
+  await repo.abandon(id);
+  return { ok: true as const };
+});
+
 // Phase 1.5 alarms: accept the heavy-doc-keepalive Port from withHeavyDocAlive().
 // The Port being open is itself the keepalive — Chrome will not evict either side
 // while at least one Port is connected. No work to do in the listener.
