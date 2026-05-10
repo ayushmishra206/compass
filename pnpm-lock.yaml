@@ -270,6 +270,9 @@ importers:
       '@compass/core':
         specifier: workspace:*
         version: link:../core
+      '@compass/db':
+        specifier: workspace:^
+        version: link:../db
     devDependencies:
       '@types/chrome':
         specifier: ^0.0.270

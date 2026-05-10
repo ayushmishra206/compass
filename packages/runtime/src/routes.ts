@@ -3,6 +3,7 @@
 //
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
+import type { StoredBriefing } from '@compass/db';
 import type { ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
@@ -40,6 +41,32 @@ export interface Routes {
       fetchedAt: number;
     };
   };
+  'brief.morning': {
+    req: { trigger: 'alarm' | 'manual' | 'catchup'; force?: boolean };
+    res: { stored: StoredBriefing } | { skipped: 'locked' | 'too-early' };
+  };
+  'brief.eod': {
+    req: { trigger: 'alarm' | 'manual'; force?: boolean };
+    res: { stored: StoredBriefing } | { skipped: 'locked' | 'no-morning-brief' };
+  };
+  'brief.getOrGenerate': {
+    req: { kind: 'morning' | 'eod' };
+    res:
+      | { kind: 'have-brief'; brief: StoredBriefing }
+      | { kind: 'locked-no-brief' }
+      | { kind: 'too-early'; readyAt: string }
+      | { kind: 'generating' };
+  };
+  'brief.recordOpen': { req: { dateLocal: string; kind: 'morning' | 'eod' }; res: { ok: true } };
+  'brief.recordRating': {
+    req: { dateLocal: string; kind: 'morning' | 'eod'; rating: -1 | 1 };
+    res: { ok: true };
+  };
+  'brief.streak': { req: Record<string, never>; res: { days: number; lastDate: string | null } };
+  'pomodoro.start': { req: { id: string; durationMin: number; theme?: string }; res: { ok: true } };
+  'pomodoro.complete': { req: { id: string }; res: { ok: true } };
+  'pomodoro.abandon': { req: { id: string }; res: { ok: true } };
+  'alarms.refresh': { req: Record<string, never>; res: { ok: true } };
 }
 
 export type RouteKind = keyof Routes;
