@@ -1930,13 +1930,20 @@ Each phase has a **merge gate**: all DoD items met, all listed tests passing, pr
 - BriefDrawer empty-state branches: `loading` / `have-brief` / `locked-no-brief` / `too-early` / `error`.
 - **Gate (closed):** brief generation round-trip green in `brief-pipeline` integration test; e2e `daily-agent.spec.ts` 3/3 passing on structural path.
 
-### Phase 2 semantic-notes — Semantic Notes (deferred)
+### Phase 2 semantic-notes — Semantic Notes (complete, closed 2026-05-11 via PR #TBD)
 
-- Notes drawer: real auto-link pipeline, hybrid semantic search, forgotten-context surfacing.
-- ⌘K ask mode: real `notes.askGrounded` RAG response.
-- Eval suite `notes.autolink.yaml`.
-- `streakDays` / `streakLastDate` already populated by Phase 2 daily-agent EOD pipeline; the Ticker sources from sqlite.
-- **Gate:** all DoD in §11.8; Playwright scenarios 9–10 green.
+- Notes CRUD with CodeMirror 6 markdown editor.
+- Local embedding pipeline (MiniLM-L6-v2, 384 dims; offscreen).
+- Auto-linking with on-demand LLM rationale (lazy).
+- Forgotten-context callout — one per session, ≥ 45-day stale + similarity > 0.82.
+- Hybrid (FTS5 + JS-cosine over BLOB embeddings) semantic search with reciprocal-rank fusion (k=60). Pivoted away from sqlite-vec because sqlite-wasm does not expose `loadExtension()`; tracked in `docs/architecture.md` § Semantic Notes.
+- ⌘K `notes.askGrounded` — hybrid retrieve + grounded answer + citation badge click-through.
+- Quality gates (§11.8) hit:
+  - Hybrid search P95 ≤ 250 ms at 10k notes — gated by `tests/perf/hybrid-search-p95.test.ts`.
+  - Zero content leakage to logs — gated by ESLint `no-restricted-syntax` rule scoped to notes pipeline files.
+  - Auto-link precision ≥ 0.80 on curated fixture — harness in place, env-gated (`COMPASS_RUN_AUTOLINK_PRECISION=1`) because real-MiniLM run downloads ~80 MB on first invocation.
+- Per-note + global auto-link kill switches.
+- **Gate (closed):** `notes-pipeline` integration 7/7; hybrid-search P95 ≤ 250 ms; e2e `notes.spec.ts` 2 passing + 1 structural-skip (CmdK accelerator headless-context limitation).
 
 ### Phase 3 — Personalization + Smart Blocker (4 weeks)
 

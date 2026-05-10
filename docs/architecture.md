@@ -260,6 +260,45 @@ Phase 2 closes the alarm → LLM → drawer loop introduced by Phase 1.5 alarms.
 
 ---
 
+## Semantic Notes (`packages/db` + `packages/embeddings` + `packages/agents`)
+
+Phase 2 closes the Notes drawer + ⌘K ask loop with real local-first retrieval.
+
+**Module layout:**
+
+- Schema: migration v3 adds `notes` / `note_chunks` (with `embedding BLOB`) / `notes_fts` (FTS5 + triggers) / `auto_links`.
+- Repo: `NotesRepo` at [`packages/db/src/repositories/notes.ts`](../packages/db/src/repositories/notes.ts) — CRUD, `upsertChunks`, `findNeighbors` (JS cosine over BLOB), `hybridSearch` (FTS5 ∪ JS-cosine with RRF), `rebuildAutoLinks`, `setAutoLinkRationale`, `dismissAutoLink`.
+- Embeddings: `@compass/embeddings` MiniLM-L6-v2 (offscreen, OPFS-cached weights). `embedBatch` returns N float32 vectors per N inputs.
+- Agents: `notes.autolink.summary` (on-demand pair → 1-sentence rationale) and `notes.askGrounded` (hybrid hits → grounded answer + citations).
+
+**Vec backend choice — JS cosine over BLOB embeddings.** sqlite-vec's `load(db)` requires `db.loadExtension()`, which sqlite-wasm does NOT expose in either Node or browser builds. Rather than wedge in a community sqlite-wasm-vec fork, Phase 2 stores embeddings as raw `Float32` BLOBs on `note_chunks.embedding` and computes cosine similarity in JavaScript. At the 10k-note target the per-query cost stays under 250 ms (PRD §11.8) — measured by [`tests/perf/hybrid-search-p95.test.ts`](../tests/perf/hybrid-search-p95.test.ts). If we outgrow this, the upgrade path is a per-note pooled-embedding column for a coarse first-pass, then chunk-level re-rank on the top 50.
+
+**Pipelines:**
+
+- Write (debounced 5 s): minor-edit Δ-check → re-chunk → `embedBatch` → `note_chunks` upsert → neighbor compute (`findNeighbors`) → `auto_links` rebuild (NULL rationale). Forgotten-context check surfaces ≤ 1 callout per session via `chrome.storage.session['notes.forgotten.shownThisSession']`.
+- Rationale: lazy. Pill click → `rpc('notes.autolink.rationale')` → cached after first fetch.
+- Search: hybrid FTS5 ∪ JS-cosine, reciprocal-rank fusion (k=60).
+- Ask: `notes.search` top-5 → grounded LLM call → answer with `[nN]` citations; citation badge click closes ⌘K and opens NotesDrawer to the cited note.
+
+**Quality gates (PRD §11.8):**
+
+- Auto-link precision ≥ 0.80 on 27-note curated fixture ([`tests/prompt-eval/notes.autolink.fixture.json`](../tests/prompt-eval/notes.autolink.fixture.json)). Harness at [`packages/db/tests/eval/autolink-precision.test.ts`](../packages/db/tests/eval/autolink-precision.test.ts), gated behind `COMPASS_RUN_AUTOLINK_PRECISION=1` because it downloads ~80 MB of real MiniLM weights from HF on first run.
+- Hybrid search P95 ≤ 250 ms at 10k notes — enforced by [`tests/perf/hybrid-search-p95.test.ts`](../tests/perf/hybrid-search-p95.test.ts) and benchmarked separately by `pnpm bench`.
+- Zero content leakage to logs — enforced by an ESLint `no-restricted-syntax` rule scoped to the notes pipeline files (`apps/extension/entrypoints/offscreen/{notes,main}.ts`, `apps/extension/app/drawers/notes/**`, `apps/extension/app/components/CmdK.tsx`, `apps/extension/app/hooks/useNotes.ts`, `packages/agents/src/notes.*.ts`, `packages/db/src/repositories/notes.ts`). Tests are exempt; the rule blocks `console.{log,warn,error,info,debug}` calls reading `.body` / `.title` / `.text` / `.context` / `.answer` / `.rationale` / `.query` member access.
+
+**Kill switches:**
+
+- Per-note: editor header toggle → `notes.autolink_enabled` column.
+- Global: ProfileDrawer NotesSection → `profile.user.v1.autoLinkEnabled`.
+- When either is off, the offscreen `notes.update` handler skips the neighbor compute and clears any existing pairs.
+
+**Future-proofing:**
+
+- `notes.embedding_model` per row + `notes.reembed_pending` flag prepare for a future embedding-model swap migration without data loss.
+- Query rewrite (§11.5 feature flag) and image-to-tasks "Scan note" (§11.6) stay deferred to later phases.
+
+---
+
 ## Settings + encrypted storage (`packages/core/src/crypto/`)
 
 Phase 1.5 settings closes the Phase 1.5 gate by giving users multi-key BYOK CRUD + opt-in passphrase encryption.
