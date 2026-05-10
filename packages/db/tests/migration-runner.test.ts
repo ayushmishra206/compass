@@ -12,20 +12,22 @@ beforeEach(async () => {
 });
 
 describe('migration-runner', () => {
-  it('applies migration 0001 on a fresh DB', async () => {
+  it('applies all migrations on a fresh DB', async () => {
     await runMigrations(db!);
-    expect(getSchemaVersion(db!)).toBe(1);
+    expect(getSchemaVersion(db!)).toBe(2);
     const tables = db!.exec({
       sql: "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
       returnValue: 'resultRows',
     });
     expect(tables.flat()).toContain('llm_cost_ledger');
     expect(tables.flat()).toContain('meta');
+    expect(tables.flat()).toContain('briefings');
+    expect(tables.flat()).toContain('pomodoros');
   });
 
   it('is idempotent — running twice does not re-apply', async () => {
     await runMigrations(db!);
     await runMigrations(db!);
-    expect(getSchemaVersion(db!)).toBe(1);
+    expect(getSchemaVersion(db!)).toBe(2);
   });
 });
