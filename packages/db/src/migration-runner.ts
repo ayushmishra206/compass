@@ -99,6 +99,16 @@ CREATE TABLE auto_links (
 CREATE INDEX auto_links_src ON auto_links(src_note_id);
 CREATE INDEX auto_links_target ON auto_links(target_note_id);
 
+CREATE TRIGGER notes_fts_ai AFTER INSERT ON notes BEGIN
+  INSERT INTO notes_fts(rowid, title, body, note_id) VALUES (new.rowid, new.title, new.body, new.id);
+END;
+CREATE TRIGGER notes_fts_au AFTER UPDATE ON notes BEGIN
+  UPDATE notes_fts SET title=new.title, body=new.body, note_id=new.id WHERE rowid=old.rowid;
+END;
+CREATE TRIGGER notes_fts_ad AFTER DELETE ON notes BEGIN
+  DELETE FROM notes_fts WHERE rowid=old.rowid;
+END;
+
 UPDATE meta SET value = '3' WHERE key = 'schema_version';
 `;
 
