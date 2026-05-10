@@ -1,0 +1,61 @@
+# Brief.autolink rationale eval — Phase 2 placeholder.
+#
+# The retrieval *precision* gate (≥ 0.8 on the curated fixture) is enforced
+# by the Vitest harness:
+#   packages/db/tests/eval/autolink-precision.test.ts
+# Gated behind COMPASS_RUN_AUTOLINK_PRECISION=1 because it requires the real
+# MiniLM model (downloaded from HF CDN on first run).
+#
+# This file documents the rationale-LLM (notes.autolink.summary) eval, run
+# as a standard promptfoo task. Three fixture pairs from
+# notes.autolink.fixture.json.
+
+description: Notes autolink rationale eval (Phase 2 placeholder)
+
+prompts:
+  - file://../../packages/core/src/prompts/notes.autolink.summary.md
+
+providers:
+  - openrouter:anthropic/claude-haiku-4-5
+
+tests:
+  - description: Same-cluster pair — Q2 launch
+    vars:
+      noteA:
+        title: 'Q2 launch — risks and slips'
+        body: 'Engineering capacity is tight through July. PRD locked but two integration points (Gmail OAuth + Stripe) are not yet signed off.'
+      noteB:
+        title: 'Q2 product blockers'
+        body: 'Top three: Gmail OAuth CASA, embedding model size in extension bundle, cost ledger UI is still a stub.'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: 'output.rationale && output.rationale.length < 400'
+      - type: contains-any
+        value: ['Q2', 'launch', 'blockers', 'both', 'shared']
+
+  - description: Same-cluster pair — running training
+    vars:
+      noteA:
+        title: '10k training — week 5 plan'
+        body: 'Monday 5km easy, Tuesday 6x800m intervals, Thursday tempo 4km, Saturday long run 12km.'
+      noteB:
+        title: 'Race day — taper plan'
+        body: 'Week 8 starts the taper. Cut total volume 30%. Hydrate carefully. Even splits first 5km, push from km 7.'
+    assert:
+      - type: is-json
+      - type: contains-any
+        value: ['running', 'training', '10k', 'taper', 'race']
+
+  - description: Cross-cluster pair — must still produce a bounded sentence
+    vars:
+      noteA:
+        title: 'Anne Frank house — booking note'
+        body: 'Tickets release 6 weeks before, in two waves. Both released at midnight CET.'
+      noteB:
+        title: 'Form cues — cadence drills'
+        body: 'Target cadence 178. Forefoot strike. Drilled 4x100m yesterday.'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: 'output.rationale && output.rationale.length < 400'

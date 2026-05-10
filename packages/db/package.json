@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
-    "sqlite-vec": "^0.1.9",
     "@compass/core": "workspace:*"
   }
 }

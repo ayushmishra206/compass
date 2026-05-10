@@ -1,0 +1,225 @@
+{
+  "$comment": "Curated notes fixture for auto-link precision evaluation. Phase 2 ships ~30 notes across 3 clusters; gate is ≥0.8 precision on the labeled pairs. Grow to 100 notes in a follow-up when real-model CI harness runs.",
+  "notes": [
+    {
+      "id": "n001",
+      "cluster": "work-q2-launch",
+      "title": "Q2 launch — risks and slips",
+      "body": "Engineering capacity is tight through July. PRD locked but two integration points (Gmail OAuth + Stripe) are not yet signed off. If CASA review takes the full 8 weeks we miss our committed Plus rollout window. Risk register updated; need to re-baseline next Monday with Mira."
+    },
+    {
+      "id": "n002",
+      "cluster": "work-q2-launch",
+      "title": "Plus rollout — staged release plan",
+      "body": "Three rings: 5% canary on May 18, 25% on May 25, 100% on June 1. Rollback bar: if brief open-rate drops below 40% in canary, halt. Need analytics wiring per the brief.open RPC route before May 15."
+    },
+    {
+      "id": "n003",
+      "cluster": "work-q2-launch",
+      "title": "Q2 product blockers",
+      "body": "Top three: (1) Gmail OAuth CASA, (2) embedding model size in extension bundle, (3) cost ledger UI is still a stub. Mira to triage Wednesday standup. Customer council Friday — pre-read by Thursday EOD."
+    },
+    {
+      "id": "n004",
+      "cluster": "work-q2-launch",
+      "title": "Mira 1:1 — May 2",
+      "body": "Discussed launch slip risk. Mira agreed to push CASA submission this week instead of next. Wants the brief.morning eval gate signed off before launch announcement. Action: I send her the precision numbers by Friday."
+    },
+    {
+      "id": "n005",
+      "cluster": "work-q2-launch",
+      "title": "Pricing memo — three scenarios",
+      "body": "Plus at $39 versus $49 versus $59 with a 30-day trial. Reviewer feedback: $49 with trial outperforms in modeled retention but risks brand framing. Owner: me. Due Tuesday for the board pre-read."
+    },
+    {
+      "id": "n006",
+      "cluster": "work-q2-launch",
+      "title": "CASA tier-2 readiness checklist",
+      "body": "Gmail OAuth consent screen frozen. 12-item security questionnaire — drafted 9, three pending on data retention details. Subcontractor list submitted. Expected turnaround: 6-8 weeks. Submitting Friday."
+    },
+    {
+      "id": "n007",
+      "cluster": "weekend-trip-amsterdam",
+      "title": "Amsterdam trip — itinerary draft",
+      "body": "Arrive Thursday morning. Rijksmuseum Friday. Day trip to Haarlem Saturday — coastal weather permitting. Sunday slow morning before flight. Booked a small flat in De Pijp. Need to pre-book Anne Frank tickets — they sell out 6 weeks ahead."
+    },
+    {
+      "id": "n008",
+      "cluster": "weekend-trip-amsterdam",
+      "title": "Packing list — light Europe trip",
+      "body": "Convertible jacket, two pairs jeans, three button-downs, sneakers, dress shoes. Adapter (Type C). Kindle. Notebook + pen. Backup charger. No checked bag — carry-on only since we're hopping flats."
+    },
+    {
+      "id": "n009",
+      "cluster": "weekend-trip-amsterdam",
+      "title": "Anne Frank house — booking note",
+      "body": "Tickets release 6 weeks before, in two waves. Both released at midnight CET. Watched March windows go in 12 minutes. Set a calendar alarm for the May release date. Backup: get-in-by-line option for 30 minutes pre-open."
+    },
+    {
+      "id": "n010",
+      "cluster": "weekend-trip-amsterdam",
+      "title": "Restaurants — pre-pick list",
+      "body": "De Kas (greenhouse-grown). Foer (small natural wine). The Pancake Bakery (touristy but the kids will love it). Coffee at Lot Sixty One. Skip Vondelpark cafe — slow service per the food forum."
+    },
+    {
+      "id": "n011",
+      "cluster": "weekend-trip-amsterdam",
+      "title": "Haarlem day trip — what to see",
+      "body": "30 minutes by train. Frans Hals museum. Grote Markt for lunch. Beach at Bloemendaal if the weather holds. Last train back is 23:14 — plenty of room. Pack a windbreaker — coastal can shift."
+    },
+    {
+      "id": "n012",
+      "cluster": "running-training",
+      "title": "10k training — week 5 plan",
+      "body": "Monday: 5km easy. Tuesday: 6x800m at 5k pace. Thursday: tempo 4km at threshold. Saturday: long run 12km. Sunday: cross-train (cycling). Strength work Tuesday + Friday evening. Heart rate cap 162 on easy days."
+    },
+    {
+      "id": "n013",
+      "cluster": "running-training",
+      "title": "Form cues — cadence drills",
+      "body": "Target cadence 178. Forefoot strike. Light ankle, push off the toes. Exhale on the off-foot to break breath sync with stride. Drilled 4x100m yesterday — felt smoother after the third rep."
+    },
+    {
+      "id": "n014",
+      "cluster": "running-training",
+      "title": "Race day — taper plan",
+      "body": "Week 8 starts the taper: cut total volume 30%, keep intensity. Two days rest before race. Hydrate carefully Friday + Saturday. Race kit laid out Friday night. Strategy: even splits first 5km, push from km 7."
+    },
+    {
+      "id": "n015",
+      "cluster": "running-training",
+      "title": "Tempo run notes — May 6",
+      "body": "Felt strong through km 3, started to break form at km 3.5 — cadence dropped to 174, leaned forward. Last km cleaned up after a deliberate cadence reset. Recovery 71 next morning, mid-range."
+    },
+    {
+      "id": "n016",
+      "cluster": "running-training",
+      "title": "Strength work — accessory routine",
+      "body": "Glute bridges 3x12, single-leg deadlift 3x10 each side, calf raises 3x15, plank 3x45s. Twice a week. Skip if a hard run is within 24 hours. Focus on slow eccentric for the deadlifts — that's where the resilience builds."
+    },
+    {
+      "id": "n017",
+      "cluster": "reading-power-and-progress",
+      "title": "Power and Progress — ch 4 notes",
+      "body": "Acemoglu and Johnson argue that productivity gains rarely diffuse to wages without countervailing institutional pressure. The 19th-century textile industry analogue is the throughline. Useful framing for current AI labor displacement debates."
+    },
+    {
+      "id": "n018",
+      "cluster": "reading-power-and-progress",
+      "title": "Power and Progress — ch 7 reflections",
+      "body": "The Bell Labs vs. modern Silicon Valley R&D contrast is the most generative chapter. Bell socialized basic research with weak appropriation; Silicon Valley structurally appropriates everything at startup formation. Different equilibria, different downstream effects on diffusion."
+    },
+    {
+      "id": "n019",
+      "cluster": "reading-power-and-progress",
+      "title": "Industrial revolution diffusion — what stuck",
+      "body": "Productivity divergence held for almost a century before wages began to track. The lag closes only after organized labor + suffrage. The book's most uncomfortable claim: without those countervailing forces, the lag persists indefinitely."
+    },
+    {
+      "id": "n020",
+      "cluster": "reading-power-and-progress",
+      "title": "Compare with Brynjolfsson on AI productivity",
+      "body": "Brynjolfsson is more optimistic about AI diffusion timelines. Acemoglu would say Brynjolfsson under-weights the structural appropriation. Read 'The Productivity J-Curve' next — that's the empirical anchor for the optimistic view."
+    },
+    {
+      "id": "n021",
+      "cluster": "reading-power-and-progress",
+      "title": "Note to self — book club discussion prep",
+      "body": "Lead question for Tuesday: which contemporary technology best fits the Acemoglu countervailing-pressure framework? My answer: open-source LLMs, but the framing weakens because the 'countervailing' actor is itself a corporation (Meta). Need a sharper example."
+    },
+    {
+      "id": "n022",
+      "cluster": "reading-power-and-progress",
+      "title": "Power and Progress — ch 9 quote",
+      "body": "Direction of technological change is a choice, not a destiny — paraphrasing the closing argument. This is the book's actionable thesis. The mechanisms section (ch 10) gets vague though; the policy prescriptions feel under-specified."
+    },
+    {
+      "id": "n023",
+      "cluster": "engineering-retro",
+      "title": "May retro — what went well",
+      "body": "Phase 1.5 settings landed clean with multi-provider keys. e2e gate caught the encryption-onboarding regression before merge. Pre-commit hooks + commitlint kept commit history readable. Daily-agent slice closed in under two weeks."
+    },
+    {
+      "id": "n024",
+      "cluster": "engineering-retro",
+      "title": "May retro — what hurt",
+      "body": "Sqlite-vec / sqlite-wasm incompatibility surfaced mid-phase 2 semantic-notes and forced a pivot to JS cosine. Should have validated the vec stack end-to-end during Phase 1 instead of just scaffolding. Loss: ~3 hours of replanning + the orphan implementer commit."
+    },
+    {
+      "id": "n025",
+      "cluster": "engineering-retro",
+      "title": "Subagent-driven dev — observations",
+      "body": "Worked great for mechanical tasks (migrations, repo methods, type extensions). Less great for tightly coupled refactors — overhead of dispatching + reviewing each one didn't amortize. Doing tasks 5-9 as one cohesive inline write was the right call once the JS-cosine pivot landed."
+    },
+    {
+      "id": "n026",
+      "cluster": "engineering-retro",
+      "title": "Test infra debt — bench harness",
+      "body": "Vitest bench is fine but the 10k-note corpus generation is slow. Want a pre-built sqlite snapshot committed under tests/perf/fixtures/. Saves ~30s per bench run. Tradeoff: snapshot needs re-generation when schema changes."
+    },
+    {
+      "id": "n027",
+      "cluster": "engineering-retro",
+      "title": "Embedding model swap — design surface",
+      "body": "Schema v3 has notes.embedding_model + notes.reembed_pending columns. v4 migration will flip the flag on stale-model rows. Background job processes them in batches. Need to handle the case where a model swap happens mid-batch — version-check on each chunk."
+    }
+  ],
+  "groundTruthPairs": [
+    ["n001", "n002", true],
+    ["n001", "n003", true],
+    ["n001", "n004", true],
+    ["n001", "n005", true],
+    ["n001", "n006", true],
+    ["n002", "n003", true],
+    ["n002", "n004", true],
+    ["n003", "n004", true],
+    ["n003", "n006", true],
+    ["n005", "n004", true],
+    ["n007", "n008", true],
+    ["n007", "n009", true],
+    ["n007", "n010", true],
+    ["n007", "n011", true],
+    ["n008", "n011", true],
+    ["n009", "n010", true],
+    ["n010", "n011", true],
+    ["n012", "n013", true],
+    ["n012", "n014", true],
+    ["n012", "n015", true],
+    ["n012", "n016", true],
+    ["n013", "n015", true],
+    ["n014", "n015", true],
+    ["n014", "n016", true],
+    ["n017", "n018", true],
+    ["n017", "n019", true],
+    ["n017", "n020", true],
+    ["n017", "n021", true],
+    ["n017", "n022", true],
+    ["n018", "n019", true],
+    ["n019", "n020", true],
+    ["n023", "n024", true],
+    ["n023", "n025", true],
+    ["n023", "n026", true],
+    ["n024", "n027", true],
+    ["n025", "n026", true],
+    ["n001", "n007", false],
+    ["n001", "n012", false],
+    ["n001", "n017", false],
+    ["n001", "n023", false],
+    ["n007", "n012", false],
+    ["n007", "n017", false],
+    ["n007", "n023", false],
+    ["n012", "n017", false],
+    ["n012", "n023", false],
+    ["n017", "n023", false],
+    ["n003", "n009", false],
+    ["n005", "n013", false],
+    ["n006", "n019", false],
+    ["n008", "n021", false],
+    ["n010", "n025", false],
+    ["n014", "n018", false],
+    ["n016", "n020", false],
+    ["n022", "n026", false],
+    ["n004", "n008", false],
+    ["n011", "n015", false]
+  ]
+}
