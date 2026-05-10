@@ -232,6 +232,34 @@ Phase 1.5 introduces a cross-browser alarm scheduler used by Phase 2's Daily Age
 
 ---
 
+## Daily Agent (`brief.morning` / `brief.eod`)
+
+Phase 2 closes the alarm → LLM → drawer loop introduced by Phase 1.5 alarms.
+
+**Module layout:**
+
+- Agents at `packages/agents/src/brief.{morning,eod}.ts` orchestrate snapshot → `router.executeTask` → cost ledger row.
+- Prompts at `packages/core/src/prompts/brief.{morning,eod}.md` with `{{locale}}`, `{{dateLocal}}`, `{{dayOfWeek}}`, `{{nowHHMM}}` interpolations.
+- Storage in sqlite via `BriefRepo` ([`packages/db/src/repositories/brief.ts`](../packages/db/src/repositories/brief.ts)), composite key `(date_local, kind)`. `PomodoroRepo` aggregates focusSummary14d (peakHourLocal + trend). `CostLedgerRepo` records token + USD per generation.
+
+**Trigger paths:**
+
+- Alarm-driven: `chrome.alarms.onAlarm` → `withHeavyDocAlive(rpc('brief.morning'))`. Silent skip on `LlmCredentialsLocked`.
+- Catch-up: new-tab mounts → `useBrief()` → `rpc('brief.getOrGenerate')`. Returns one of `loading` / `have-brief` / `locked-no-brief` / `too-early` / `error`.
+- Manual: Brief drawer Regenerate button → `rpc('brief.morning', { trigger: 'manual' })`.
+
+**UserProfile-backed alarms.** Scheduler `defaults.ts` async `getBriefingHour()` / `getReflectionHour()` reads `chrome.storage.local['profile.user.v1']`. ProfileDrawer's [`DailyTimesSection`](../apps/extension/app/drawers/profile/DailyTimesSection.tsx) edits trigger `rpc('alarms.refresh')` SW route → `ensureAlarms()`.
+
+**Empty-state UX.** Phase 2 ships honestly sparse — calendar/Gmail/goals/Fitbit fields stay empty until Phase 4-5. Drawer template renders "Connect X to see Y" CTAs in [`apps/extension/app/drawers/brief/`](../apps/extension/app/drawers/brief/); the LLM is told not to invent data.
+
+**Phase 2 swap surface for later phases:**
+
+- Phase 4 (Calendar/Gmail/Goals) → snapshot transformers in agents extend to populate the empty arrays.
+- Phase 5 (Fitbit) → `RecoverySection` empty-state replaced with real recovery score.
+- Promptfoo CI → [`tests/prompt-eval/brief.morning.yaml`](../tests/prompt-eval/brief.morning.yaml) placeholder grows to 50 fixtures + ≥4/5 human rating gate.
+
+---
+
 ## Settings + encrypted storage (`packages/core/src/crypto/`)
 
 Phase 1.5 settings closes the Phase 1.5 gate by giving users multi-key BYOK CRUD + opt-in passphrase encryption.
