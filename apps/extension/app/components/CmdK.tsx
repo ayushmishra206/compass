@@ -127,6 +127,10 @@ export function CmdK() {
       setAnswer(r.answer);
       setCitations(r.citations);
       setReason(r.reason);
+    } catch {
+      setAnswer(null);
+      setCitations([]);
+      setReason('error');
     } finally {
       setBusy(false);
     }

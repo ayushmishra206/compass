@@ -562,6 +562,14 @@ registry.register('notes.search', async ({ query, limit }) => {
 
 registry.register('notes.askGrounded', async ({ query }) => {
   const repo = await getNotesRepo();
+  // Short-circuit on an empty corpus before loading the embedding runtime.
+  // Avoids the user paying a model-load round-trip just to be told they have
+  // no notes — and avoids surfacing an embedding-stack failure as a generic
+  // error when the real signal is "nothing to search".
+  const sample = await repo.list({ limit: 1, offset: 0 });
+  if (sample.length === 0) {
+    return { answer: null, citations: [], reason: 'no-notes' as const };
+  }
   const queryEmbedding = await embed(query);
   const hits = await repo.hybridSearch({ query, queryEmbedding, limit: 5 });
   if (hits.length === 0) {
