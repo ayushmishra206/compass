@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@compass/core": "workspace:*",
+    "@compass/db": "workspace:^",
     "@compass/runtime": "workspace:*"
   }
 }

@@ -153,6 +153,9 @@ importers:
       '@compass/core':
         specifier: workspace:*
         version: link:../core
+      '@compass/db':
+        specifier: workspace:^
+        version: link:../db
       '@compass/runtime':
         specifier: workspace:*
         version: link:../runtime
