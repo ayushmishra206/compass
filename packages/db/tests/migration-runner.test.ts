@@ -33,11 +33,12 @@ describe('migration-runner', () => {
 });
 
 describe('migration v3 — semantic notes', () => {
-  // notes_vec is a vec0 virtual table; sqlite-wasm's Node build does not
-  // expose loadExtension(), so the extension DDL is applied best-effort and
-  // silently skipped when vec is unavailable (see migration-runner.ts extSql).
-  // notes_vec creation in the browser stack is verified by smoke.test.ts.
-  it('creates notes, note_chunks, notes_fts, auto_links and bumps schema_version to 3', async () => {
+  // Phase 2 semantic-notes uses BLOB embeddings on note_chunks + JS cosine
+  // for similarity (no sqlite-vec virtual table). Rationale: sqlite-wasm
+  // does not expose loadExtension() in Node or browser builds, so vec0
+  // cannot be registered cross-environment. JS cosine is acceptable at the
+  // 10k-note target size; gate is tracked in tests/perf/hybrid-search.bench.ts.
+  it('creates notes (with embedding BLOB on chunks), notes_fts, auto_links and bumps schema_version to 3', async () => {
     const sqlite3 = await sqlite3InitModule();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = new sqlite3.oo1.DB(':memory:', 'c') as any;
@@ -52,7 +53,13 @@ describe('migration v3 — semantic notes', () => {
     for (const t of ['notes', 'note_chunks', 'notes_fts', 'auto_links']) {
       expect(names).toContain(t);
     }
-  });
 
-  it.todo('notes_vec virtual table is created when sqlite-vec extension is loaded (browser stack)');
+    // note_chunks must carry an embedding BLOB column (raw float32 bytes).
+    const cols = db.exec({
+      sql: 'PRAGMA table_info(note_chunks)',
+      returnValue: 'resultRows',
+    }) as Array<[number, string, string, number, unknown, number]>;
+    const colNames = cols.map((c) => c[1]);
+    expect(colNames).toContain('embedding');
+  });
 });

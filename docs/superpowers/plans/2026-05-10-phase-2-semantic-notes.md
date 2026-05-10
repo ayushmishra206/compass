@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace mocked Notes drawer + ⌘K ask mode with real Notes CRUD + local embeddings + auto-linking + hybrid (FTS5 + sqlite-vec) semantic search + grounded RAG answers, hitting PRD §11.8 quality gates (0.8 precision @ 100-note fixture, ≤250ms P95 @ 10k notes, 0 log leakage).
+> **PIVOT NOTICE (post-Task 1):** sqlite-vec's `load(db)` requires `db.loadExtension()`, which sqlite-wasm does NOT expose. We pivoted to **JS cosine**: no `notes_vec` virtual table, no `vec0`, no `sqlite-vec` runtime dep. `note_chunks` carries an `embedding BLOB NOT NULL` column (raw float32 bytes). `findNeighbors` / `hybridSearch` decode BLOBs in JS and compute cosine in TypeScript. Wherever the plan below shows `INSERT INTO notes_vec(...)` or `WHERE notes_vec.embedding MATCH ?`, replace with BLOB read + JS cosine. The §11.8 P95 ≤ 250 ms gate stays; JS cosine over 10k 384-dim vectors is ~50-100ms which fits the budget.
 
-**Architecture:** Repo-layer split (option A from spec): `packages/db` gains migration v3 + `NotesRepo` over sqlite-vec/FTS5. `packages/agents` adds `notes.autolink.summary` + `notes.askGrounded`. `apps/extension` rewrites NotesDrawer with CodeMirror 6 editor, adds `useNotes`/`notesStore`, wires CmdK ask path.
+**Goal:** Replace mocked Notes drawer + ⌘K ask mode with real Notes CRUD + local embeddings + auto-linking + hybrid (FTS5 + JS-cosine) semantic search + grounded RAG answers, hitting PRD §11.8 quality gates (0.8 precision @ 100-note fixture, ≤250ms P95 @ 10k notes, 0 log leakage).
 
-**Tech Stack:** sqlite-wasm + sqlite-vec + FTS5; `@huggingface/transformers` MiniLM-L6-v2 (offscreen); CodeMirror 6 (`@codemirror/state` + `@codemirror/view` + `@codemirror/lang-markdown`); Zustand; Vitest + RTL + jest-axe; Playwright (env-key gated).
+**Architecture:** Repo-layer split (option A from spec): `packages/db` gains migration v3 + `NotesRepo` over BLOB embeddings + FTS5. JS cosine for similarity. `packages/agents` adds `notes.autolink.summary` + `notes.askGrounded`. `apps/extension` rewrites NotesDrawer with CodeMirror 6 editor, adds `useNotes`/`notesStore`, wires CmdK ask path.
+
+**Tech Stack:** sqlite-wasm + FTS5 (no sqlite-vec); `@huggingface/transformers` MiniLM-L6-v2 (offscreen); CodeMirror 6 (`@codemirror/state` + `@codemirror/view` + `@codemirror/lang-markdown`); Zustand; Vitest + RTL + jest-axe; Playwright (env-key gated).
 
 **Spec:** `docs/superpowers/specs/2026-05-10-phase-2-semantic-notes-design.md`.
 

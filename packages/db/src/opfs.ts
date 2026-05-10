@@ -1,5 +1,4 @@
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
-import { load as loadVec } from 'sqlite-vec';
 
 export type Db = Database;
 
@@ -12,8 +11,6 @@ export async function openOpfsDatabase(): Promise<Db> {
     throw new Error('sqlite-wasm OPFS not available; check COOP/COEP and SAB support');
   }
   const db: Db = new sqlite3.oo1.OpfsDb('compass.sqlite3');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  loadVec(db as any);
   dbInstance = db;
   return db;
 }

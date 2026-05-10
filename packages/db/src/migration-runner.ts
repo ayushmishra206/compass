@@ -4,10 +4,6 @@ interface Migration {
   version: number;
   name: string;
   sql: string;
-  /** Optional DDL that requires a native extension (e.g. sqlite-vec).
-   *  Applied after the main sql, outside the transaction, with a best-effort
-   *  try/catch so tests running without the extension can still pass. */
-  extSql?: string;
 }
 
 const MIGRATION_0001_FOUNDATION = `
@@ -79,6 +75,7 @@ CREATE TABLE note_chunks (
   note_id      TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
   chunk_index  INTEGER NOT NULL,
   text         TEXT NOT NULL,
+  embedding    BLOB NOT NULL,
   UNIQUE(note_id, chunk_index)
 );
 CREATE INDEX note_chunks_note ON note_chunks(note_id);
@@ -105,21 +102,10 @@ CREATE INDEX auto_links_target ON auto_links(target_note_id);
 UPDATE meta SET value = '3' WHERE key = 'schema_version';
 `;
 
-// notes_vec requires the sqlite-vec native extension (vec0 module).
-// In production openOpfsDatabase() calls loadVec() before runMigrations(),
-// so this always succeeds. In Node-based vitest the extension is unavailable
-// (sqlite-wasm does not expose loadExtension in its Node build), so this DDL
-// is applied outside the transaction with a best-effort try/catch.
-const MIGRATION_0003_NOTES_VEC = `
-CREATE VIRTUAL TABLE notes_vec USING vec0(
-  embedding float[384]
-);
-`;
-
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
   { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
-  { version: 3, name: 'notes', sql: MIGRATION_0003_NOTES, extSql: MIGRATION_0003_NOTES_VEC },
+  { version: 3, name: 'notes', sql: MIGRATION_0003_NOTES },
 ];
 
 export function getSchemaVersion(db: Db): number {
@@ -148,15 +134,6 @@ export async function runMigrations(db: Db): Promise<void> {
     } catch (err) {
       db.exec('ROLLBACK');
       throw err;
-    }
-    // Apply extension-dependent DDL outside the transaction (best-effort).
-    // In production this succeeds because the native extension is pre-loaded.
-    if (m.extSql) {
-      try {
-        db.exec(m.extSql);
-      } catch {
-        // Extension not available (e.g. Node/vitest environment). Skipping.
-      }
     }
   }
 }
