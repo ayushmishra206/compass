@@ -73,7 +73,10 @@ registry.register('llm.validateKey', async ({ provider, apiKey }) => {
   return { valid: false, error: `Unknown provider: ${String(provider)}` };
 });
 
-const SCENE_MANIFEST_URL = 'https://assets.compassdash.com/scenes/manifest.v1.json';
+// Pre-domain interim host. Flip back to https://assets.compassdash.com/scenes/manifest.v1.json
+// once the custom domain is registered and Pages CNAME is configured.
+const SCENE_MANIFEST_URL =
+  'https://ayushmishra206.github.io/compass-assets/scenes/manifest.v1.json';
 
 registry.register('scenes.getManifest', async (req) => {
   const headers: Record<string, string> = { Accept: 'application/json' };
