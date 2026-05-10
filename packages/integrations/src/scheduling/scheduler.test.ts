@@ -1,4 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock defaults BEFORE importing the SUT so the async functions are stubbed.
+vi.mock('./defaults', () => ({
+  getBriefingHour: vi.fn(async () => 8),
+  getReflectionHour: vi.fn(async () => 18),
+}));
+
 import { computeDesired, ensureAlarms, type AlarmsApi } from './scheduler';
 
 interface MockAlarmsApi extends AlarmsApi {
@@ -32,11 +39,11 @@ describe('computeDesired', () => {
     vi.useRealTimers();
   });
 
-  it('returns morning-brief at briefingHour today and eod-reflection at reflectionHour today when called before both', () => {
+  it('returns morning-brief at briefingHour today and eod-reflection at reflectionHour today when called before both', async () => {
     // 2026-05-09 06:00:00 local time — both hours still ahead today.
     vi.setSystemTime(new Date(2026, 4, 9, 6, 0, 0));
 
-    const desired = computeDesired();
+    const desired = await computeDesired();
 
     expect(desired).toHaveLength(2);
     const morning = desired.find((d) => d.name === 'morning-brief')!;
@@ -47,11 +54,11 @@ describe('computeDesired', () => {
     expect(new Date(eod.when).getDate()).toBe(9);
   });
 
-  it('rolls morning-brief to tomorrow when called after briefingHour', () => {
+  it('rolls morning-brief to tomorrow when called after briefingHour', async () => {
     // 2026-05-09 09:00:00 — past briefingHour=8, before reflectionHour=18.
     vi.setSystemTime(new Date(2026, 4, 9, 9, 0, 0));
 
-    const desired = computeDesired();
+    const desired = await computeDesired();
     const morning = desired.find((d) => d.name === 'morning-brief')!;
     const eod = desired.find((d) => d.name === 'eod-reflection')!;
 
@@ -60,11 +67,11 @@ describe('computeDesired', () => {
     expect(new Date(eod.when).getDate()).toBe(9);
   });
 
-  it('rolls both to tomorrow when called after reflectionHour', () => {
+  it('rolls both to tomorrow when called after reflectionHour', async () => {
     // 2026-05-09 23:00:00 — past both today.
     vi.setSystemTime(new Date(2026, 4, 9, 23, 0, 0));
 
-    const desired = computeDesired();
+    const desired = await computeDesired();
     expect(desired.every((d) => new Date(d.when).getDate() === 10)).toBe(true);
   });
 });
@@ -106,7 +113,7 @@ describe('ensureAlarms — matching no-op', () => {
   });
 
   it('does not call create or clear when existing alarms match desired', async () => {
-    const desired = computeDesired();
+    const desired = await computeDesired();
     const api = makeAlarmsMock(desired.map((d) => ({ name: d.name, scheduledTime: d.when })));
 
     await ensureAlarms(api);
@@ -126,7 +133,7 @@ describe('ensureAlarms — time differs', () => {
   });
 
   it('clears and re-creates the alarm when scheduledTime drifts more than tolerance', async () => {
-    const desired = computeDesired();
+    const desired = await computeDesired();
     const morning = desired.find((d) => d.name === 'morning-brief')!;
     const eod = desired.find((d) => d.name === 'eod-reflection')!;
     // morning is off by 5 minutes (>60s tolerance)
@@ -145,7 +152,7 @@ describe('ensureAlarms — time differs', () => {
   });
 
   it('leaves alarms alone when scheduledTime is within tolerance (≤60s)', async () => {
-    const desired = computeDesired();
+    const desired = await computeDesired();
     const morning = desired.find((d) => d.name === 'morning-brief')!;
     const eod = desired.find((d) => d.name === 'eod-reflection')!;
     const api = makeAlarmsMock([
@@ -170,7 +177,7 @@ describe('ensureAlarms — extras cleared', () => {
   });
 
   it('clears alarms not in the desired set (e.g., stale alarms from a prior version)', async () => {
-    const desired = computeDesired();
+    const desired = await computeDesired();
     const api = makeAlarmsMock([
       ...desired.map((d) => ({ name: d.name, scheduledTime: d.when })),
       { name: 'legacy-alarm-from-v0', scheduledTime: Date.now() + 86_400_000 },

@@ -1,4 +1,4 @@
-import { BRIEFING_HOUR, REFLECTION_HOUR } from './defaults';
+import { getBriefingHour, getReflectionHour } from './defaults';
 
 export interface DesiredAlarm {
   name: string;
@@ -15,10 +15,14 @@ function nextOccurrenceAtHour(hour: number): number {
   return candidate.getTime();
 }
 
-export function computeDesired(): DesiredAlarm[] {
+export async function computeDesired(): Promise<DesiredAlarm[]> {
+  const [briefingHour, reflectionHour] = await Promise.all([
+    getBriefingHour(),
+    getReflectionHour(),
+  ]);
   return [
-    { name: 'morning-brief', when: nextOccurrenceAtHour(BRIEFING_HOUR) },
-    { name: 'eod-reflection', when: nextOccurrenceAtHour(REFLECTION_HOUR) },
+    { name: 'morning-brief', when: nextOccurrenceAtHour(briefingHour) },
+    { name: 'eod-reflection', when: nextOccurrenceAtHour(reflectionHour) },
   ];
 }
 
@@ -36,7 +40,7 @@ function defaultApi(): AlarmsApi {
 
 export async function ensureAlarms(api: AlarmsApi = defaultApi()): Promise<void> {
   const existing = await api.getAll();
-  const desired = computeDesired();
+  const desired = await computeDesired();
 
   for (const d of desired) {
     const e = existing.find((a) => a.name === d.name);

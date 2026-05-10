@@ -10,6 +10,11 @@ function defaultEvents(): AlarmEvents {
 
 export function registerAlarmHandlers(events: AlarmEvents = defaultEvents()): void {
   events.addListener((alarm) => {
-    void withHeavyDocAlive(() => rpc('system.ping', { utterance: alarm.name }));
+    if (alarm.name === 'morning-brief') {
+      void withHeavyDocAlive(() => rpc('brief.morning' as never, { trigger: 'alarm' } as never));
+    } else if (alarm.name === 'eod-reflection') {
+      void withHeavyDocAlive(() => rpc('brief.eod' as never, { trigger: 'alarm' } as never));
+    }
+    // Unknown alarm names: drop silently.
   });
 }
