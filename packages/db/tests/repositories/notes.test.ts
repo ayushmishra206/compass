@@ -254,6 +254,71 @@ describe('NotesRepo auto_links', () => {
     expect(await repo.listAutoLinksForNote(a)).toHaveLength(0);
   });
 
+  it('rebuildAutoLinks preserves dismissed + rationale on a kept pair', async () => {
+    const db = await freshDb();
+    const repo = createNotesRepo(db);
+    const a = await repo.create({
+      title: 'a',
+      body: 'aa',
+      tags: [],
+      embeddingModel: 'minilm-l6-v2',
+    });
+    const b = await repo.create({
+      title: 'b',
+      body: 'bb',
+      tags: [],
+      embeddingModel: 'minilm-l6-v2',
+    });
+    await repo.rebuildAutoLinks(a, [{ noteId: b, similarity: 0.85 }]);
+    await repo.setAutoLinkRationale(a, b, 'shared topic');
+    await repo.dismissAutoLink(a, b);
+    // Rebuild with the same neighbor (re-saved note still has the same pair).
+    await repo.rebuildAutoLinks(a, [{ noteId: b, similarity: 0.91 }]);
+    // Dismissed flag and rationale must survive.
+    expect(await repo.getAutoLinkRationale(a, b)).toBe('shared topic');
+    expect(await repo.listAutoLinksForNote(a)).toHaveLength(0); // still dismissed
+    // Similarity should have been refreshed by the upsert.
+    const raw = db.exec({
+      sql: 'SELECT similarity FROM auto_links WHERE src_note_id=? AND target_note_id=?',
+      bind: a < b ? [a, b] : [b, a],
+      returnValue: 'resultRows',
+    }) as Array<[number]>;
+    expect(raw[0]![0]).toBeCloseTo(0.91, 5);
+  });
+
+  it('rebuildAutoLinks removes pairs no longer in the neighbor set', async () => {
+    const db = await freshDb();
+    const repo = createNotesRepo(db);
+    const a = await repo.create({
+      title: 'a',
+      body: 'aa',
+      tags: [],
+      embeddingModel: 'minilm-l6-v2',
+    });
+    const b = await repo.create({
+      title: 'b',
+      body: 'bb',
+      tags: [],
+      embeddingModel: 'minilm-l6-v2',
+    });
+    const c = await repo.create({
+      title: 'c',
+      body: 'cc',
+      tags: [],
+      embeddingModel: 'minilm-l6-v2',
+    });
+    await repo.rebuildAutoLinks(a, [
+      { noteId: b, similarity: 0.9 },
+      { noteId: c, similarity: 0.85 },
+    ]);
+    expect(await repo.listAutoLinksForNote(a)).toHaveLength(2);
+    // Drop c from the neighbor set on the next rebuild.
+    await repo.rebuildAutoLinks(a, [{ noteId: b, similarity: 0.92 }]);
+    const links = await repo.listAutoLinksForNote(a);
+    expect(links).toHaveLength(1);
+    expect(links[0]!.targetNoteId).toBe(b);
+  });
+
   it('setAutoLinkRationale persists the rationale; getAutoLinkRationale reads it back', async () => {
     const db = await freshDb();
     const repo = createNotesRepo(db);

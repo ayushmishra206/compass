@@ -306,16 +306,42 @@ export function createNotesRepo(db: Db): NotesRepo {
     },
 
     async rebuildAutoLinks(noteId, neighbors) {
+      // Per-pair user state (dismissed, rationale, rationale_at, user_feedback)
+      // must survive a rebuild. We delete only pairs that are NOT in the new
+      // neighbor set, and upsert the rest preserving existing state.
       db.exec('BEGIN');
       try {
-        exec('DELETE FROM auto_links WHERE src_note_id=? OR target_note_id=?', [noteId, noteId]);
         const now = new Date().toISOString();
+        const keepKeys = new Set<string>();
+        for (const n of neighbors) {
+          if (n.noteId === noteId) continue;
+          const [src, tgt] = orderPair(noteId, n.noteId);
+          keepKeys.add(`${src}\x00${tgt}`);
+        }
+
+        // Drop only rows touching this note that aren't in the new set.
+        const existing = exec(
+          'SELECT src_note_id, target_note_id FROM auto_links WHERE src_note_id=? OR target_note_id=?',
+          [noteId, noteId],
+          true,
+        ) as Array<[string, string]>;
+        for (const [src, tgt] of existing) {
+          if (!keepKeys.has(`${src}\x00${tgt}`)) {
+            exec('DELETE FROM auto_links WHERE src_note_id=? AND target_note_id=?', [src, tgt]);
+          }
+        }
+
+        // Upsert kept/new pairs: refresh similarity + detected_at, preserve
+        // dismissed / rationale / rationale_at / user_feedback.
         for (const n of neighbors) {
           if (n.noteId === noteId) continue;
           const [src, tgt] = orderPair(noteId, n.noteId);
           exec(
             `INSERT INTO auto_links(src_note_id, target_note_id, similarity, detected_at)
-             VALUES(?,?,?,?)`,
+             VALUES(?,?,?,?)
+             ON CONFLICT(src_note_id, target_note_id) DO UPDATE SET
+               similarity = excluded.similarity,
+               detected_at = excluded.detected_at`,
             [src, tgt, n.similarity, now],
           );
         }

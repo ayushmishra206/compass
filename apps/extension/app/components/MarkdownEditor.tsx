@@ -23,6 +23,10 @@ export function MarkdownEditor({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onChangeRef = useRef(onChange);
   const debounceRef = useRef(debounceMs);
+  // When set, the next docChanged came from a programmatic value-prop swap
+  // (e.g., user switched to a different note). Skip scheduling a save in
+  // that case — the new content belongs to the new note, not to the user.
+  const applyingExternalValueRef = useRef(false);
   useEffect(() => {
     onChangeRef.current = onChange;
     debounceRef.current = debounceMs;
@@ -32,6 +36,7 @@ export function MarkdownEditor({
     if (!ref.current) return;
     const updateListener = EditorView.updateListener.of((u) => {
       if (!u.docChanged) return;
+      if (applyingExternalValueRef.current) return;
       if (timerRef.current) clearTimeout(timerRef.current);
       const next = u.state.doc.toString();
       timerRef.current = setTimeout(() => onChangeRef.current(next), debounceRef.current);
@@ -66,12 +71,25 @@ export function MarkdownEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- editor is built once and external value handled below
   }, []);
 
-  // External value change (e.g., switching notes) — replace doc atomically.
+  // External value change (e.g., switching notes) — flush any pending save
+  // for the OLD doc first, then replace the doc atomically without scheduling
+  // a save for the synthetic change (the new value belongs to the new note).
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    if (view.state.doc.toString() === value) return;
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
+    const current = view.state.doc.toString();
+    if (current === value) return;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+      onChangeRef.current(current);
+    }
+    applyingExternalValueRef.current = true;
+    try {
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
+    } finally {
+      applyingExternalValueRef.current = false;
+    }
   }, [value]);
 
   return <div ref={ref} aria-label={ariaLabel} style={{ minHeight: 320, width: '100%' }} />;
