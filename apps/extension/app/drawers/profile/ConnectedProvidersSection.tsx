@@ -230,7 +230,9 @@ export function ConnectedProvidersSection() {
               <div style={{ fontSize: 11, color: 'var(--color-ink-3)', marginLeft: 'auto' }}>
                 {validatingProvider === provider
                   ? 'validating…'
-                  : relativeTime(entry.lastValidatedAt)}
+                  : entry.lastValidatedAt
+                    ? relativeTime(entry.lastValidatedAt)
+                    : 'never validated'}
               </div>
               <button
                 type="button"
