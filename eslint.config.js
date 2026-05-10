@@ -82,4 +82,25 @@ export default [
       ],
     },
   },
+  {
+    files: ['**/*.{ts,tsx}'],
+    ignores: [
+      'packages/core/src/profile/userProfile.ts',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.object.property.name='local'] Literal[value=/profile\\.user/]",
+          message:
+            'Use getUserProfile() / setUserProfile() from @compass/core/profile instead of direct chrome.storage.local access.',
+        },
+      ],
+    },
+  },
 ];
