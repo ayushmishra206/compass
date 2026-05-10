@@ -4,6 +4,10 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
+      '@sqlite.org/sqlite-wasm': path.resolve(
+        __dirname,
+        './packages/db/node_modules/@sqlite.org/sqlite-wasm/dist/node.mjs',
+      ),
       '@compass/core': path.resolve(__dirname, './packages/core/src'),
       '@compass/runtime': path.resolve(__dirname, './packages/runtime/src'),
       '@compass/runtime/in-process': path.resolve(
