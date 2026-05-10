@@ -385,6 +385,13 @@ registry.register('brief.streak', async () => {
   return { days, lastDate };
 });
 
+// ── Ledger handlers ──────────────────────────────────────────────────────────
+
+registry.register('ledger.getMonthlySpend', async ({ monthStartIso }) => {
+  const repo = await getCostLedger();
+  return await repo.monthlySpend(monthStartIso);
+});
+
 // ── Pomodoro handlers ─────────────────────────────────────────────────────────
 
 registry.register('pomodoro.start', async ({ id, durationMin, theme }) => {
