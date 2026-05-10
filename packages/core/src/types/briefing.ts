@@ -111,3 +111,12 @@ export const AgentBriefingSchema = z.object({
   openedAt: z.string().optional(),
 });
 export type AgentBriefing = z.infer<typeof AgentBriefingSchema>;
+
+export const EodReflectionSchema = z.object({
+  wins: z.array(z.string()).max(3),
+  dropped: z.array(z.string()).max(3),
+  patterns: z.array(z.string()).max(2),
+  tomorrowOneThing: z.string(),
+  journalPrompt: z.string(),
+});
+export type EodReflection = z.infer<typeof EodReflectionSchema>;
