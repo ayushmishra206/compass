@@ -24,3 +24,4 @@ export * from './components/BrandMark.js';
 export * from './components/GlassCard.js';
 export * from './hooks/index.js';
 export * from './shell/index.js';
+export * from './primitives/index.js';

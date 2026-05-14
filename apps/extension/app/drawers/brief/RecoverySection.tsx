@@ -1,24 +1,4 @@
-import type { CSSProperties } from 'react';
-
-const labelStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-3)',
-  marginBottom: 10,
-};
-const noteStyle: CSSProperties = {
-  fontSize: 13,
-  color: 'var(--color-ink-2)',
-  marginBottom: 24,
-};
-const emptyStyle: CSSProperties = {
-  fontSize: 12,
-  color: 'var(--color-ink-3)',
-  fontStyle: 'italic',
-  marginBottom: 24,
-};
+import { Text } from '@compass/ui';
 
 export function RecoverySection({
   note,
@@ -28,18 +8,24 @@ export function RecoverySection({
   if (!note || !note.note) {
     return (
       <>
-        <div style={labelStyle}>Recovery</div>
-        <p style={emptyStyle}>Connect Fitbit/Whoop to surface recovery and sleep insights.</p>
+        <Text variant="mono" style={{ marginBottom: 10 }}>
+          Recovery
+        </Text>
+        <Text variant="body" tone="muted" italic style={{ fontSize: 12, marginBottom: 24 }}>
+          Connect Fitbit/Whoop to surface recovery and sleep insights.
+        </Text>
       </>
     );
   }
   return (
     <>
-      <div style={labelStyle}>Recovery</div>
-      <p style={noteStyle}>
+      <Text variant="mono" style={{ marginBottom: 10 }}>
+        Recovery
+      </Text>
+      <Text variant="serif-body" style={{ fontSize: 13, marginBottom: 24 }}>
         {note.note}
         {note.suggestBreak && ' (a short break would help)'}
-      </p>
+      </Text>
     </>
   );
 }

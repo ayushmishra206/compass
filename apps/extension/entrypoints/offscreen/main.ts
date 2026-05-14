@@ -34,7 +34,20 @@ import {
   type LlmRouter,
 } from '@compass/agents';
 
-void startDb();
+// sqlite-wasm's OPFS-backed OpfsDb requires SharedArrayBuffer (cross-origin
+// isolation) which is not available in a plain MV3 offscreen document. The
+// proper fix is to run sqlite-wasm in a dedicated worker via the bundled
+// sqlite3Worker1Promiser (tracked as a separate workstream). Until that
+// lands we swallow the rejection here so the failure does not show up as
+// "Uncaught (in promise)" in chrome://extensions — DB-backed routes
+// (brief / notes / pomodoro / cost-ledger) will still error individually
+// when called, but the surface-level red error goes away.
+void startDb().catch((err) => {
+  console.warn(
+    '[offscreen] sqlite-wasm DB init failed — DB-backed routes will be unavailable:',
+    err instanceof Error ? err.message : err,
+  );
+});
 
 const registry = createHandlerRegistry();
 

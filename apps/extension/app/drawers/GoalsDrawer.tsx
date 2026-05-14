@@ -1,57 +1,34 @@
+import { Pill, Row, Stack, Text } from '@compass/ui';
 import { MOCK } from '../mocks/index.js';
 
 export function GoalsDrawer() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <Stack gap={5}>
       {MOCK.goals.map((g) => (
         <div key={g.id}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--accent-soft)',
-              }}
-            >
+          <Row gap={3} align="baseline" style={{ marginBottom: 6 }}>
+            <Text variant="mono" tone="accent">
               {g.horizon} · {g.weeksRemaining}w
-            </span>
-            <span
-              style={{
-                marginLeft: 'auto',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-                color: 'var(--color-ink-4)',
-              }}
-            >
+            </Text>
+            <Text variant="mono" tone="dim" style={{ marginLeft: 'auto' }}>
               {Math.round(g.progress * 100)}%
-            </span>
-          </div>
-          <h3
-            style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: 22,
-              lineHeight: 1.2,
-              margin: '0 0 10px',
-              letterSpacing: '-0.02em',
-            }}
+            </Text>
+          </Row>
+          <Text
+            variant="title"
+            as="h3"
+            style={{ fontSize: 22, lineHeight: 1.2, margin: '0 0 10px' }}
           >
             {g.title}
-          </h3>
+          </Text>
           {g.why && (
-            <p
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 13.5,
-                lineHeight: 1.55,
-                color: 'var(--color-ink-2)',
-                fontStyle: 'italic',
-                margin: '0 0 12px',
-              }}
+            <Text
+              variant="serif-body"
+              italic
+              style={{ fontSize: 13.5, lineHeight: 1.55, margin: '0 0 12px' }}
             >
               &ldquo;{g.why}&rdquo;
-            </p>
+            </Text>
           )}
           <div
             style={{
@@ -85,61 +62,44 @@ export function GoalsDrawer() {
               {g.milestones.slice(0, 5).map((m) => {
                 const current = 'current' in m && m.current === true;
                 return (
-                  <div
+                  <Row
                     key={m.week}
+                    gap={3}
+                    align="center"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
                       padding: '9px 12px',
                       background: current ? 'var(--accent-wash)' : 'rgba(255,255,255,0.03)',
                       borderBottom: '1px solid var(--color-hair)',
                     }}
                   >
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 10,
-                        color: 'var(--color-ink-4)',
-                        flex: '0 0 50px',
-                      }}
-                    >
+                    <Text variant="mono" tone="dim" style={{ flex: '0 0 50px' }}>
                       WK {m.week}
-                    </span>
-                    <span
+                    </Text>
+                    <Text
+                      variant="body"
+                      as="span"
+                      tone={m.done && !current ? 'dim' : 'secondary'}
                       style={{
                         flex: 1,
                         fontSize: 12.5,
-                        color: m.done && !current ? 'var(--color-ink-4)' : 'var(--color-ink-2)',
                         textDecoration: m.done && !current ? 'line-through' : 'none',
                       }}
                     >
                       {m.title}
-                    </span>
-                    {m.done && !current && <span style={{ color: 'var(--accent-soft)' }}>✓</span>}
-                    {current && (
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 9,
-                          padding: '2px 6px',
-                          borderRadius: 3,
-                          background: 'var(--accent-wash)',
-                          color: 'var(--accent-soft)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.10em',
-                        }}
-                      >
-                        now
-                      </span>
+                    </Text>
+                    {m.done && !current && (
+                      <Text variant="body" as="span" tone="accent">
+                        ✓
+                      </Text>
                     )}
-                  </div>
+                    {current && <Pill tone="accent">now</Pill>}
+                  </Row>
                 );
               })}
             </div>
           )}
         </div>
       ))}
-    </div>
+    </Stack>
   );
 }
