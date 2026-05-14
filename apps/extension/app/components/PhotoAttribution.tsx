@@ -3,10 +3,15 @@ import { OverlayText, Row, Stack } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 
+// Sits above the ticker (which is the 80px bottom grid row in App.tsx) with
+// breathing room. `bottom: 20` put the card directly under the
+// Sleep/Recovery/RHR vitals and the layers z-fought; lifting to 96 (= 80px
+// ticker + 16px gap) keeps the bottom-left aesthetic without overlapping
+// the persistent vitals row.
 const containerStyle: CSSProperties = {
   position: 'fixed',
   left: 20,
-  bottom: 20,
+  bottom: 96,
   zIndex: 6,
   minWidth: 220,
   maxWidth: 280,
