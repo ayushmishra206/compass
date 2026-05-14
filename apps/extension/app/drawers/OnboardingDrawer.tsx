@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { Row, Stack, Text } from '@compass/ui';
 import { setActiveCredentials, enableEncryption } from '@compass/core';
 import type { ProviderId } from '@compass/core';
 import { useShell } from '../state/shell.js';
@@ -7,28 +8,8 @@ import { PassphraseSetForm } from '../components/credentials/PassphraseSetForm';
 
 type Step = 1 | 2 | 3;
 
-const titleStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 28,
-  margin: '0 0 8px',
-  letterSpacing: '-0.02em',
-  lineHeight: 1.15,
-};
-const monoStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--accent-soft)',
-};
-const proseStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 14,
-  lineHeight: 1.6,
-  color: 'var(--color-ink-2)',
-};
 const btnAccent: CSSProperties = {
-  padding: '10px 16px',
+  padding: '10px 18px',
   borderRadius: 999,
   background: 'var(--accent)',
   color: '#1a0e02',
@@ -38,7 +19,7 @@ const btnAccent: CSSProperties = {
   cursor: 'pointer',
 };
 const btnGhost: CSSProperties = {
-  padding: '10px 16px',
+  padding: '10px 18px',
   borderRadius: 999,
   background: 'rgba(255,255,255,0.06)',
   color: 'var(--color-ink)',
@@ -73,34 +54,40 @@ export function OnboardingDrawer() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={monoStyle}>Step {step} of 3</div>
+    <Stack gap={4}>
+      <Text variant="mono" tone="accent">
+        Step {step} of 3
+      </Text>
 
       {step === 1 && (
         <>
-          <h2 style={titleStyle}>Welcome to Compass</h2>
-          <p style={proseStyle}>
+          <Text variant="title" as="h2" style={{ fontSize: 28, lineHeight: 1.15 }}>
+            Welcome to Compass
+          </Text>
+          <Text variant="serif-body" style={{ fontSize: 14, lineHeight: 1.6 }}>
             A new-tab page that helps you start each day with intention. Brief, focus, notes, inbox
             — proactive without being noisy. Local-first; your data stays on this device.
-          </p>
-          <p style={proseStyle}>
+          </Text>
+          <Text variant="serif-body" style={{ fontSize: 14, lineHeight: 1.6 }}>
             To begin, connect a model. You bring your own key — Compass never proxies your requests.
-          </p>
-          <div style={{ display: 'flex', gap: 8 }}>
+          </Text>
+          <Row gap={2}>
             <button style={btnAccent} onClick={() => setStep(2)}>
               Connect a model
             </button>
-          </div>
+          </Row>
         </>
       )}
 
       {step === 2 && (
         <>
-          <h2 style={titleStyle}>Connect a model</h2>
-          <p style={proseStyle}>
+          <Text variant="title" as="h2" style={{ fontSize: 28, lineHeight: 1.15 }}>
+            Connect a model
+          </Text>
+          <Text variant="serif-body" style={{ fontSize: 14, lineHeight: 1.6 }}>
             Choose a provider and paste your API key. Compass calls the provider directly from your
             browser — keys never transit our servers.
-          </p>
+          </Text>
           <KeyValidator
             providers={['openrouter', 'openai', 'anthropic']}
             onValidated={handleValidated}
@@ -112,20 +99,22 @@ export function OnboardingDrawer() {
 
       {step === 3 && (
         <>
-          <h2 style={titleStyle}>Optional: encryption</h2>
-          <p style={proseStyle}>
+          <Text variant="title" as="h2" style={{ fontSize: 28, lineHeight: 1.15 }}>
+            Optional: encryption
+          </Text>
+          <Text variant="serif-body" style={{ fontSize: 14, lineHeight: 1.6 }}>
             You can lock your stored API keys with a passphrase so they&rsquo;re encrypted at rest.
             This step is optional — you can enable it later from Profile → Encryption.
-          </p>
+          </Text>
           {!showEncryptForm ? (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <Row gap={2}>
               <button style={btnAccent} onClick={() => setShowEncryptForm(true)}>
                 Encrypt with passphrase
               </button>
               <button style={btnGhost} onClick={byokSetupComplete}>
                 Skip for now
               </button>
-            </div>
+            </Row>
           ) : (
             <PassphraseSetForm
               onSet={handleEncrypt}
@@ -135,6 +124,6 @@ export function OnboardingDrawer() {
           )}
         </>
       )}
-    </div>
+    </Stack>
   );
 }
