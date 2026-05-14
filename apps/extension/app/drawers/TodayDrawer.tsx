@@ -73,11 +73,14 @@ export function TodayDrawer() {
         const height = toY(ev.end) - top;
         const isFocus = 'focus' in ev && ev.focus;
         return (
+          // Event bars start at left: 60 to align with the hour-line gutter so
+          // the mono hour labels (positioned at left: -50 from each line) stay
+          // readable instead of being overprinted by the event background.
           <div
             key={ev.id}
             style={{
               position: 'absolute',
-              left: 0,
+              left: 60,
               right: 8,
               top,
               height,

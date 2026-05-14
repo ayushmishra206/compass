@@ -5,13 +5,13 @@ import { MOCK } from '../mocks/index.js';
 
 const listBtnStyle: CSSProperties = {
   textAlign: 'left',
-  padding: '10px 12px',
+  padding: '12px 14px',
   borderRadius: 8,
   background: 'transparent',
-  marginBottom: 2,
+  marginBottom: 4,
   display: 'flex',
   flexDirection: 'column',
-  gap: 3,
+  gap: 6,
   color: 'var(--color-ink)',
 };
 
@@ -96,19 +96,19 @@ export function InboxDrawer() {
         ))}
       </Stack>
       {it && (
-        <div style={{ borderTop: '1px solid var(--color-hair)', paddingTop: 18 }}>
+        <div style={{ borderTop: '1px solid var(--color-hair)', marginTop: 12, paddingTop: 22 }}>
           <Text variant="title">{it.subject}</Text>
-          <Text variant="body" tone="muted" style={{ margin: '4px 0 14px', fontSize: 12 }}>
+          <Text variant="body" tone="muted" style={{ margin: '6px 0 18px', fontSize: 12 }}>
             {it.from} · {it.email}
           </Text>
-          <Text variant="serif-body" style={{ fontSize: 13.5, lineHeight: 1.65, marginBottom: 18 }}>
+          <Text variant="serif-body" style={{ fontSize: 13.5, lineHeight: 1.65, marginBottom: 22 }}>
             {it.snippet}
           </Text>
           {it.actions.length > 0 && (
             <Surface
               tier={1}
               radius="md"
-              padding="sm"
+              padding="md"
               style={{
                 background: 'var(--accent-wash)',
                 border: '1px solid rgba(255,255,255,0.12)',
@@ -119,7 +119,7 @@ export function InboxDrawer() {
               </Text>
               <Text
                 variant="heading"
-                style={{ fontSize: 16, lineHeight: 1.3, margin: '8px 0 12px' }}
+                style={{ fontSize: 16, lineHeight: 1.3, margin: '10px 0 16px' }}
               >
                 {it.actions[0].title}
               </Text>
