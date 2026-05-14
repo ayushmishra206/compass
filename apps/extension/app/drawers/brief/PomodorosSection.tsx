@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { Row, Text } from '@compass/ui';
 
 interface Pomodoro {
   startLocal: string;
@@ -7,51 +7,35 @@ interface Pomodoro {
   taskId?: string;
 }
 
-const labelStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-3)',
-  marginBottom: 10,
-};
-const rowStyle: CSSProperties = {
-  display: 'flex',
-  padding: '10px 0',
-  gap: 14,
-  fontSize: 13,
-  alignItems: 'center',
-};
-const emptyStyle: CSSProperties = {
-  fontSize: 12,
-  color: 'var(--color-ink-3)',
-  fontStyle: 'italic',
-  marginBottom: 24,
-};
-
 export function PomodorosSection({ items }: { items: Pomodoro[] | undefined }) {
   if (!items || items.length === 0) {
     return (
       <>
-        <div style={labelStyle}>Pomodoros</div>
-        <p style={emptyStyle}>
+        <Text variant="mono" style={{ marginBottom: 10 }}>
+          Pomodoros
+        </Text>
+        <Text variant="body" tone="muted" italic style={{ fontSize: 12, marginBottom: 24 }}>
           Suggested focus blocks land with Calendar in Phase 4. For now, start a Pomodoro from Focus
           drawer to track time.
-        </p>
+        </Text>
       </>
     );
   }
   return (
     <>
-      <div style={labelStyle}>Pomodoros</div>
+      <Text variant="mono" style={{ marginBottom: 10 }}>
+        Pomodoros
+      </Text>
       <div style={{ marginBottom: 24 }}>
         {items.map((p, i) => (
-          <div key={i} style={rowStyle}>
-            <span>
-              {p.startLocal} – {p.endLocal}
-            </span>
-            <span>{p.theme}</span>
-          </div>
+          <Row key={i} gap={3} align="center" style={{ padding: '10px 0' }}>
+            <Text variant="mono" tone="secondary" style={{ width: 90 }}>
+              {p.startLocal}–{p.endLocal}
+            </Text>
+            <Text variant="body" as="span" style={{ flex: 1, fontSize: 13 }}>
+              {p.theme}
+            </Text>
+          </Row>
         ))}
       </div>
     </>
