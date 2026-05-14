@@ -65,6 +65,7 @@ export function useScene(): SceneView {
   const weatherEnabled = useShell((s) => s.weatherEnabled);
   const pinnedScene = useShell((s) => s.pinnedScene);
   const sceneSalt = useShell((s) => s.sceneSalt);
+  const favoriteScenes = useShell((s) => s.favoriteScenes);
   const { coords } = useGeolocation({ enabled: weatherEnabled });
 
   const [manifest, setManifest] = useState<SceneManifest | null>(
@@ -169,10 +170,10 @@ export function useScene(): SceneView {
       const fakeNow = new Date(now);
       const hourMap = { dawn: 4, fog: 9, ocean: 13, alpine: 17, desert: 21 } as const;
       fakeNow.setHours(hourMap[pinnedScene]);
-      return pickScene(fakeNow, weather, manifest, seed);
+      return pickScene(fakeNow, weather, manifest, seed, favoriteScenes);
     }
-    return pickScene(now, weather, manifest, seed);
-  }, [manifest, weather, pinnedScene, tickMs, sceneSalt]);
+    return pickScene(now, weather, manifest, seed, favoriteScenes);
+  }, [manifest, weather, pinnedScene, tickMs, sceneSalt, favoriteScenes]);
 
   useEffect(() => {
     if (!picked) return;

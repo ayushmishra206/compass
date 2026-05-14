@@ -21,9 +21,13 @@ export function pickMoodByHour(h: number): Mood {
  * - filter manifest by mood
  * - if weather provided, narrow to scenes whose weather affinity includes it
  * - if narrowed subset is empty, fall back to full mood pool
- * - pick one via hashSeed(dateSeed + mood) % pool.length
+ * - if `favorites` is non-empty AND at least one favorite is in the pool,
+ *   bias ~70% of seeds toward favorites-in-pool; the remaining ~30% still
+ *   draws from the full pool so the picker keeps surfacing photos the user
+ *   has not yet hearted
+ * - otherwise pick via hashSeed(dateSeed + mood) % pool.length
  *
- * Same (date, mood, weather) inputs ALWAYS produce the same scene.
+ * Same (date, mood, weather, favorites) inputs ALWAYS produce the same scene.
  *
  * Throws if the manifest has no scenes for the picked mood — the manifest
  * is malformed and should be fixed at the source.
@@ -33,6 +37,7 @@ export function pickScene(
   weather: WxAffinity | null,
   manifest: SceneManifest,
   dateSeed: string,
+  favorites: readonly string[] = [],
 ): Scene {
   const mood = pickMoodByHour(now.getHours());
   const moodPool = manifest.scenes.filter((s) => s.mood === mood);
@@ -42,6 +47,16 @@ export function pickScene(
   const subset = weather ? moodPool.filter((s) => s.weather.includes(weather)) : moodPool;
   const pool = subset.length > 0 ? subset : moodPool;
   const seed = hashSeed(dateSeed + mood);
+
+  if (favorites.length > 0) {
+    const favoriteSet = new Set(favorites);
+    const favoritesInPool = pool.filter((s) => favoriteSet.has(s.sha256));
+    if (favoritesInPool.length > 0 && seed % 10 < 7) {
+      const favoritePick = favoritesInPool[seed % favoritesInPool.length];
+      if (favoritePick) return favoritePick;
+    }
+  }
+
   const scene = pool[seed % pool.length];
   if (!scene) {
     throw new Error(`scene picker logic broken: pool is empty after safety check`);

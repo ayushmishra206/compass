@@ -83,4 +83,44 @@ describe('pickScene', () => {
     expect(typeof a.id).toBe('string');
     expect(typeof b.id).toBe('string');
   });
+
+  it('biases the pick toward favorites when favorites are in the pool', () => {
+    const now = new Date(2026, 4, 3, 7, 0, 0); // dawn
+    // d1 + d2 are both dawn; favorite only d2
+    const favorites = ['sha-d2'];
+    // Sample across 200 dates to smooth out the deterministic bias
+    let d2Hits = 0;
+    let total = 0;
+    for (let i = 0; i < 200; i++) {
+      const seed = `2026-05-${String((i % 28) + 1).padStart(2, '0')}#${i}`;
+      const scene = pickScene(now, null, manifest, seed, favorites);
+      if (scene.id === 'd2') d2Hits += 1;
+      total += 1;
+    }
+    // Without bias the 50/50 split would land near 50%. With ~70% bias toward
+    // d2 we expect well above 50%.
+    expect(d2Hits / total).toBeGreaterThan(0.55);
+  });
+
+  it('still picks from the full pool when no favorite is present in the pool', () => {
+    const now = new Date(2026, 4, 3, 20, 0, 0); // desert; pool = [x1]
+    const favorites = ['sha-d1', 'sha-d2']; // dawn favorites, irrelevant here
+    const scene = pickScene(now, null, manifest, '2026-05-03', favorites);
+    expect(scene.id).toBe('x1');
+  });
+
+  it('is deterministic when favorites are stable', () => {
+    const now = new Date(2026, 4, 3, 7, 0, 0);
+    const favorites = ['sha-d1'];
+    const a = pickScene(now, null, manifest, '2026-05-03', favorites);
+    const b = pickScene(now, null, manifest, '2026-05-03', favorites);
+    expect(a.id).toBe(b.id);
+  });
+
+  it('default favorites=[] preserves the existing unbiased behavior', () => {
+    const now = new Date(2026, 4, 3, 13, 0, 0);
+    const without = pickScene(now, 'clear', manifest, '2026-05-03');
+    const withEmpty = pickScene(now, 'clear', manifest, '2026-05-03', []);
+    expect(without.id).toBe(withEmpty.id);
+  });
 });
