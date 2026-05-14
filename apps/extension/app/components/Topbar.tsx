@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { OverlayText, Pill, Row } from '@compass/ui';
+import { OverlayText, Pill } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 
@@ -37,6 +37,28 @@ const brandNameStyle: CSSProperties = {
   fontSize: 18,
   fontStyle: 'italic',
   letterSpacing: '-0.01em',
+};
+
+// Nav buttons are bare mono-uppercase text labels with a subtle hover,
+// not chip-shaped pills. The canonical mock uses unstyled <button> tags
+// inheriting topbar font; we keep mono uppercase for compactness but drop
+// the background + border so the row reads as a series of labels rather
+// than a row of chunky chips.
+const navStyle: CSSProperties = { display: 'flex', gap: 6, marginLeft: 20 };
+const navBtnStyle: CSSProperties = {
+  padding: '6px 8px',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 11,
+  fontWeight: 500,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  color: 'var(--color-ink-2)',
+  textShadow: 'var(--shadow-overlay-text)',
+  background: 'transparent',
+  border: 0,
+  borderRadius: 4,
+  cursor: 'pointer',
+  transition: 'color 120ms, background 120ms',
 };
 
 const rightStyle: CSSProperties = {
@@ -102,13 +124,13 @@ export function Topbar({ initials = 'AY' }: { initials?: string }) {
           {scene.label}
         </OverlayText>
       </div>
-      <Row gap={1} style={{ marginLeft: 20 }}>
+      <nav style={navStyle}>
         {TABS.map((t) => (
-          <Pill key={t.id} size="md" onClick={() => navClick(t.id)}>
+          <button key={t.id} style={navBtnStyle} onClick={() => navClick(t.id)}>
             {t.label}
-          </Pill>
+          </button>
         ))}
-      </Row>
+      </nav>
       <div style={rightStyle}>
         {encryptionEnabled && locked && (
           <Pill
