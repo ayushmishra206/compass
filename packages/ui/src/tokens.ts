@@ -41,6 +41,8 @@ export const SHADOWS = {
   sh1: '0 1px 4px rgba(0,0,0,0.35)',
   sh2: '0 8px 24px -8px rgba(0,0,0,0.5)',
   sh3: '0 30px 80px -20px rgba(0,0,0,0.7)',
+  overlayText: '0 2px 6px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 0, 0, 0.4)',
+  card: '0 8px 24px -8px rgba(0, 0, 0, 0.5)',
 } as const;
 
 export const FONTS = {
@@ -54,6 +56,16 @@ export const MOTION = {
   mid: 240,
   slow: 360,
   scenefade: 1200,
+  slideup: 600,
+} as const;
+
+export const SPACE = {
+  s1: 4,
+  s2: 8,
+  s3: 14,
+  s4: 20,
+  s5: 28,
+  s6: 40,
 } as const;
 
 export type AccentName = 'amber' | 'rose' | 'mint' | 'violet' | 'sky';

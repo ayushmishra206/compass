@@ -1,3 +1,4 @@
+import { Pill, Text } from '@compass/ui';
 import { MOCK } from '../mocks/index.js';
 
 const START_H = 8;
@@ -32,18 +33,20 @@ export function TodayDrawer() {
             height: 1,
           }}
         >
-          <span
+          <Text
+            variant="mono"
+            tone="dim"
+            as="span"
             style={{
               position: 'absolute',
               left: -50,
               top: -7,
-              fontFamily: 'var(--font-mono)',
               fontSize: 9,
-              color: 'var(--color-ink-4)',
+              letterSpacing: '0.08em',
             }}
           >
             {((START_H + i + 11) % 12) + 1} {START_H + i < 12 ? 'am' : 'pm'}
-          </span>
+          </Text>
         </div>
       ))}
       <div
@@ -56,31 +59,28 @@ export function TodayDrawer() {
           zIndex: 2,
         }}
       >
-        <span
-          style={{
-            position: 'absolute',
-            right: 8,
-            top: -14,
-            fontFamily: 'var(--font-mono)',
-            fontSize: 9,
-            color: 'var(--accent-soft)',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-          }}
+        <Text
+          variant="mono"
+          tone="accent"
+          as="span"
+          style={{ position: 'absolute', right: 8, top: -14, fontSize: 9 }}
         >
           now
-        </span>
+        </Text>
       </div>
       {MOCK.events.map((ev) => {
         const top = toY(ev.start);
         const height = toY(ev.end) - top;
         const isFocus = 'focus' in ev && ev.focus;
         return (
+          // Event bars start at left: 60 to align with the hour-line gutter so
+          // the mono hour labels (positioned at left: -50 from each line) stay
+          // readable instead of being overprinted by the event background.
           <div
             key={ev.id}
             style={{
               position: 'absolute',
-              left: 0,
+              left: 60,
               right: 8,
               top,
               height,
@@ -88,50 +88,29 @@ export function TodayDrawer() {
               borderRadius: 6,
               background: isFocus ? 'var(--accent-wash)' : 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.08)',
-              fontSize: 11.5,
               display: 'flex',
               alignItems: 'center',
               gap: 8,
               overflow: 'hidden',
             }}
           >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                flex: '0 0 auto',
-                fontSize: 9,
-                color: 'var(--color-ink-3)',
-              }}
-            >
+            <Text variant="mono" tone="muted" as="span" style={{ flex: '0 0 auto', fontSize: 9 }}>
               {ev.start}
-            </span>
-            <span
+            </Text>
+            <Text
+              variant="body"
+              as="span"
               style={{
                 flex: 1,
+                fontSize: 11.5,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               }}
             >
               {ev.summary}
-            </span>
-            {'prep' in ev && ev.prep && (
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
-                  padding: '2px 6px',
-                  borderRadius: 3,
-                  background: 'var(--accent-wash)',
-                  color: 'var(--accent-soft)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.10em',
-                }}
-              >
-                prep
-              </span>
-            )}
+            </Text>
+            {'prep' in ev && ev.prep && <Pill tone="accent">prep</Pill>}
           </div>
         );
       })}

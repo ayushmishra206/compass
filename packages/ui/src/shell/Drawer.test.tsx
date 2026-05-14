@@ -49,4 +49,24 @@ describe('Drawer', () => {
     );
     expect(container.querySelector('.drawer.on')).toBeFalsy();
   });
+
+  it('floats the close button right when no meta is supplied', () => {
+    const { container } = render(
+      <Drawer open kind="day" title="Today" onClose={() => {}}>
+        <p />
+      </Drawer>,
+    );
+    const close = container.querySelector('[data-testid="drawer-close"]') as HTMLElement;
+    expect(close.style.marginLeft).toBe('auto');
+  });
+
+  it('keeps the close button hugging meta when meta is supplied', () => {
+    const { container } = render(
+      <Drawer open kind="brief" title="Morning brief" meta="claude · 4.2s" onClose={() => {}}>
+        <p />
+      </Drawer>,
+    );
+    const close = container.querySelector('[data-testid="drawer-close"]') as HTMLElement;
+    expect(close.style.marginLeft).not.toBe('auto');
+  });
 });

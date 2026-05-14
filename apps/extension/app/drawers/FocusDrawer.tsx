@@ -1,33 +1,48 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { Pill, Row, Stack, Text } from '@compass/ui';
 import { rpc } from '@compass/runtime';
 import { MOCK } from '../mocks/index.js';
 
 const DURATION_MIN = 25;
 const DURATION_SEC = DURATION_MIN * 60;
 
+const btnAccent: CSSProperties = {
+  padding: '8px 14px',
+  fontSize: 12,
+  borderRadius: 999,
+  background: 'var(--accent)',
+  color: '#1a0e02',
+  border: 0,
+};
+const btnGhost: CSSProperties = {
+  padding: '8px 14px',
+  fontSize: 12,
+  borderRadius: 999,
+  background: 'rgba(255,255,255,0.06)',
+  color: 'var(--color-ink)',
+  border: '1px solid rgba(255,255,255,0.08)',
+};
+
 export function FocusDrawer() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [theme, setTheme] = useState('');
   const [running, setRunning] = useState(false);
   const [seconds, setSeconds] = useState(DURATION_SEC);
-  // Ref mirror of activeId so async callbacks don't close over stale state
   const activeIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
 
-  // Countdown tick
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, [running]);
 
-  // Auto-complete when countdown reaches zero
   useEffect(() => {
     if (!running || seconds > 0) return;
-    // Countdown ended naturally
     const id = activeIdRef.current;
     setRunning(false);
     setActiveId(null);
@@ -69,23 +84,16 @@ export function FocusDrawer() {
     <div
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0' }}
     >
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'var(--accent-soft)',
-          marginBottom: 14,
-        }}
-      >
+      <Text variant="mono" tone="accent" style={{ marginBottom: 14, letterSpacing: '0.14em' }}>
         ● {DURATION_MIN}-min Pomodoro{theme ? ` · ${theme}` : ''}
-      </div>
-      <div
+      </Text>
+      <Text
+        variant="display"
+        as="span"
         style={{
-          fontFamily: 'var(--font-serif)',
           fontSize: 120,
           lineHeight: 1,
+          fontStyle: 'normal',
           fontWeight: 300,
           letterSpacing: '-0.04em',
           fontVariantNumeric: 'tabular-nums',
@@ -93,7 +101,7 @@ export function FocusDrawer() {
         }}
       >
         {String(mm).padStart(2, '0')}:{String(ss).padStart(2, '0')}
-      </div>
+      </Text>
 
       {!isActive && (
         <input
@@ -117,58 +125,28 @@ export function FocusDrawer() {
         />
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+      <Row gap={2} style={{ marginBottom: 32 }}>
         {!isActive ? (
-          <button
-            onClick={startPomo}
-            style={{
-              padding: '8px 14px',
-              fontSize: 12,
-              borderRadius: 999,
-              background: 'var(--accent)',
-              color: '#1a0e02',
-              border: 0,
-            }}
-          >
+          <button onClick={startPomo} style={btnAccent}>
             ▶ Start
           </button>
         ) : (
           <>
-            <button
-              onClick={() => setRunning((r) => !r)}
-              style={{
-                padding: '8px 14px',
-                fontSize: 12,
-                borderRadius: 999,
-                background: 'var(--accent)',
-                color: '#1a0e02',
-                border: 0,
-              }}
-            >
+            <button onClick={() => setRunning((r) => !r)} style={btnAccent}>
               {running ? '❚❚ Pause' : '▶ Resume'}
             </button>
-            <button
-              onClick={onAbandon}
-              style={{
-                padding: '8px 14px',
-                fontSize: 12,
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.06)',
-                color: 'var(--color-ink)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
-            >
+            <button onClick={onAbandon} style={btnGhost}>
               Stop
             </button>
           </>
         )}
-      </div>
-      <p
+      </Row>
+      <Text
+        variant="serif-body"
+        italic
+        tone="muted"
         style={{
-          fontFamily: 'var(--font-serif)',
           fontSize: 14,
-          fontStyle: 'italic',
-          color: 'var(--color-ink-3)',
           textAlign: 'center',
           maxWidth: 380,
           margin: '0 0 28px',
@@ -176,21 +154,10 @@ export function FocusDrawer() {
         }}
       >
         &ldquo;{MOCK.brief.quotedGoal}&rdquo;
-      </p>
+      </Text>
 
-      <div style={{ width: '100%' }}>
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--color-ink-3)',
-            marginBottom: 10,
-          }}
-        >
-          Soundscape
-        </div>
+      <Stack gap={3} style={{ width: '100%' }}>
+        <Text variant="mono">Soundscape</Text>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {MOCK.soundscapes.map((s) => (
             <button
@@ -207,80 +174,51 @@ export function FocusDrawer() {
                 color: 'var(--color-ink)',
               }}
             >
-              <span style={{ flex: 1, fontSize: 12 }}>{s.name}</span>
-              {s.loved && <span style={{ color: 'var(--accent-soft)' }}>♥</span>}
+              <Text variant="body" as="span" style={{ flex: 1, fontSize: 12 }}>
+                {s.name}
+              </Text>
+              {s.loved && (
+                <Text variant="body" as="span" tone="accent">
+                  ♥
+                </Text>
+              )}
             </button>
           ))}
         </div>
-      </div>
+      </Stack>
 
-      <div style={{ width: '100%', marginTop: 24 }}>
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--color-ink-3)',
-            marginBottom: 10,
-          }}
-        >
-          Active blocks
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <Stack gap={3} style={{ width: '100%', marginTop: 24 }}>
+        <Text variant="mono">Active blocks</Text>
+        <Stack gap={2}>
           {MOCK.blockRules.map((r) => (
-            <div
+            <Row
               key={r.id}
+              gap={3}
+              align="center"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                fontSize: 12,
                 padding: '7px 10px',
                 background: 'rgba(255,255,255,0.03)',
                 borderRadius: 6,
               }}
             >
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
-                  padding: '2px 6px',
-                  borderRadius: 3,
-                  background: r.mode === 'hard' ? 'rgba(220,80,60,0.18)' : 'var(--accent-wash)',
-                  color: r.mode === 'hard' ? 'oklch(0.82 0.13 30)' : 'var(--accent-soft)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.10em',
-                }}
-              >
-                {r.mode}
-              </span>
-              <span
-                style={{
-                  flex: 1,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  color: 'var(--color-ink-2)',
-                }}
+              <Pill tone={r.mode === 'hard' ? 'red' : 'accent'}>{r.mode}</Pill>
+              <Text
+                variant="body"
+                as="span"
+                tone="secondary"
+                style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11 }}
               >
                 {r.pattern}
-              </span>
+              </Text>
               {r.source === 'adaptive' && (
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
-                    color: 'var(--color-ink-4)',
-                  }}
-                >
+                <Text variant="mono" tone="dim" as="span" style={{ fontSize: 9 }}>
                   adaptive
-                </span>
+                </Text>
               )}
-            </div>
+            </Row>
           ))}
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     </div>
   );
 }

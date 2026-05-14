@@ -37,6 +37,38 @@
   --motion-mid: 240ms;
   --motion-slow: 360ms;
   --motion-scenefade: 1200ms;
+  --motion-slideup: 600ms;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 14px;
+  --space-4: 20px;
+  --space-5: 28px;
+  --space-6: 40px;
+
+  --shadow-overlay-text: 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+
+  --scrim-top: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.45) 6%,
+    rgba(0, 0, 0, 0) 14%
+  );
+  --scrim-bottom: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.65) 12%,
+    rgba(0, 0, 0, 0.3) 32%,
+    rgba(0, 0, 0, 0) 50%
+  );
+  --scrim-right: linear-gradient(
+    270deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.2) 28%,
+    rgba(0, 0, 0, 0) 50%
+  );
+  --scrim-ambient: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.18) 100%);
 }
 
 :root {
@@ -119,4 +151,32 @@ textarea {
   100% {
     transform: scale(1.12) translate(-1.5%, -1%);
   }
+}
+
+@keyframes compass-slideup {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.compass-slideup {
+  animation: compass-slideup var(--motion-slideup) ease both;
+}
+
+@keyframes compass-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.compass-fade {
+  animation: compass-fade var(--motion-mid) ease;
 }
