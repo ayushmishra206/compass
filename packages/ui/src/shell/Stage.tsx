@@ -16,7 +16,10 @@ const imgStyle: CSSProperties = {
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   transform: 'scale(1.05)',
-  animation: 'compass-ken 24s ease-in-out infinite alternate',
+  // 24s symmetric keyframe (zoom in for first half, zoom out for second).
+  // Drop `alternate` because the keyframe itself loops back to its start,
+  // so plain `infinite` produces a seamless zoom-in/zoom-out cycle.
+  animation: 'compass-ken 24s ease-in-out infinite',
   transition: 'opacity 1200ms ease',
 };
 
