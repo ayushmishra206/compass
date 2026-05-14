@@ -1,3 +1,8 @@
+// Ambient declaration for the `?url` Vite suffix lives in wasm-url.d.ts —
+// must be a script-mode .d.ts (no imports/exports) for the wildcard form to
+// be valid. Triple-slash ref forces every consumer's typechecker to load it.
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- ambient module decl can't be inlined inside a module file
+/// <reference path="./wasm-url.d.ts" />
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
 
 export type Db = Database;
