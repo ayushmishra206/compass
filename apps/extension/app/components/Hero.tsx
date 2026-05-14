@@ -35,12 +35,17 @@ const metaStyle: CSSProperties = {
   paddingBottom: 8,
   maxWidth: 540,
 };
+// Hero text floats on the photo per the design reference — Stage's bottom
+// scrim handles most contrast; these shadows are the safety net for bright photos.
+const heroShadow = '0 2px 6px rgba(0,0,0,0.6), 0 0 24px rgba(0,0,0,0.4)';
+
 const monoStyle: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 10,
-  letterSpacing: '0.12em',
+  letterSpacing: '0.14em',
   textTransform: 'uppercase',
-  color: 'var(--color-ink-3)',
+  color: 'var(--color-ink-2)',
+  textShadow: heroShadow,
 };
 const greetingStyle: CSSProperties = {
   fontFamily: 'var(--font-serif)',
@@ -50,6 +55,8 @@ const greetingStyle: CSSProperties = {
   fontWeight: 300,
   fontStyle: 'italic',
   margin: 0,
+  color: 'var(--color-ink)',
+  textShadow: heroShadow,
 };
 const whereStyle: CSSProperties = {
   fontFamily: 'var(--font-serif)',
@@ -58,6 +65,7 @@ const whereStyle: CSSProperties = {
   color: 'var(--color-ink-2)',
   margin: 0,
   maxWidth: 480,
+  textShadow: heroShadow,
 };
 const cardWrapStyle: CSSProperties = {
   padding: '24px 28px',
@@ -84,6 +92,9 @@ const titleStyle: CSSProperties = {
   letterSpacing: '-0.02em',
   margin: 0,
   flex: 1,
+  // Explicit so the h2 doesn't pick up any cascading accent color from the card.
+  color: 'var(--color-ink)',
+  fontWeight: 500,
 };
 const whyStyle: CSSProperties = {
   fontSize: 13,

@@ -23,8 +23,21 @@ const imgStyle: CSSProperties = {
 const veilStyle: CSSProperties = {
   position: 'absolute',
   inset: 0,
-  background:
-    'radial-gradient(120% 80% at 30% 0%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.35) 50%, rgba(8,6,4,0.85) 100%), linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)',
+  // Layered scrim that guarantees readable contrast for the topbar (top ~80px),
+  // hero/ticker (bottom ~30%), and brief card (right side) regardless of which
+  // Unsplash photo lands behind. Without these explicit dark bands the design
+  // depended on the photo itself being uniformly dark; bright shots like
+  // open-water "ocean" scenes left small UI text sub-2:1 against the photo.
+  background: [
+    // Top scrim for the topbar
+    'linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.45) 6%, rgba(0,0,0,0) 14%)',
+    // Bottom scrim for hero text + ticker
+    'linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.65) 12%, rgba(0,0,0,0.3) 32%, rgba(0,0,0,0) 50%)',
+    // Right-side scrim under the brief card area
+    'linear-gradient(270deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 28%, rgba(0,0,0,0) 50%)',
+    // Soft ambient darkening across the full image so mid-tones don't clash
+    'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.18) 100%)',
+  ].join(', '),
 };
 
 const grainStyle: CSSProperties = {

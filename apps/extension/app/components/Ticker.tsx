@@ -15,30 +15,38 @@ const tickerStyle: CSSProperties = {
   alignItems: 'center',
   gap: 28,
   padding: '14px 56px',
-  borderTop: '1px solid var(--color-hair)',
-  background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.4))',
   zIndex: 8,
   position: 'relative',
 };
+
+// Same shadow as Topbar — ticker text floats on the photo per the design
+// reference; Stage's bottom scrim does most of the work, this is the safety net.
+const textShadow = '0 1px 2px rgba(0,0,0,0.55), 0 0 12px rgba(0,0,0,0.35)';
+
 const vitalsStyle: CSSProperties = { display: 'flex', gap: 28 };
 const vitalStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 };
 const lblStyle: CSSProperties = {
   fontFamily: 'var(--font-mono)',
-  fontSize: 9,
+  fontSize: 10,
   letterSpacing: '0.16em',
-  color: 'var(--color-ink-4)',
+  textTransform: 'uppercase',
+  color: 'var(--color-ink-3)',
+  textShadow,
 };
 const valStyle: CSSProperties = {
   fontFamily: 'var(--font-serif)',
-  fontSize: 20,
+  fontSize: 22,
   fontWeight: 400,
   lineHeight: 1,
   letterSpacing: '-0.02em',
+  color: 'var(--color-ink)',
+  textShadow,
 };
 const subStyle: CSSProperties = {
   fontSize: 10,
-  color: 'var(--color-ink-3)',
+  color: 'var(--color-ink-2)',
   fontFamily: 'var(--font-mono)',
+  textShadow,
 };
 const centerStyle: CSSProperties = {
   fontFamily: 'var(--font-serif)',
@@ -47,6 +55,7 @@ const centerStyle: CSSProperties = {
   color: 'var(--color-ink-2)',
   textAlign: 'center',
   maxWidth: 480,
+  textShadow,
 };
 const rightStyle: CSSProperties = {
   display: 'flex',
