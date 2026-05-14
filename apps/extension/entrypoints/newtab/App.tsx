@@ -59,7 +59,10 @@ export function App() {
   // entirely in useGlobalShortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      // e.key honours Shift / Caps Lock — fold to lowercase so Ctrl+Shift+K,
+      // Caps-Lock + Ctrl+K, etc. still open the palette. Windows users hit
+      // Ctrl, Mac users hit Cmd; both feed through (metaKey || ctrlKey).
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         cmdkHotkey();
       }

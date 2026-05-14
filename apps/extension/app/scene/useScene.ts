@@ -20,6 +20,7 @@ interface SceneView {
 
 const MANIFEST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 90 * 60 * 1000;
+const LAST_IMAGE_KEY = 'compass.scenes.lastImageUrl';
 
 function readCached<T>(key: string): { value: T; ts: number } | null {
   const raw = localStorage.getItem(key);
@@ -39,6 +40,24 @@ function dateSeed(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// The compass-assets manifest currently bakes `w=2400&q=80` into every Unsplash
+// URL. On high-DPI displays that gets visibly soft; bump to w=2880 / q=90 and
+// let Unsplash auto-format negotiate WebP for Chrome. Until the upstream
+// manifest is regenerated, transform on the client.
+function upgradeUnsplashUrl(url: string): string {
+  if (!url.includes('images.unsplash.com')) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('w', '2880');
+    u.searchParams.set('q', '90');
+    u.searchParams.set('auto', 'format');
+    u.searchParams.set('fit', 'max');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function useScene(): SceneView {
   const weatherEnabled = useShell((s) => s.weatherEnabled);
   const pinnedScene = useShell((s) => s.pinnedScene);
@@ -50,7 +69,12 @@ export function useScene(): SceneView {
   const [weather, setWeather] = useState<WxAffinity | null>(
     () => readCached<{ affinity: WxAffinity }>('compass.weather.cache')?.value?.affinity ?? null,
   );
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  // Seed from the last successful render. The browser HTTP cache almost
+  // certainly still has the bytes, so the user sees a photo on first paint
+  // instead of staring at --color-bg while the offscreen RPC roundtrips.
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    () => localStorage.getItem(LAST_IMAGE_KEY) ?? null,
+  );
   const [tickMs, setTickMs] = useState(() => Date.now());
   const lastShaRef = useRef<string | null>(null);
 
@@ -147,9 +171,16 @@ export function useScene(): SceneView {
     if (!picked) return;
     if (lastShaRef.current === picked.sha256) return;
     lastShaRef.current = picked.sha256;
-    void rpc('scenes.fetchPhoto', { url: picked.url, sha256: picked.sha256 }).then((res) =>
-      setImageUrl(res.blobUrl),
-    );
+    const highQualityUrl = upgradeUnsplashUrl(picked.url);
+    // Paint immediately from the CDN URL — eliminates the black flash that
+    // was occurring while the offscreen RPC fetched + cached the blob.
+    setImageUrl(highQualityUrl);
+    localStorage.setItem(LAST_IMAGE_KEY, highQualityUrl);
+    // Warm the OPFS cache in the background so offline / re-open is instant.
+    // Failure here does not regress visual quality — the CDN URL stays live.
+    void rpc('scenes.fetchPhoto', { url: highQualityUrl, sha256: picked.sha256 })
+      .then((res) => setImageUrl(res.blobUrl))
+      .catch(() => {});
   }, [picked?.sha256]);
 
   return {
