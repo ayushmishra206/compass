@@ -99,10 +99,15 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Honor user preference: collapse repeating animations to a single cycle and
+     make transitions instantaneous. Don't zero `animation-duration` — `infinite
+     alternate` keyframes (e.g. Stage compass-ken) would strobe at thousands of
+     cycles per second. Letting them play once and stop on the final keyframe
+     yields a calm, slow zoom that ends in a static frame. */
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }
