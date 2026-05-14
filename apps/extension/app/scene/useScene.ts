@@ -16,6 +16,9 @@ interface SceneView {
   photographer: string;
   attribution: string;
   mood: ReturnType<typeof pickMoodByHour>;
+  sha256: string | null;
+  /** Direct Unsplash CDN URL for the photo (not the OPFS Blob URL). */
+  sourceUrl: string | null;
 }
 
 const MANIFEST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -61,6 +64,7 @@ function upgradeUnsplashUrl(url: string): string {
 export function useScene(): SceneView {
   const weatherEnabled = useShell((s) => s.weatherEnabled);
   const pinnedScene = useShell((s) => s.pinnedScene);
+  const sceneSalt = useShell((s) => s.sceneSalt);
   const { coords } = useGeolocation({ enabled: weatherEnabled });
 
   const [manifest, setManifest] = useState<SceneManifest | null>(
@@ -158,14 +162,17 @@ export function useScene(): SceneView {
   const picked: Scene | null = useMemo(() => {
     if (!manifest) return null;
     const now = new Date(tickMs);
+    // sceneSalt is appended to the deterministic date seed so successive
+    // "skip" presses cycle through different photos within the same mood pool.
+    const seed = `${dateSeed(now)}#${sceneSalt}`;
     if (pinnedScene) {
       const fakeNow = new Date(now);
       const hourMap = { dawn: 4, fog: 9, ocean: 13, alpine: 17, desert: 21 } as const;
       fakeNow.setHours(hourMap[pinnedScene]);
-      return pickScene(fakeNow, weather, manifest, dateSeed(now));
+      return pickScene(fakeNow, weather, manifest, seed);
     }
-    return pickScene(now, weather, manifest, dateSeed(now));
-  }, [manifest, weather, pinnedScene, tickMs]);
+    return pickScene(now, weather, manifest, seed);
+  }, [manifest, weather, pinnedScene, tickMs, sceneSalt]);
 
   useEffect(() => {
     if (!picked) return;
@@ -189,5 +196,7 @@ export function useScene(): SceneView {
     photographer: picked?.photographer ?? '',
     attribution: picked?.attribution ?? '',
     mood: picked?.mood ?? pickMoodByHour(new Date().getHours()),
+    sha256: picked?.sha256 ?? null,
+    sourceUrl: picked?.url ?? null,
   };
 }
