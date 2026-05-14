@@ -101,22 +101,36 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   /* Honor user preference: collapse repeating animations to a single cycle and
      make transitions instantaneous. Don't zero `animation-duration` — `infinite
-     alternate` keyframes (e.g. Stage compass-ken) would strobe at thousands of
-     cycles per second. Letting them play once and stop on the final keyframe
-     yields a calm, slow zoom that ends in a static frame. */
+     alternate` keyframes would strobe at thousands of cycles per second. */
   *,
   *::before,
   *::after {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+
+  /* Exception: the Stage Ken Burns zoom is calm by design (24s symmetric
+     keyframe). The user reported the auto-disable looked like a hard
+     freeze; keep it looping infinitely so the photo continues to breathe
+     even under prefers-reduced-motion. */
+  .stage-img {
+    animation-iteration-count: infinite !important;
+  }
 }
 
+/* True zoom-in / zoom-out loop: starts at scale 1.04, peaks at scale 1.12
+   at the midpoint, returns to scale 1.04 at the end. No `alternate` needed
+   because the keyframe is itself symmetric, so the animation can run on
+   `infinite` without the jump-back-to-start clunk that the previous
+   asymmetric 0→100 keyframe produced. */
 @keyframes compass-ken {
   0% {
     transform: scale(1.04) translate(0, 0);
   }
-  100% {
+  50% {
     transform: scale(1.12) translate(-1.5%, -1%);
+  }
+  100% {
+    transform: scale(1.04) translate(0, 0);
   }
 }
