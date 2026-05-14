@@ -44,26 +44,28 @@ const cardWrapStyle: CSSProperties = {
 const btnAccent: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 6,
-  padding: '8px 14px',
+  gap: 8,
+  padding: '10px 18px',
   borderRadius: 999,
-  fontSize: 12,
+  fontSize: 12.5,
   fontWeight: 500,
   background: 'var(--accent)',
   color: '#1a0e02',
   border: 0,
+  cursor: 'pointer',
 };
 const btnGhost: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 6,
-  padding: '8px 14px',
+  gap: 8,
+  padding: '10px 18px',
   borderRadius: 999,
-  fontSize: 12,
+  fontSize: 12.5,
   fontWeight: 500,
   background: 'rgba(255,255,255,0.06)',
   color: 'var(--color-ink)',
   border: '1px solid rgba(255,255,255,0.08)',
+  cursor: 'pointer',
 };
 
 export function Hero() {
