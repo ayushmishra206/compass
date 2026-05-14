@@ -61,37 +61,12 @@ export function useScene(): SceneView {
       setManifest(cached.value);
       return;
     }
-    let cancelled = false;
-    // The first new tab after a cold extension start can race the offscreen-doc
-    // creation: the SW receives the rpc broadcast and triggers ensureHeavyDoc,
-    // but the offscreen handler isn't registered yet when our message arrives,
-    // so the message is dropped silently. Retry a few times with backoff so the
-    // user doesn't have to manually reload the new tab.
-    const fetchManifest = async () => {
-      const delaysMs = [0, 800, 1600, 3200];
-      for (const delay of delaysMs) {
-        if (cancelled) return;
-        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
-        try {
-          const res = await Promise.race([
-            rpc('scenes.getManifest', {}),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('rpc timeout')), 4000),
-            ),
-          ]);
-          if (cancelled) return;
-          setManifest(res.manifest);
-          writeCached('compass.scenes.manifest', res.manifest);
-          return;
-        } catch {
-          // fall through to next retry
-        }
-      }
-    };
-    void fetchManifest();
-    return () => {
-      cancelled = true;
-    };
+    // rpc() awaits the heavy.wakeup handshake internally, so this is safe
+    // even on a cold extension start when the offscreen doc isn't alive yet.
+    void rpc('scenes.getManifest', {}).then((res) => {
+      setManifest(res.manifest);
+      writeCached('compass.scenes.manifest', res.manifest);
+    });
   }, []);
 
   useEffect(() => {

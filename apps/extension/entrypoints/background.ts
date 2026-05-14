@@ -5,6 +5,14 @@ export default defineBackground(() => {
   console.log('Compass service worker online');
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    // Cold-start handshake. The new tab fires this before any rpc so it can
+    // await offscreen creation; otherwise rpc.request broadcasts can arrive
+    // before the offscreen handler is registered and silently disappear,
+    // leaving Stage / brief / etc. blank until manual reload.
+    if (msg?.kind === 'heavy.wakeup') {
+      void ensureHeavyDoc().then(() => sendResponse({ ready: true as const }));
+      return true; // async response
+    }
     if (msg?.kind === 'rpc.request' && msg?.route === 'alarms.refresh') {
       void ensureAlarms().then(() => sendResponse({ ok: true }));
       return true; // async response
