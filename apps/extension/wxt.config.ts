@@ -10,11 +10,12 @@ export default defineConfig({
         '@app': new URL('./app', import.meta.url).pathname,
       },
     },
-    build: {
-      rollupOptions: {
-        external: ['sqlite-vec'],
-      },
+    optimizeDeps: {
+      // Required by @sqlite.org/sqlite-wasm — Emscripten output uses dynamic
+      // imports that break under Vite's pre-bundling.
+      exclude: ['@sqlite.org/sqlite-wasm'],
     },
+    assetsInclude: ['**/*.wasm'],
   }),
   manifest: {
     name: 'Compass',
@@ -22,5 +23,10 @@ export default defineConfig({
     permissions: ['storage', 'alarms', 'offscreen'],
     chrome_url_overrides: { newtab: 'newtab.html' },
     action: { default_title: 'Compass' },
+    // MV3 default CSP blocks WebAssembly compilation. sqlite-wasm needs
+    // wasm-unsafe-eval to instantiate sqlite3.wasm.
+    content_security_policy: {
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+    },
   },
 });
