@@ -54,6 +54,22 @@ export function App() {
       });
   }, []);
 
+  // Suppress the known sqlite-wasm OPFS rejection so it does not surface as
+  // "Uncaught (in promise)" in chrome://extensions. The underlying issue
+  // (sqlite-wasm needs a dedicated worker for FileSystemSyncAccessHandle)
+  // is its own workstream — until then, DB-backed routes error per-call
+  // and we silence only this exact pattern at the window level.
+  useEffect(() => {
+    const onRejection = (e: PromiseRejectionEvent) => {
+      const msg = e.reason instanceof Error ? e.reason.message : String(e.reason);
+      if (msg.includes('sqlite-wasm OPFS not available')) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => window.removeEventListener('unhandledrejection', onRejection);
+  }, []);
+
   // Global hotkeys (⌘K / Esc) registered redundantly here so they work even
   // before useGlobalShortcuts mounts; chord-style drawer shortcuts live
   // entirely in useGlobalShortcuts.
