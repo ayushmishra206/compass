@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { OverlayText, Pill, Row } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 
@@ -20,11 +21,6 @@ const barStyle: CSSProperties = {
   zIndex: 10,
 };
 
-// Defense-in-depth text shadow for the topbar — design floats labels directly
-// on the photo (no glass), so the Stage's top scrim + this shadow are what
-// guarantee 4.5:1 contrast against arbitrary Unsplash photos.
-const textShadow = '0 1px 2px rgba(0,0,0,0.55), 0 0 12px rgba(0,0,0,0.35)';
-
 const brandStyle: CSSProperties = { display: 'flex', alignItems: 'baseline', gap: 10 };
 const markStyle: CSSProperties = {
   width: 24,
@@ -34,37 +30,15 @@ const markStyle: CSSProperties = {
     'conic-gradient(from 200deg, var(--accent-soft), oklch(0.5 0.13 25), var(--accent-soft))',
   position: 'relative',
 };
-const nameStyle: CSSProperties = {
+// Brand wordmark uses italic serif at 18px; keeps its bespoke shape but
+// inherits OverlayText's canonical text-shadow recipe.
+const brandNameStyle: CSSProperties = {
   fontFamily: 'var(--font-serif)',
   fontSize: 18,
   fontStyle: 'italic',
   letterSpacing: '-0.01em',
-  color: 'var(--color-ink)',
-  textShadow,
 };
-const monoStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-2)',
-  textShadow,
-};
-const navStyle: CSSProperties = { display: 'flex', gap: 2, marginLeft: 20 };
-const pillStyle: CSSProperties = {
-  padding: '6px 12px',
-  fontFamily: 'var(--font-mono)',
-  // Bumped from 10px and from --color-ink-3 (0.55 alpha) so the labels meet
-  // ≈4.5:1 contrast against the Stage top scrim regardless of underlying photo.
-  fontSize: 11,
-  fontWeight: 500,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-2)',
-  textShadow,
-  borderRadius: 999,
-  transition: 'color 120ms, background 120ms',
-};
+
 const rightStyle: CSSProperties = {
   marginLeft: 'auto',
   display: 'flex',
@@ -109,46 +83,43 @@ export function Topbar({ initials = 'AY' }: { initials?: string }) {
   const navClick = useShell((s) => s.navClick);
   const cmdkHotkey = useShell((s) => s.cmdkHotkey);
   const avatarClick = useShell((s) => s.avatarClick);
+  const encryptionEnabled = useShell((s) => s.encryptionEnabled);
+  const locked = useShell((s) => s.locked);
   const scene = useScene();
 
   return (
-    <header style={barStyle}>
+    <header style={barStyle} className="compass-slideup">
       <div style={brandStyle}>
         <div style={markStyle} aria-hidden />
-        <div style={nameStyle}>Compass</div>
-        <div style={{ ...monoStyle, marginLeft: 14 }}>{scene.label}</div>
+        <OverlayText as="span" style={brandNameStyle}>
+          Compass
+        </OverlayText>
+        <OverlayText
+          variant="mono"
+          tone="secondary"
+          style={{ marginLeft: 14, fontSize: 11, letterSpacing: '0.14em' }}
+        >
+          {scene.label}
+        </OverlayText>
       </div>
-      <nav style={navStyle}>
+      <Row gap={1} style={{ marginLeft: 20 }}>
         {TABS.map((t) => (
-          <button key={t.id} style={pillStyle} onClick={() => navClick(t.id)}>
+          <Pill key={t.id} size="md" onClick={() => navClick(t.id)}>
             {t.label}
-          </button>
+          </Pill>
         ))}
-      </nav>
+      </Row>
       <div style={rightStyle}>
-        {useShell((s) => s.encryptionEnabled && s.locked) && (
-          <button
-            type="button"
+        {encryptionEnabled && locked && (
+          <Pill
+            tone="accent"
+            size="md"
             aria-label="Credentials locked. Click to unlock."
             onClick={() => useShell.getState().requestUnlock()}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              borderRadius: 999,
-              border: '1px solid var(--accent-soft)',
-              background: 'rgba(255,255,255,0.04)',
-              color: 'var(--color-ink-2)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}
+            leading={<span aria-hidden="true">🔒</span>}
           >
-            <span aria-hidden="true">🔒</span> Locked
-          </button>
+            Locked
+          </Pill>
         )}
         <button style={cmdkBtnStyle} onClick={cmdkHotkey} aria-label="Open command palette">
           <span style={{ flex: 1, textAlign: 'left' }}>Ask Compass…</span>

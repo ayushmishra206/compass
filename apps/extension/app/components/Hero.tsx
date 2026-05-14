@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { GlassCard } from '@compass/ui';
+import { GlassCard, OverlayText, Row, Stack, Text } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 import { MOCK } from '../mocks/index.js';
@@ -27,83 +27,20 @@ const sectionStyle: CSSProperties = {
   position: 'relative',
   zIndex: 5,
   overflow: 'hidden',
+  animationDelay: '100ms',
 };
 const metaStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 12,
   paddingBottom: 8,
   maxWidth: 540,
-};
-// Hero text floats on the photo per the design reference — Stage's bottom
-// scrim handles most contrast; these shadows are the safety net for bright photos.
-const heroShadow = '0 2px 6px rgba(0,0,0,0.6), 0 0 24px rgba(0,0,0,0.4)';
-
-const monoStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-2)',
-  textShadow: heroShadow,
-};
-const greetingStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 'clamp(48px, 7.2vw, 108px)',
-  lineHeight: 0.95,
-  letterSpacing: '-0.04em',
-  fontWeight: 300,
-  fontStyle: 'italic',
-  margin: 0,
-  color: 'var(--color-ink)',
-  textShadow: heroShadow,
-};
-const whereStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 18,
-  lineHeight: 1.5,
-  color: 'var(--color-ink-2)',
-  margin: 0,
-  maxWidth: 480,
-  textShadow: heroShadow,
 };
 const cardWrapStyle: CSSProperties = {
   padding: '24px 28px',
   marginBottom: 32,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 16,
   maxWidth: 520,
   justifySelf: 'end',
   alignSelf: 'end',
   width: '100%',
 };
-const lblStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: 'var(--accent-soft)',
-};
-const titleStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 24,
-  lineHeight: 1.2,
-  letterSpacing: '-0.02em',
-  margin: 0,
-  flex: 1,
-  // Explicit so the h2 doesn't pick up any cascading accent color from the card.
-  color: 'var(--color-ink)',
-  fontWeight: 500,
-};
-const whyStyle: CSSProperties = {
-  fontSize: 13,
-  lineHeight: 1.6,
-  color: 'var(--color-ink-2)',
-  margin: 0,
-  fontFamily: 'var(--font-serif)',
-};
-const actionsStyle: CSSProperties = { display: 'flex', gap: 8, alignItems: 'center' };
 const btnAccent: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -149,35 +86,53 @@ export function Hero() {
   }
 
   return (
-    <section style={sectionStyle}>
-      <div style={metaStyle}>
-        <div style={monoStyle}>{stamp(new Date())}</div>
-        <h1 style={greetingStyle}>
+    <section style={sectionStyle} className="compass-slideup">
+      <Stack gap={3} style={metaStyle}>
+        <OverlayText
+          variant="mono"
+          tone="secondary"
+          style={{ fontSize: 11, letterSpacing: '0.14em' }}
+        >
+          {stamp(new Date())}
+        </OverlayText>
+        <OverlayText variant="display">
           Move with{' '}
           <em style={{ fontStyle: 'normal', fontWeight: 400, color: 'var(--accent-soft)' }}>
             momentum
           </em>
           .
-        </h1>
-        <p style={whereStyle}>
+        </OverlayText>
+        <OverlayText variant="serif-body" style={{ fontSize: 18, maxWidth: 480 }}>
           {MOOD_TEXT[scene.mood] ?? ''} {tldr}
-        </p>
-      </div>
+        </OverlayText>
+      </Stack>
       <GlassCard tier={1} style={cardWrapStyle}>
-        <div style={lblStyle}>Top of mind · 90 minutes</div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-          <h2 style={titleStyle}>{b.topPriority.title}</h2>
-        </div>
-        <p style={whyStyle}>{b.topPriority.why}</p>
-        <div style={actionsStyle}>
-          <button style={btnAccent} onClick={() => navClick('focus')}>
-            ▶ Begin 90 min
-          </button>
-          <button style={btnGhost} onClick={() => navClick('brief')}>
-            Read full brief
-          </button>
-          <span style={{ ...monoStyle, marginLeft: 'auto' }}>claude · 4.2s</span>
-        </div>
+        <Stack gap={3}>
+          <Text variant="mono" tone="accent" style={{ fontSize: 10, letterSpacing: '0.14em' }}>
+            Top of mind · 90 minutes
+          </Text>
+          <Row gap={3} align="start">
+            <Text variant="title" style={{ fontSize: 24, flex: 1 }}>
+              {b.topPriority.title}
+            </Text>
+          </Row>
+          <Text variant="serif-body">{b.topPriority.why}</Text>
+          <Row gap={2} align="center">
+            <button style={btnAccent} onClick={() => navClick('focus')}>
+              ▶ Begin 90 min
+            </button>
+            <button style={btnGhost} onClick={() => navClick('brief')}>
+              Read full brief
+            </button>
+            <Text
+              variant="mono"
+              tone="secondary"
+              style={{ marginLeft: 'auto', fontSize: 10, letterSpacing: '0.14em' }}
+            >
+              claude · 4.2s
+            </Text>
+          </Row>
+        </Stack>
       </GlassCard>
     </section>
   );
