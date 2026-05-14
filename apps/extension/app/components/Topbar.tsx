@@ -3,6 +3,14 @@ import { OverlayText, Pill } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 
+// Platform-aware command-palette hint. Mac users expect ⌘K; everyone else
+// (Windows, Linux, ChromeOS) hits Ctrl+K. Detect once at module load — the
+// extension never moves between machines mid-session.
+const IS_MAC =
+  typeof navigator !== 'undefined' &&
+  (/Mac|iPhone|iPad|iPod/i.test(navigator.platform) || /Mac OS X/i.test(navigator.userAgent));
+const CMDK_LABEL = IS_MAC ? '⌘K' : 'Ctrl K';
+
 const TABS = [
   { id: 'brief', label: 'Brief' },
   { id: 'today', label: 'Today' },
@@ -21,7 +29,10 @@ const barStyle: CSSProperties = {
   zIndex: 10,
 };
 
-const brandStyle: CSSProperties = { display: 'flex', alignItems: 'baseline', gap: 10 };
+// alignItems: 'center' so the circular brand mark sits visually centered with
+// the wordmark + scene label. 'baseline' (the previous value) made the mark
+// drift up against the cap-line of the italic serif "Compass".
+const brandStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 10 };
 const markStyle: CSSProperties = {
   width: 24,
   height: 24,
@@ -145,7 +156,9 @@ export function Topbar({ initials = 'AY' }: { initials?: string }) {
         )}
         <button style={cmdkBtnStyle} onClick={cmdkHotkey} aria-label="Open command palette">
           <span style={{ flex: 1, textAlign: 'left' }}>Ask Compass…</span>
-          <span style={kbdStyle}>⌘K</span>
+          <span style={kbdStyle} aria-label={IS_MAC ? 'Command K' : 'Control K'}>
+            {CMDK_LABEL}
+          </span>
         </button>
         <button style={avatarStyle} onClick={avatarClick} aria-label="Profile">
           {initials}
