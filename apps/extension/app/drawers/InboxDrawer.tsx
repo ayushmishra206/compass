@@ -21,20 +21,30 @@ const listBtnSelectedStyle: CSSProperties = {
 };
 
 const btnAccent: CSSProperties = {
-  padding: '6px 12px',
-  fontSize: 11,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '8px 16px',
+  fontSize: 12,
+  fontWeight: 500,
   borderRadius: 999,
   background: 'var(--accent)',
   color: '#1a0e02',
   border: 0,
+  cursor: 'pointer',
 };
 const btnGhost: CSSProperties = {
-  padding: '6px 12px',
-  fontSize: 11,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '8px 16px',
+  fontSize: 12,
+  fontWeight: 500,
   borderRadius: 999,
   background: 'rgba(255,255,255,0.06)',
   color: 'var(--color-ink)',
   border: '1px solid rgba(255,255,255,0.08)',
+  cursor: 'pointer',
 };
 
 const priorityTone: Record<string, 'red' | 'blue' | 'default'> = {
@@ -123,7 +133,7 @@ export function InboxDrawer() {
               >
                 {it.actions[0].title}
               </Text>
-              <Row gap={2}>
+              <Row gap={3}>
                 <button style={btnAccent}>✓ Accept</button>
                 {it.hasDraft && <button style={btnGhost}>Open draft</button>}
                 <button style={btnGhost}>Snooze</button>
