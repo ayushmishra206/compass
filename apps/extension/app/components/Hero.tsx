@@ -117,7 +117,7 @@ export function Hero() {
             </Text>
           </Row>
           <Text variant="serif-body">{b.topPriority.why}</Text>
-          <Row gap={2} align="center">
+          <Row gap={3} align="center">
             <button style={btnAccent} onClick={() => navClick('focus')}>
               ▶ Begin 90 min
             </button>
