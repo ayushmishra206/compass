@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Text } from '@compass/ui';
 import { useBrief } from '../hooks/useBrief';
 import { BriefTLDR } from './brief/BriefTLDR';
 import { PomodorosSection } from './brief/PomodorosSection';
@@ -31,7 +32,9 @@ export function BriefDrawer() {
 
   if (state.kind === 'loading') {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-ink-3)' }}>Loading…</div>
+      <Text variant="body" tone="muted" style={{ padding: 40, textAlign: 'center' }}>
+        Loading…
+      </Text>
     );
   }
 

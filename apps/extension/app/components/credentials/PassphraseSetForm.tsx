@@ -41,6 +41,9 @@ const STRENGTH_COLORS: Record<'weak' | 'medium' | 'strong', string> = {
   medium: 'oklch(0.82 0.13 80)',
   strong: 'oklch(0.82 0.13 150)',
 };
+const labelStyle: CSSProperties = { fontSize: 11, color: 'var(--color-ink-3)' };
+const labelWithMarginStyle: CSSProperties = { ...labelStyle, marginTop: 6 };
+const errorTextStyle: CSSProperties = { color: 'oklch(0.82 0.13 30)', fontSize: 12 };
 
 export function PassphraseSetForm({
   onSet,
@@ -71,7 +74,7 @@ export function PassphraseSetForm({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <label htmlFor={passId} style={{ fontSize: 11, color: 'var(--color-ink-3)' }}>
+      <label htmlFor={passId} style={labelStyle}>
         Passphrase
       </label>
       <div style={{ position: 'relative' }}>
@@ -100,15 +103,12 @@ export function PassphraseSetForm({
           }}
         />
       </div>
-      <div id={`${passId}-hint`} style={{ fontSize: 11, color: 'var(--color-ink-3)' }}>
+      <div id={`${passId}-hint`} style={labelStyle}>
         12+ characters. A short sentence works well — e.g., &ldquo;correct horse battery
         staple&rdquo;.
       </div>
 
-      <label
-        htmlFor={confirmId}
-        style={{ fontSize: 11, color: 'var(--color-ink-3)', marginTop: 6 }}
-      >
+      <label htmlFor={confirmId} style={labelWithMarginStyle}>
         Confirm passphrase
       </label>
       <input
@@ -119,7 +119,7 @@ export function PassphraseSetForm({
         style={inputStyle}
       />
 
-      {error && <div style={{ color: 'oklch(0.82 0.13 30)', fontSize: 12 }}>{error}</div>}
+      {error && <div style={errorTextStyle}>{error}</div>}
 
       <div style={{ display: 'flex', gap: 8 }}>
         {onCancel && (

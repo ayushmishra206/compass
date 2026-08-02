@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { Text } from '@compass/ui';
 import { rpc } from '@compass/runtime';
 import type { ProviderId } from '@compass/core';
 
@@ -41,6 +42,18 @@ const btnGhost: CSSProperties = {
   cursor: 'pointer',
 };
 
+const providerBtnStyle = (selected: boolean): CSSProperties => ({
+  padding: '8px 14px',
+  fontSize: 12,
+  borderRadius: 999,
+  background: selected ? 'var(--accent-wash)' : 'rgba(255,255,255,0.05)',
+  color: 'var(--color-ink)',
+  border: selected ? '1px solid var(--accent-soft)' : '1px solid rgba(255,255,255,0.08)',
+  cursor: 'pointer',
+});
+
+const errorTextStyle: CSSProperties = { color: 'oklch(0.82 0.13 30)', fontSize: 12 };
+
 export function KeyValidator({
   providers,
   initialProvider,
@@ -74,9 +87,9 @@ export function KeyValidator({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {lockProvider ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-ink-3)' }}>
+        <Text variant="mono" tone="muted" style={{ fontSize: 11 }}>
           {provider}
-        </div>
+        </Text>
       ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {providers.map((p) => (
@@ -84,18 +97,7 @@ export function KeyValidator({
               key={p}
               type="button"
               onClick={() => setProvider(p)}
-              style={{
-                padding: '8px 14px',
-                fontSize: 12,
-                borderRadius: 999,
-                background: provider === p ? 'var(--accent-wash)' : 'rgba(255,255,255,0.05)',
-                color: 'var(--color-ink)',
-                border:
-                  provider === p
-                    ? '1px solid var(--accent-soft)'
-                    : '1px solid rgba(255,255,255,0.08)',
-                cursor: 'pointer',
-              }}
+              style={providerBtnStyle(provider === p)}
             >
               {p}
             </button>
@@ -110,7 +112,7 @@ export function KeyValidator({
         aria-label="API key"
         style={inputStyle}
       />
-      {error && <div style={{ color: 'oklch(0.82 0.13 30)', fontSize: 12 }}>{error}</div>}
+      {error && <div style={errorTextStyle}>{error}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         {onCancel && (
           <button type="button" style={btnGhost} onClick={onCancel} disabled={validating}>

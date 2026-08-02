@@ -52,7 +52,7 @@ const variantStyle: Record<TextVariant, CSSProperties> = {
   },
 };
 
-const toneColor: Record<TextTone, string> = {
+export const toneColor: Record<TextTone, string> = {
   primary: 'var(--color-ink)',
   secondary: 'var(--color-ink-2)',
   muted: 'var(--color-ink-3)',

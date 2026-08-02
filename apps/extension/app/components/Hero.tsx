@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { GlassCard, OverlayText, Row, Stack, Text } from '@compass/ui';
+import { GlassCard, Ink, OverlayText, Row, Stack, Text } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
 import { MOCK } from '../mocks/index.js';
@@ -99,9 +99,9 @@ export function Hero() {
         </OverlayText>
         <OverlayText variant="display">
           Move with{' '}
-          <em style={{ fontStyle: 'normal', fontWeight: 400, color: 'var(--accent-soft)' }}>
+          <Ink as="em" tone="accent" style={{ fontWeight: 400 }}>
             momentum
-          </em>
+          </Ink>
           .
         </OverlayText>
         <OverlayText variant="serif-body" style={{ fontSize: 18, maxWidth: 480 }}>

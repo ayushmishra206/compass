@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Text } from '@compass/ui';
 import { useShell } from '../../state/shell';
 import { PassphraseConfirmForm } from '../../components/credentials/PassphraseConfirmForm';
 import { KeyValidator } from '../../components/credentials/KeyValidator';
@@ -139,9 +140,9 @@ export function ConnectedProvidersSection() {
         <div style={sectionLabelStyle}>Connected providers</div>
         {!showForgot ? (
           <>
-            <div style={{ fontSize: 12, color: 'var(--color-ink-3)', marginBottom: 10 }}>
+            <Text variant="body" tone="muted" style={{ fontSize: 12, marginBottom: 10 }}>
               🔒 Locked. Enter your passphrase to manage providers.
-            </div>
+            </Text>
             <div ref={passphraseRef}>
               <PassphraseConfirmForm onConfirm={(p) => unlock(p)} submitLabel="Unlock" />
             </div>
@@ -227,13 +228,18 @@ export function ConnectedProvidersSection() {
               <div style={{ minWidth: 90 }}>{provider}</div>
               <div style={monoStyle}>{maskKey(entry.apiKey)}</div>
               {isDefault && <span style={badgeStyle}>default</span>}
-              <div style={{ fontSize: 11, color: 'var(--color-ink-3)', marginLeft: 'auto' }}>
+              <Text
+                variant="body"
+                as="div"
+                tone="muted"
+                style={{ fontSize: 11, marginLeft: 'auto' }}
+              >
                 {validatingProvider === provider
                   ? 'validating…'
                   : entry.lastValidatedAt
                     ? relativeTime(entry.lastValidatedAt)
                     : 'never validated'}
-              </div>
+              </Text>
               <button
                 type="button"
                 aria-label={`Row actions for ${provider}`}
@@ -359,9 +365,9 @@ function RemoveConfirm({
   if (isDefault && remaining.length > 0) {
     return (
       <div style={{ padding: '4px 0 8px 90px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ fontSize: 12, color: 'var(--color-ink-2)' }}>
+        <Text variant="body" tone="secondary" style={{ fontSize: 12 }}>
           Remove {provider} — pick new default:
-        </div>
+        </Text>
         {remaining.map((p) => (
           <label key={p} style={{ fontSize: 12 }}>
             <input
@@ -387,11 +393,11 @@ function RemoveConfirm({
 
   return (
     <div style={{ padding: '4px 0 8px 90px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ fontSize: 12, color: 'var(--color-ink-2)' }}>
+      <Text variant="body" tone="secondary" style={{ fontSize: 12 }}>
         {remaining.length === 0
           ? 'This will leave you with no providers. You will see onboarding on next reload.'
           : `Remove ${provider}?`}
-      </div>
+      </Text>
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="button" style={btnGhost} onClick={onCancel}>
           Cancel
@@ -423,11 +429,11 @@ function ForgotPassphrasePrompt({ onCancel }: { onCancel: () => void }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 12, color: 'var(--color-ink-2)' }}>
+      <Text variant="body" tone="secondary" style={{ fontSize: 12 }}>
         This will permanently erase your saved API keys from this browser. You will see the
         onboarding screen and need to re-paste your keys. There is no recovery — this device cannot
         decrypt the keys without your passphrase.
-      </div>
+      </Text>
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="button" style={btnGhost} onClick={onCancel} disabled={submitting}>
           Cancel

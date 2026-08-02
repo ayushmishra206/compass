@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Text } from '@compass/ui';
 import { getUserProfile, setUserProfile } from '@compass/core';
 
 export function NotesSection() {
@@ -18,25 +19,16 @@ export function NotesSection() {
 
   return (
     <section style={{ padding: '12px 0', borderBottom: '1px solid var(--color-hair)' }}>
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'var(--color-ink-3)',
-          marginBottom: 8,
-        }}
-      >
+      <Text variant="mono" as="div" style={{ marginBottom: 8 }}>
         Notes
-      </div>
+      </Text>
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
         <input type="checkbox" checked={enabled} onChange={toggle} />
         Auto-link new notes
       </label>
-      <div style={{ marginTop: 4, fontSize: 11, color: 'var(--color-ink-4)' }}>
+      <Text variant="body" tone="dim" style={{ marginTop: 4, fontSize: 11 }}>
         Compute related-note suggestions on save (local). Rationale is fetched only on click.
-      </div>
+      </Text>
     </section>
   );
 }

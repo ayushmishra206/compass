@@ -24,6 +24,31 @@ const btnGhost: CSSProperties = {
   border: '1px solid rgba(255,255,255,0.08)',
 };
 
+const themeInputStyle: CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  fontSize: 12,
+  fontFamily: 'var(--font-serif)',
+  borderRadius: 6,
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  color: 'var(--color-ink)',
+  marginBottom: 12,
+  boxSizing: 'border-box',
+};
+
+const soundscapeBtnStyle = (loved: boolean): CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '9px 12px',
+  borderRadius: 8,
+  border: '1px solid var(--color-hair)',
+  textAlign: 'left',
+  background: loved ? 'rgba(255,255,255,0.04)' : 'transparent',
+  color: 'var(--color-ink)',
+});
+
 export function FocusDrawer() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [theme, setTheme] = useState('');
@@ -110,18 +135,7 @@ export function FocusDrawer() {
           onChange={(e) => setTheme(e.target.value)}
           placeholder="What are you working on?"
           aria-label="Pomodoro theme"
-          style={{
-            width: '100%',
-            padding: '8px 10px',
-            fontSize: 12,
-            fontFamily: 'var(--font-serif)',
-            borderRadius: 6,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            color: 'var(--color-ink)',
-            marginBottom: 12,
-            boxSizing: 'border-box',
-          }}
+          style={themeInputStyle}
         />
       )}
 
@@ -160,20 +174,7 @@ export function FocusDrawer() {
         <Text variant="mono">Soundscape</Text>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {MOCK.soundscapes.map((s) => (
-            <button
-              key={s.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 12px',
-                borderRadius: 8,
-                border: '1px solid var(--color-hair)',
-                textAlign: 'left',
-                background: s.loved ? 'rgba(255,255,255,0.04)' : 'transparent',
-                color: 'var(--color-ink)',
-              }}
-            >
+            <button key={s.id} style={soundscapeBtnStyle(s.loved)}>
               <Text variant="body" as="span" style={{ flex: 1, fontSize: 12 }}>
                 {s.name}
               </Text>
