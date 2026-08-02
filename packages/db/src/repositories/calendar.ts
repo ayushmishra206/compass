@@ -23,7 +23,7 @@ export function createCalendarRepo(db: Db): CalendarRepo {
     async upsert(events, syncedAt) {
       if (events.length === 0) return;
       for (const e of events) {
-        db.exec({
+        await db.exec({
           sql: `INSERT INTO calendar_events
                   (id, calendar_id, start_at, end_at, all_day, summary, location,
                    has_conference, is_focus_block, self_response, status, updated_at, synced_at)
@@ -60,9 +60,9 @@ export function createCalendarRepo(db: Db): CalendarRepo {
 
         // Google sends the full attendee list every time, so replace rather
         // than merge — a merge would resurrect attendees who were removed.
-        db.exec({ sql: 'DELETE FROM calendar_attendees WHERE event_id = ?', bind: [e.id] });
+        await db.exec({ sql: 'DELETE FROM calendar_attendees WHERE event_id = ?', bind: [e.id] });
         for (const a of e.attendees) {
-          db.exec({
+          await db.exec({
             sql: `INSERT INTO calendar_attendees (event_id, email, is_self, response)
                   VALUES (?, ?, ?, ?)
                   ON CONFLICT(event_id, email) DO NOTHING`,
@@ -73,7 +73,7 @@ export function createCalendarRepo(db: Db): CalendarRepo {
     },
 
     async listBetween(fromIso, toIso) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT id, calendar_id, start_at, end_at, all_day, summary, location,
                      has_conference, is_focus_block, self_response, status, updated_at
               FROM calendar_events
@@ -81,18 +81,21 @@ export function createCalendarRepo(db: Db): CalendarRepo {
               ORDER BY start_at ASC`,
         bind: [fromIso, toIso],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
 
-      return rows.map((r) => {
+      // Sequential rather than mapped: each row needs its own awaited
+      // attendee query, and `.map` cannot host an await.
+      const out: CalendarEventRow[] = [];
+      for (const r of rows) {
         const id = r[0] as string;
-        const attendeeRows = db.exec({
+        const attendeeRows = (await db.exec({
           sql: `SELECT email, is_self, response FROM calendar_attendees
                 WHERE event_id = ? ORDER BY email ASC`,
           bind: [id],
           returnValue: 'resultRows',
-        }) as Array<Array<unknown>>;
+        })) as Array<Array<unknown>>;
 
-        return {
+        out.push({
           id,
           calendarId: r[1] as string,
           startAt: r[2] as string,
@@ -110,33 +113,34 @@ export function createCalendarRepo(db: Db): CalendarRepo {
             isSelf: a[1] === 1,
             response: (a[2] as string | null) ?? null,
           })),
-        };
-      });
+        });
+      }
+      return out;
     },
 
     async remove(ids) {
       if (ids.length === 0) return;
-      db.exec({
+      await db.exec({
         sql: `DELETE FROM calendar_attendees WHERE event_id IN (${placeholders(ids.length)})`,
         bind: ids,
       });
-      db.exec({
+      await db.exec({
         sql: `DELETE FROM calendar_events WHERE id IN (${placeholders(ids.length)})`,
         bind: ids,
       });
     },
 
     async getSyncToken(calendarId) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: 'SELECT sync_token FROM calendar_sync_state WHERE calendar_id = ?',
         bind: [calendarId],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return (rows[0]?.[0] as string | null) ?? null;
     },
 
     async setSyncToken(calendarId, token, at) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO calendar_sync_state (calendar_id, sync_token, last_sync_at)
               VALUES (?, ?, ?)
               ON CONFLICT(calendar_id) DO UPDATE SET
@@ -147,12 +151,15 @@ export function createCalendarRepo(db: Db): CalendarRepo {
     },
 
     async clearCalendar(calendarId) {
-      db.exec({
+      await db.exec({
         sql: `DELETE FROM calendar_attendees WHERE event_id IN
                 (SELECT id FROM calendar_events WHERE calendar_id = ?)`,
         bind: [calendarId],
       });
-      db.exec({ sql: 'DELETE FROM calendar_events WHERE calendar_id = ?', bind: [calendarId] });
+      await db.exec({
+        sql: 'DELETE FROM calendar_events WHERE calendar_id = ?',
+        bind: [calendarId],
+      });
     },
   };
 }

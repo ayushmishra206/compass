@@ -253,12 +253,12 @@ const MIGRATIONS: Migration[] = [
 /** Version a fully-migrated DB lands on. Derived, so adding a migration updates it. */
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 
-export function getSchemaVersion(db: Db): number {
+export async function getSchemaVersion(db: Db): Promise<number> {
   try {
-    const rows = db.exec({
+    const rows = (await db.exec({
       sql: "SELECT value FROM meta WHERE key='schema_version'",
       returnValue: 'resultRows',
-    }) as Array<[string]>;
+    })) as Array<[string]>;
     return rows[0] ? parseInt(rows[0][0], 10) : 0;
   } catch {
     // meta table doesn't exist yet
@@ -267,17 +267,17 @@ export function getSchemaVersion(db: Db): number {
 }
 
 export async function runMigrations(db: Db): Promise<void> {
-  const current = getSchemaVersion(db);
+  const current = await getSchemaVersion(db);
   for (const m of MIGRATIONS) {
     if (m.version <= current) continue;
-    db.exec('BEGIN');
+    await db.exec('BEGIN');
     try {
-      db.exec(m.sql);
+      await db.exec(m.sql);
       // 0001 already inserts schema_version='1'. For 0002+, the migration
       // SQL must update meta.schema_version itself.
-      db.exec('COMMIT');
+      await db.exec('COMMIT');
     } catch (err) {
-      db.exec('ROLLBACK');
+      await db.exec('ROLLBACK');
       throw err;
     }
   }

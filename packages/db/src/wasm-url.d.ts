@@ -6,3 +6,11 @@ declare module '*?url' {
   const url: string;
   export default url;
 }
+
+// Vite's worker import suffix. Returns a constructor that instantiates the
+// bundled worker; the bare `new URL(...)` form is NOT transformed when the
+// module lives in a workspace package, and emits the raw .ts path.
+declare module '*?worker' {
+  const WorkerConstructor: new () => Worker;
+  export default WorkerConstructor;
+}

@@ -32,7 +32,7 @@ export interface PomodoroRepo {
 export function createPomodoroRepo(db: Db): PomodoroRepo {
   return {
     async start({ id, durationMin, theme, soundscapeId }) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO pomodoros (id, started_at, duration_min, theme, soundscape_id)
               VALUES (?, ?, ?, ?, ?)
               ON CONFLICT(id) DO NOTHING`,
@@ -41,12 +41,12 @@ export function createPomodoroRepo(db: Db): PomodoroRepo {
     },
 
     async listSince(sinceIso) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT started_at, duration_min, completed, interrupt_count, soundscape_id
               FROM pomodoros WHERE started_at >= ? ORDER BY started_at ASC`,
         bind: [sinceIso],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows.map((r) => ({
         startedAt: r[0] as string,
         durationMin: (r[1] as number) ?? 0,
@@ -56,13 +56,13 @@ export function createPomodoroRepo(db: Db): PomodoroRepo {
       }));
     },
     async complete(id) {
-      db.exec({
+      await db.exec({
         sql: 'UPDATE pomodoros SET ended_at = ?, completed = 1 WHERE id = ?',
         bind: [new Date().toISOString(), id],
       });
     },
     async abandon(id) {
-      db.exec({
+      await db.exec({
         sql: 'UPDATE pomodoros SET ended_at = ?, completed = 0 WHERE id = ?',
         bind: [new Date().toISOString(), id],
       });
@@ -71,37 +71,37 @@ export function createPomodoroRepo(db: Db): PomodoroRepo {
       const cutoff14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
       const cutoff7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      const totalRows = db.exec({
+      const totalRows = (await db.exec({
         sql: `SELECT COALESCE(SUM(duration_min), 0), COALESCE(AVG(interrupt_count), 0), COUNT(*)
               FROM pomodoros WHERE completed = 1 AND started_at >= ?`,
         bind: [cutoff14],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       const totalFocusMin = (totalRows[0]?.[0] as number) ?? 0;
       const avgInt = (totalRows[0]?.[1] as number) ?? 0;
 
-      const peakRows = db.exec({
+      const peakRows = (await db.exec({
         sql: `SELECT CAST(strftime('%H', started_at, 'localtime') AS INTEGER), COUNT(*)
               FROM pomodoros WHERE completed = 1 AND started_at >= ?
               GROUP BY CAST(strftime('%H', started_at, 'localtime') AS INTEGER)
               ORDER BY COUNT(*) DESC LIMIT 1`,
         bind: [cutoff14],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       const peakHourLocal = peakRows[0] ? (peakRows[0][0] as number) : null;
 
-      const last7 = db.exec({
+      const last7 = (await db.exec({
         sql: `SELECT COALESCE(SUM(duration_min), 0) FROM pomodoros
               WHERE completed = 1 AND started_at >= ?`,
         bind: [cutoff7],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
-      const prior7 = db.exec({
+      })) as Array<Array<unknown>>;
+      const prior7 = (await db.exec({
         sql: `SELECT COALESCE(SUM(duration_min), 0) FROM pomodoros
               WHERE completed = 1 AND started_at >= ? AND started_at < ?`,
         bind: [cutoff14, cutoff7],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       const cur = (last7[0]?.[0] as number) ?? 0;
       const prev = (prior7[0]?.[0] as number) ?? 0;
       let trend: 'improving' | 'flat' | 'declining' = 'flat';

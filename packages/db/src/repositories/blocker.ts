@@ -37,7 +37,7 @@ export interface BlockerRepo {
 export function createBlockerRepo(db: Db): BlockerRepo {
   return {
     async add(input) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO block_rules (id, pattern, mode, source, created_at, focus_only)
               VALUES (?, ?, ?, ?, ?, ?)
               ON CONFLICT(pattern) DO UPDATE SET
@@ -56,11 +56,11 @@ export function createBlockerRepo(db: Db): BlockerRepo {
     },
 
     async list() {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT id, pattern, mode, source, created_at, enabled, focus_only, strikes
               FROM block_rules ORDER BY created_at ASC`,
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows.map((r) => ({
         id: r[0] as string,
         pattern: r[1] as string,
@@ -74,19 +74,19 @@ export function createBlockerRepo(db: Db): BlockerRepo {
     },
 
     async setEnabled(id, enabled) {
-      db.exec({
+      await db.exec({
         sql: 'UPDATE block_rules SET enabled = ? WHERE id = ?',
         bind: [enabled ? 1 : 0, id],
       });
     },
 
     async remove(id) {
-      db.exec({ sql: 'DELETE FROM block_events WHERE rule_id = ?', bind: [id] });
-      db.exec({ sql: 'DELETE FROM block_rules WHERE id = ?', bind: [id] });
+      await db.exec({ sql: 'DELETE FROM block_events WHERE rule_id = ?', bind: [id] });
+      await db.exec({ sql: 'DELETE FROM block_rules WHERE id = ?', bind: [id] });
     },
 
     async recordEvent(input) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO block_events (id, rule_id, occurred_at, hostname, outcome)
               VALUES (?, ?, ?, ?, ?)`,
         bind: [input.id, input.ruleId, input.occurredAt, input.hostname, input.outcome],
@@ -94,7 +94,7 @@ export function createBlockerRepo(db: Db): BlockerRepo {
       // A bypass is the interesting signal — it is the moment the user talked
       // themselves out of their own rule.
       if (input.outcome === 'bypassed') {
-        db.exec({
+        await db.exec({
           sql: 'UPDATE block_rules SET strikes = strikes + 1 WHERE id = ?',
           bind: [input.ruleId],
         });
@@ -102,11 +102,11 @@ export function createBlockerRepo(db: Db): BlockerRepo {
     },
 
     async countEvents(ruleId) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: 'SELECT COUNT(*) FROM block_events WHERE rule_id = ?',
         bind: [ruleId],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return (rows[0]?.[0] as number) ?? 0;
     },
   };

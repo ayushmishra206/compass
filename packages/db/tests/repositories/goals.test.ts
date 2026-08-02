@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { runMigrations } from '../../src/migration-runner';
+import { wrapSyncDb } from '../../src/worker/client';
 import { createGoalsRepo, type GoalsRepo } from '../../src/repositories/goals';
 import type { Db } from '../../src/opfs';
 
@@ -34,8 +35,8 @@ const decomposition = (over: Partial<Parameters<GoalsRepo['saveDecomposition']>[
 
 beforeEach(async () => {
   const sqlite3 = await sqlite3InitModule();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db = new sqlite3.oo1.DB(':memory:') as any;
+
+  db = wrapSyncDb(new sqlite3.oo1.DB(':memory:'));
   await runMigrations(db);
   repo = createGoalsRepo(db);
 });
@@ -198,10 +199,10 @@ describe('remove', () => {
     await repo.remove('g1');
 
     expect(await repo.get('g1')).toBeNull();
-    const orphans = db.exec({
+    const orphans = (await db.exec({
       sql: 'SELECT COUNT(*) FROM milestones',
       returnValue: 'resultRows',
-    }) as Array<Array<unknown>>;
+    })) as Array<Array<unknown>>;
     expect(orphans[0]?.[0]).toBe(0);
   });
 });

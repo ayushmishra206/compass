@@ -82,7 +82,7 @@ export function createGmailRepo(db: Db): GmailRepo {
         // Truncate here rather than trusting callers — this is the last point
         // before the value is durable.
         const snippet = (m.snippet ?? '').slice(0, MAX_SNIPPET_CHARS);
-        db.exec({
+        await db.exec({
           sql: `INSERT INTO gmail_messages_index
                   (message_id, thread_id, from_email, from_name, subject, snippet, received_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -107,26 +107,26 @@ export function createGmailRepo(db: Db): GmailRepo {
     },
 
     async list(limit = 50) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT ${COLS} FROM gmail_messages_index
               WHERE archived = 0 ORDER BY received_at DESC LIMIT ?`,
         bind: [limit],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows.map(toMessage);
     },
 
     async get(messageId) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT ${COLS} FROM gmail_messages_index WHERE message_id = ?`,
         bind: [messageId],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows[0] ? toMessage(rows[0]) : null;
     },
 
     async saveExtraction(messageId, input) {
-      db.exec({
+      await db.exec({
         sql: `UPDATE gmail_messages_index
               SET priority = ?, actions_json = ?, injection_flags = ?, last_processed_at = ?
               WHERE message_id = ?`,
@@ -141,27 +141,27 @@ export function createGmailRepo(db: Db): GmailRepo {
     },
 
     async unprocessed(limit) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT ${COLS} FROM gmail_messages_index
               WHERE last_processed_at IS NULL AND archived = 0
               ORDER BY received_at DESC LIMIT ?`,
         bind: [limit],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows.map(toMessage);
     },
 
     async wipe() {
-      db.exec('DELETE FROM gmail_messages_index');
+      await db.exec('DELETE FROM gmail_messages_index');
     },
 
     async pruneOlderThan(iso) {
-      const before = db.exec({
+      const before = (await db.exec({
         sql: 'SELECT COUNT(*) FROM gmail_messages_index WHERE received_at < ?',
         bind: [iso],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
-      db.exec({
+      })) as Array<Array<unknown>>;
+      await db.exec({
         sql: 'DELETE FROM gmail_messages_index WHERE received_at < ?',
         bind: [iso],
       });
