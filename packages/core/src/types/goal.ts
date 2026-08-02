@@ -40,6 +40,28 @@ export const GoalDecompositionMilestoneSchema = z.object({
 });
 export type GoalDecompositionMilestone = z.infer<typeof GoalDecompositionMilestoneSchema>;
 
+/**
+ * Structured output of the `goal.decompose` task (PRD §10.3). Distinct from
+ * GoalDecomposition below, which is the stored shape — this one is what the
+ * model is constrained to produce.
+ */
+export const GoalDecomposeOutputSchema = z.object({
+  milestones: z
+    .array(
+      z.object({
+        weekIndex: z.number().int().min(1).max(52),
+        title: z.string().max(100),
+        definitionOfDone: z.string().max(200),
+      }),
+    )
+    .min(1)
+    .max(16),
+  dailyTemplates: z.array(z.string().max(80)).max(4),
+  risks: z.array(z.string().max(140)).max(4),
+  firstWeekFocus: z.string().max(200),
+});
+export type GoalDecomposeOutput = z.infer<typeof GoalDecomposeOutputSchema>;
+
 export const GoalDecompositionSchema = z.object({
   generatedAt: z.string(),
   milestones: z.array(GoalDecompositionMilestoneSchema),

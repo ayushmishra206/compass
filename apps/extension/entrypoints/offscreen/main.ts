@@ -8,6 +8,7 @@ import {
   createCostLedgerRepo,
   createNotesRepo,
   createCalendarRepo,
+  createGoalsRepo,
 } from '@compass/db';
 import type { StoredBriefing, NotesRepo } from '@compass/db';
 import { embed, embedBatch } from '@compass/embeddings';
@@ -35,7 +36,10 @@ import {
   generateEodReflection,
   generateAutolinkSummary,
   askGrounded,
+  decomposeGoal,
+  weeksBetween,
   type LlmRouter,
+  type BriefGoal,
 } from '@compass/agents';
 
 // sqlite-wasm's OPFS-backed OpfsDb requires SharedArrayBuffer (cross-origin
@@ -256,6 +260,7 @@ registry.register('brief.morning', async ({ trigger: _t, force }) => {
     pomodoroRepo: await getPomodoroRepo(),
     weatherRpc: async () => null, // Phase 1.6 weather wired in shell hook; offscreen call deferred
     todayEvents: () => todayEventsForBrief(profile.timezone),
+    activeGoals: () => activeGoalsForBrief(),
     router,
     costLedger: await getCostLedger(),
     now: () => new Date(),
@@ -454,6 +459,116 @@ registry.register('calendar.sync', async () => {
 registry.register('calendar.listRange', async ({ fromIso, toIso }) => {
   const repo = await getCalendarRepo();
   return { events: await listRange(repo, fromIso, toIso) };
+});
+
+// ── Goals handlers ───────────────────────────────────────────────────────────
+
+async function getGoalsRepo() {
+  const db = await getDb();
+  return createGoalsRepo(db);
+}
+
+/**
+ * Active goals for the briefing, capped at 3 per PRD §8.3. Never throws —
+ * no goals set is a normal state, not an error.
+ */
+async function activeGoalsForBrief(): Promise<BriefGoal[]> {
+  try {
+    const goals = await (await getGoalsRepo()).list('active');
+    const now = Date.now();
+    return goals.slice(0, 3).map((g) => ({
+      id: g.id,
+      title: g.title,
+      weeksRemaining: Math.max(
+        0,
+        Math.round((Date.parse(g.endDate) - now) / (7 * 86_400_000)) || 0,
+      ),
+      currentMilestone: g.milestones.find((m) => !m.done)?.title ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+registry.register('goals.list', async ({ status }) => {
+  const repo = await getGoalsRepo();
+  return { goals: await repo.list(status) };
+});
+
+registry.register('goals.create', async (input) => {
+  const repo = await getGoalsRepo();
+  const id = crypto.randomUUID();
+  await repo.create({ id, ...input }, new Date().toISOString());
+  return { id };
+});
+
+registry.register('goals.update', async ({ id, ...patch }) => {
+  const repo = await getGoalsRepo();
+  await repo.update(id, patch);
+  return { ok: true as const };
+});
+
+registry.register('goals.delete', async ({ id }) => {
+  const repo = await getGoalsRepo();
+  await repo.remove(id);
+  return { ok: true as const };
+});
+
+registry.register('goals.setMilestoneDone', async ({ milestoneId, done }) => {
+  const repo = await getGoalsRepo();
+  await repo.setMilestoneDone(milestoneId, done, new Date().toISOString());
+  return { ok: true as const };
+});
+
+registry.register('goals.decompose', async ({ id }) => {
+  const repo = await getGoalsRepo();
+  const goal = await repo.get(id);
+  if (!goal) return { ok: false as const, reason: 'not-found' as const };
+
+  try {
+    await getActiveCredentials();
+  } catch (e) {
+    if (e instanceof LlmCredentialsLocked) return { ok: false as const, reason: 'locked' as const };
+    throw e;
+  }
+
+  try {
+    const plan = await decomposeGoal({
+      router,
+      goal: {
+        title: goal.title,
+        why: goal.why,
+        horizon: goal.horizon,
+        startDate: goal.startDate,
+        endDate: goal.endDate,
+      },
+      weeks: weeksBetween(goal.startDate, goal.endDate),
+      now: () => new Date(),
+    });
+
+    await repo.saveDecomposition(id, {
+      decomposedAt: new Date().toISOString(),
+      modelId: 'router',
+      dailyTemplates: plan.dailyTemplates,
+      risks: plan.risks,
+      firstWeekFocus: plan.firstWeekFocus,
+      milestones: plan.milestones.map((m) => ({
+        id: crypto.randomUUID(),
+        weekIndex: m.weekIndex,
+        title: m.title,
+        definitionOfDone: m.definitionOfDone,
+      })),
+    });
+
+    const updated = await repo.get(id);
+    return { ok: true as const, goal: updated! };
+  } catch (e) {
+    return {
+      ok: false as const,
+      reason: 'error' as const,
+      error: e instanceof Error ? e.message : String(e),
+    };
+  }
 });
 
 // ── Ledger handlers ──────────────────────────────────────────────────────────
