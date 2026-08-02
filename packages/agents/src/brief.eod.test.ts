@@ -44,6 +44,7 @@ const baseDeps = (): EodReflectionDeps => ({
     start: vi.fn(),
     complete: vi.fn(),
     abandon: vi.fn(),
+    listSince: vi.fn(async () => []),
     summarize14d: vi.fn(async () => ({
       totalFocusMin: 75,
       peakHourLocal: 10,

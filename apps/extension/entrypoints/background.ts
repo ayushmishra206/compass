@@ -2,6 +2,7 @@ import { createHandlerRegistry, ensureHeavyDoc, installRequestListener } from '@
 import { ensureAlarms, registerAlarmHandlers } from '@compass/integrations';
 import { clearOAuthGrant } from '@compass/core';
 import { connectGoogleCalendar } from './sw/calendarAuth';
+import { applyBlockRules, grantPass } from './sw/blockRules';
 
 /**
  * Routes the service worker owns outright. Everything else is forwarded to the
@@ -20,6 +21,19 @@ swRegistry.register('calendar.connect', async ({ clientId }) => {
   return res.ok
     ? ({ ok: true, email: res.email } as const)
     : ({ ok: false, error: res.error ?? 'Connection failed.' } as const);
+});
+
+swRegistry.register('blocker.applyRules', async ({ rules, focusActive }) => {
+  const active = await applyBlockRules(rules, {
+    focusActive,
+    blockPageUrl: chrome.runtime.getURL('blocked.html'),
+  });
+  return { ok: true as const, active };
+});
+
+swRegistry.register('blocker.grantPass', async ({ hostname }) => {
+  await grantPass(hostname);
+  return { ok: true as const };
 });
 
 swRegistry.register('calendar.disconnect', async () => {

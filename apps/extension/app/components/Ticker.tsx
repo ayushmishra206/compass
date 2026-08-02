@@ -1,13 +1,12 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useState } from 'react';
 import { OverlayText, Pill, Stack } from '@compass/ui';
-import { rpc } from '@compass/runtime';
 import { useShell } from '../state/shell.js';
 import { useBrief } from '../hooks/useBrief.js';
-import { MOCK } from '../mocks/index.js';
+import { formatFocusTime, formatHour, useFocusSignals } from '../hooks/useFocusSignals.js';
 
 interface BriefingOutput {
   watchouts?: string[];
+  quotedGoal?: string | null;
 }
 
 const tickerStyle: CSSProperties = {
@@ -29,14 +28,10 @@ const rightStyle: CSSProperties = {
   alignItems: 'center',
 };
 
-const dotStyle: CSSProperties = {
+const dotWarnStyle: CSSProperties = {
   width: 6,
   height: 6,
   borderRadius: '50%',
-  background: 'var(--accent)',
-};
-const dotWarnStyle: CSSProperties = {
-  ...dotStyle,
   background: 'oklch(0.7 0.16 30)',
 };
 
@@ -72,40 +67,45 @@ function Vital({ label, value, sub }: VitalProps) {
 
 export function Ticker() {
   const navClick = useShell((s) => s.navClick);
-  const v = MOCK.vitals;
   const { state } = useBrief('morning');
-  const [streak, setStreak] = useState<{ days: number; lastDate: string | null }>({
-    days: 0,
-    lastDate: null,
-  });
+  const signals = useFocusSignals();
 
-  useEffect(() => {
-    void rpc('brief.streak', {}).then(setStreak);
-  }, []);
+  const output = state.kind === 'have-brief' ? (state.brief.output as BriefingOutput) : null;
+  const watchouts = output?.watchouts ?? [];
+  const quotedGoal = output?.quotedGoal ?? null;
 
-  const watchouts =
-    state.kind === 'have-brief' ? ((state.brief.output as BriefingOutput).watchouts ?? []) : [];
+  // Vitals are drawn from focus history, which Compass actually measures.
+  // Sleep / recovery / RHR were mock Fitbit numbers with no integration behind
+  // them — a dashboard that invents biometrics is worse than one that omits
+  // them, so they are gone rather than faked.
+  const peak = formatHour(signals.peakFocusHour);
 
   return (
     <div style={tickerStyle} className="compass-slideup">
       <div style={vitalsStyle}>
-        <Vital label="Sleep" value={v.sleep} sub="good" />
-        <Vital label="Recovery" value={v.recovery} sub="mid" />
-        <Vital label="RHR" value={v.rhr} sub="bpm" />
-        {streak.days > 0 && <Vital label="Streak" value={streak.days} sub="days" />}
+        {signals.streakDays > 0 && (
+          <Vital
+            label="Streak"
+            value={signals.streakDays}
+            sub={signals.streakDays === 1 ? 'day' : 'days'}
+          />
+        )}
+        {signals.totalFocusMin > 0 && (
+          <Vital label="Focus" value={formatFocusTime(signals.totalFocusMin)} sub="last 30d" />
+        )}
+        {peak && <Vital label="Peak" value={peak} sub="best hour" />}
       </div>
-      <OverlayText
-        variant="serif-body"
-        italic
-        tone="secondary"
-        style={{ fontSize: 14, textAlign: 'center', maxWidth: 480 }}
-      >
-        &quot;{MOCK.brief.quotedGoal}&quot;
-      </OverlayText>
+      {quotedGoal && (
+        <OverlayText
+          variant="serif-body"
+          italic
+          tone="secondary"
+          style={{ fontSize: 14, textAlign: 'center', maxWidth: 480 }}
+        >
+          &quot;{quotedGoal}&quot;
+        </OverlayText>
+      )}
       <div style={rightStyle}>
-        <Pill size="md" onClick={() => navClick('inbox')} leading={<span style={dotStyle} />}>
-          2 inbox actions
-        </Pill>
         {watchouts.map((w, i) => (
           <Pill
             key={i}

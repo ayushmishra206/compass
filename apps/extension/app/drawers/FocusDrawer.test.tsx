@@ -5,19 +5,25 @@ import { FocusDrawer } from './FocusDrawer';
 vi.mock('@compass/runtime', () => ({ rpc: vi.fn(async () => ({ ok: true })) }));
 import { rpc } from '@compass/runtime';
 
-vi.mock('../mocks/index.js', () => ({
-  MOCK: {
-    brief: { quotedGoal: 'Ship it.' },
-    soundscapes: [],
-    blockRules: [],
-  },
-}));
+// Web Audio does not exist in jsdom; the drawer must degrade to silence
+// rather than throw, and these tests assert the timer works regardless.
+vi.mock('../lib/soundscapes.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, startSoundscape: () => null };
+});
+
+function routeAwareRpc() {
+  return vi.mocked(rpc).mockImplementation(async (route: string) => {
+    if (route === 'blocker.list') return { rules: [] } as never;
+    if (route === 'blocker.add') return { ok: true } as never;
+    return { ok: true } as never;
+  });
+}
 
 describe('FocusDrawer — Pomodoro lifecycle RPC', () => {
   beforeEach(() => {
-    vi.mocked(rpc)
-      .mockClear()
-      .mockResolvedValue({ ok: true } as never);
+    vi.mocked(rpc).mockClear();
+    routeAwareRpc();
   });
 
   it('renders theme input and Start button initially', () => {

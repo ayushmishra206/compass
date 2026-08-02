@@ -23,7 +23,10 @@ export default defineConfig({
     // `identity` drives the Google OAuth PKCE flow from the service worker.
     // No host_permissions: calendar and token endpoints are reached with
     // ordinary fetch from extension pages, which needs no host grant.
-    permissions: ['storage', 'alarms', 'offscreen', 'identity'],
+    // declarativeNetRequest powers the focus site blocker. MV3 removed
+    // blocking webRequest, and a content script would only run after the page
+    // had already begun loading.
+    permissions: ['storage', 'alarms', 'offscreen', 'identity', 'declarativeNetRequest'],
     chrome_url_overrides: { newtab: 'newtab.html' },
     action: { default_title: 'Compass' },
     // MV3 default CSP blocks WebAssembly compilation. sqlite-wasm needs

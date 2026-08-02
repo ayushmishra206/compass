@@ -7,8 +7,23 @@ export interface FocusSummary14d {
   trend: 'improving' | 'flat' | 'declining';
 }
 
+export interface PomodoroSession {
+  startedAt: string;
+  durationMin: number;
+  completed: boolean;
+  interruptCount: number;
+  soundscapeId: string | null;
+}
+
 export interface PomodoroRepo {
-  start(input: { id: string; durationMin: number; theme?: string }): Promise<void>;
+  start(input: {
+    id: string;
+    durationMin: number;
+    theme?: string;
+    soundscapeId?: string | null;
+  }): Promise<void>;
+  /** Raw completed-and-abandoned sessions since an ISO instant, for signals. */
+  listSince(sinceIso: string): Promise<PomodoroSession[]>;
   complete(id: string): Promise<void>;
   abandon(id: string): Promise<void>;
   summarize14d(now: Date): Promise<FocusSummary14d>;
@@ -16,12 +31,29 @@ export interface PomodoroRepo {
 
 export function createPomodoroRepo(db: Db): PomodoroRepo {
   return {
-    async start({ id, durationMin, theme }) {
+    async start({ id, durationMin, theme, soundscapeId }) {
       db.exec({
-        sql: `INSERT INTO pomodoros (id, started_at, duration_min, theme) VALUES (?, ?, ?, ?)
+        sql: `INSERT INTO pomodoros (id, started_at, duration_min, theme, soundscape_id)
+              VALUES (?, ?, ?, ?, ?)
               ON CONFLICT(id) DO NOTHING`,
-        bind: [id, new Date().toISOString(), durationMin, theme ?? null],
+        bind: [id, new Date().toISOString(), durationMin, theme ?? null, soundscapeId ?? null],
       });
+    },
+
+    async listSince(sinceIso) {
+      const rows = db.exec({
+        sql: `SELECT started_at, duration_min, completed, interrupt_count, soundscape_id
+              FROM pomodoros WHERE started_at >= ? ORDER BY started_at ASC`,
+        bind: [sinceIso],
+        returnValue: 'resultRows',
+      }) as Array<Array<unknown>>;
+      return rows.map((r) => ({
+        startedAt: r[0] as string,
+        durationMin: (r[1] as number) ?? 0,
+        completed: r[2] === 1,
+        interruptCount: (r[3] as number) ?? 0,
+        soundscapeId: (r[4] as string | null) ?? null,
+      }));
     },
     async complete(id) {
       db.exec({
