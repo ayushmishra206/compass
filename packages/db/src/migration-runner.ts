@@ -149,11 +149,47 @@ CREATE TABLE calendar_sync_state (
 UPDATE meta SET value = '4' WHERE key = 'schema_version';
 `;
 
+const MIGRATION_0005_GOALS = `
+CREATE TABLE goals (
+  id           TEXT PRIMARY KEY,
+  created_at   TEXT NOT NULL,
+  horizon      TEXT NOT NULL CHECK (horizon IN ('quarter', 'year', 'custom')),
+  start_date   TEXT NOT NULL,
+  end_date     TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  why          TEXT,
+  status       TEXT NOT NULL DEFAULT 'active'
+                 CHECK (status IN ('active', 'paused', 'achieved', 'abandoned')),
+  -- Decomposition provenance. Null until the user asks for one.
+  decomposed_at TEXT,
+  model_id      TEXT,
+  daily_templates TEXT NOT NULL DEFAULT '[]',
+  risks           TEXT NOT NULL DEFAULT '[]',
+  first_week_focus TEXT
+);
+CREATE INDEX goals_status ON goals(status, end_date);
+
+CREATE TABLE milestones (
+  id                 TEXT PRIMARY KEY,
+  goal_id            TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+  week_index         INTEGER NOT NULL,
+  title              TEXT NOT NULL,
+  target_date        TEXT,
+  definition_of_done TEXT NOT NULL DEFAULT '',
+  done               INTEGER NOT NULL DEFAULT 0,
+  completed_at       TEXT
+);
+CREATE INDEX milestones_goal ON milestones(goal_id, week_index);
+
+UPDATE meta SET value = '5' WHERE key = 'schema_version';
+`;
+
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
   { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
   { version: 3, name: 'notes', sql: MIGRATION_0003_NOTES },
   { version: 4, name: 'calendar', sql: MIGRATION_0004_CALENDAR },
+  { version: 5, name: 'goals', sql: MIGRATION_0005_GOALS },
 ];
 
 /** Version a fully-migrated DB lands on. Derived, so adding a migration updates it. */

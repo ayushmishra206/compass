@@ -3,7 +3,7 @@
 //
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
-import type { StoredBriefing } from '@compass/db';
+import type { StoredBriefing, StoredGoal } from '@compass/db';
 import type { CalendarEventRow, ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
@@ -92,6 +92,41 @@ export interface Routes {
   'calendar.listRange': {
     req: { fromIso: string; toIso: string };
     res: { events: CalendarEventRow[] };
+  };
+  'goals.list': {
+    req: { status?: 'active' | 'paused' | 'achieved' | 'abandoned' };
+    res: { goals: StoredGoal[] };
+  };
+  'goals.create': {
+    req: {
+      title: string;
+      why?: string;
+      horizon: 'quarter' | 'year' | 'custom';
+      startDate: string;
+      endDate: string;
+    };
+    res: { id: string };
+  };
+  'goals.update': {
+    req: {
+      id: string;
+      title?: string;
+      why?: string;
+      status?: 'active' | 'paused' | 'achieved' | 'abandoned';
+      endDate?: string;
+    };
+    res: { ok: true };
+  };
+  'goals.delete': { req: { id: string }; res: { ok: true } };
+  'goals.decompose': {
+    req: { id: string };
+    res:
+      | { ok: true; goal: StoredGoal }
+      | { ok: false; reason: 'locked' | 'not-found' | 'error'; error?: string };
+  };
+  'goals.setMilestoneDone': {
+    req: { milestoneId: string; done: boolean };
+    res: { ok: true };
   };
   'notes.create': {
     req: { title: string; body: string; tags: string[] };

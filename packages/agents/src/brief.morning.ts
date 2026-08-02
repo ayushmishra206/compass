@@ -29,12 +29,22 @@ export interface BriefEvent {
   isFocusBlock: boolean;
 }
 
+/** Goal fields the briefing prompt is allowed to see. Per PRD §8.3, max 3. */
+export interface BriefGoal {
+  id: string;
+  title: string;
+  weeksRemaining: number;
+  currentMilestone: string | null;
+}
+
 export interface MorningBriefDeps {
   briefRepo: BriefRepo;
   pomodoroRepo: PomodoroRepo;
   weatherRpc: () => Promise<{ summary: string; tempC: number; precipitationPct: number } | null>;
   /** Today's calendar. Absent or throwing means "no calendar connected". */
   todayEvents?: () => Promise<BriefEvent[]>;
+  /** Active goals, most urgent first. Absent or throwing means "no goals set". */
+  activeGoals?: () => Promise<BriefGoal[]>;
   router: LlmRouter;
   costLedger: CostLedgerRepo;
   now: () => Date;
@@ -52,9 +62,11 @@ const SYSTEM_TEMPLATE = `You are Compass, a calm morning briefing for one user. 
 
 Voice: warm, succinct, never lecturing. Two-to-three-sentence TLDR. No false certainty. If a field has no real data, return an empty array or null — do NOT invent meetings, tasks, or goals.
 
-Inputs you receive include the user's local time, weather, a 14-day focus summary, and today's calendar. Tasks and goals arrive in later phases — for those, leave arrays empty.
+Inputs you receive include the user's local time, weather, a 14-day focus summary, and today's calendar. Tasks arrive in a later phase — leave that array empty.
 
 When events is non-empty, ground the TLDR and watchouts in it: real meeting times, real gaps, real back-to-backs. Suggest Pomodoros only in windows the calendar leaves free. When events is empty, say the day looks open rather than implying the calendar is missing.
+
+quotedGoal must be drawn from activeGoals when any exist — prefer the goal whose currentMilestone is most at risk given today's schedule. Return null when there are no goals rather than inventing one.
 
 If avgInterruptPerSession is 0 and totalFocusMin is non-zero, do not infer "flawless focus" — the metric is not yet captured.
 
@@ -78,6 +90,7 @@ export async function generateMorningBrief(deps: MorningBriefDeps): Promise<Morn
   // A calendar failure must not cost the user their brief — degrade to the
   // no-calendar shape, which the prompt already knows how to handle.
   const events = deps.todayEvents ? await deps.todayEvents().catch(() => []) : [];
+  const activeGoals = deps.activeGoals ? await deps.activeGoals().catch(() => []) : [];
 
   const dateLocal = now.toLocaleDateString('sv-SE', { timeZone: deps.userProfile.timezone });
   const dayOfWeek = now.toLocaleDateString(deps.userProfile.locale, {
@@ -99,7 +112,7 @@ export async function generateMorningBrief(deps: MorningBriefDeps): Promise<Morn
     focusSummary14d: focus,
     fitbit: null,
     weather,
-    activeGoals: [],
+    activeGoals,
   };
 
   const system = interpolate(SYSTEM_TEMPLATE, {

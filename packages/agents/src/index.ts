@@ -3,6 +3,7 @@ export {
   type MorningBriefDeps,
   type MorningBriefResult,
   type BriefEvent,
+  type BriefGoal,
   type LlmRouter,
 } from './brief.morning';
 export {
@@ -11,6 +12,12 @@ export {
   type EodReflectionResult,
 } from './brief.eod';
 export { generateAutolinkSummary, type AutolinkSummaryDeps } from './notes.autolink.summary';
+export {
+  decomposeGoal,
+  weeksBetween,
+  type DecomposeGoalDeps,
+  type GoalDecomposeOutput,
+} from './goal.decompose';
 export {
   askGrounded,
   type AskGroundedDeps,
