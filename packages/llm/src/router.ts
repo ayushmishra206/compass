@@ -15,6 +15,7 @@ import {
   LlmSchemaError,
   LlmTimeout,
   LlmUnavailable,
+  LlmUntrustedToolViolation,
 } from './errors';
 import { recordCall } from './ledger';
 
@@ -47,6 +48,45 @@ function isHardFail(err: unknown): boolean {
   return err instanceof LlmKeyInvalid || err instanceof LlmTimeout || err instanceof LlmSchemaError;
 }
 
+/**
+ * Capabilities that change state outside the model. A request that reads
+ * untrusted content may never hold one of these — see assertTrustBoundary.
+ */
+const STATE_CHANGING_CAPABILITIES = new Set([
+  'createTask',
+  'sendEmail',
+  'draftsSend',
+  'messagesSend',
+  'applyLabel',
+  'deleteMessage',
+  'createEvent',
+  'deleteEvent',
+  'writeNote',
+  'runCommand',
+]);
+
+/**
+ * Enforces architectural invariant 5 (PRD §19.4.1).
+ *
+ * The defense that matters is not that the model resists a cleverly worded
+ * email — it is that a model reading a stranger's text is structurally unable
+ * to act on it. This is checked before any provider call, so an
+ * incorrectly-wired caller fails on the first request rather than the first
+ * malicious one.
+ */
+export function assertTrustBoundary(
+  taskId: string,
+  trusted: boolean,
+  capabilities: readonly string[] = [],
+): void {
+  if (trusted) return;
+  for (const cap of capabilities) {
+    if (STATE_CHANGING_CAPABILITIES.has(cap)) {
+      throw new LlmUntrustedToolViolation(taskId, cap);
+    }
+  }
+}
+
 export async function executeTask(
   taskId: string,
   payload: {
@@ -54,8 +94,20 @@ export async function executeTask(
     messages: LlmRequest['messages'];
     schema?: LlmRequest['schema'];
   },
-  opts: { trusted: boolean; timeoutMs?: number } = { trusted: true },
+  opts: { trusted: boolean; timeoutMs?: number; capabilities?: readonly string[] } = {
+    trusted: true,
+  },
 ): Promise<LlmResponse> {
+  // Trust checks run before anything else, including route resolution: an
+  // unknown task id must not mask a wiring violation behind a different error.
+  assertTrustBoundary(taskId, opts.trusted, opts.capabilities);
+
+  // An untrusted read must produce constrained JSON, never free text that
+  // could be concatenated into a later prompt (§19.4.4).
+  if (!opts.trusted && !payload.schema) {
+    throw new LlmUntrustedToolViolation(taskId, 'unstructured-output');
+  }
+
   const route = findRoute(taskId);
   if (!route) throw new Error(`Unknown taskId: ${taskId}`);
 

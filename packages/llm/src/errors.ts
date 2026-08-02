@@ -50,3 +50,20 @@ export class LlmTimeout extends Error {
     this.name = 'LlmTimeout';
   }
 }
+
+/**
+ * Thrown when a request carrying untrusted content is paired with a
+ * state-changing capability. PRD §19.4.1 / architectural invariant 5.
+ *
+ * This is not a recoverable condition — it means a caller wired an extraction
+ * path to a tool that can act, which is the exact shape of a prompt-injection
+ * exploit. It fails loudly rather than degrading.
+ */
+export class LlmUntrustedToolViolation extends Error {
+  constructor(taskId: string, capability: string) {
+    super(
+      `Task '${taskId}' reads untrusted content and may not hold the state-changing capability '${capability}'.`,
+    );
+    this.name = 'LlmUntrustedToolViolation';
+  }
+}
