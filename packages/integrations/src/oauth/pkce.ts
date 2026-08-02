@@ -162,6 +162,59 @@ export async function exchangeCodeForTokens(
   };
 }
 
+export class OAuthRefreshRevoked extends Error {
+  constructor() {
+    super('OAUTH_REFRESH_REVOKED');
+    this.name = 'OAuthRefreshRevoked';
+  }
+}
+
+/**
+ * Exchange a refresh token for a fresh access token.
+ *
+ * A 400 with `invalid_grant` means the user revoked access (or the token
+ * expired after long disuse). That is unrecoverable without re-consent, so it
+ * gets its own error type — callers must clear the grant rather than retry.
+ */
+export async function refreshAccessToken(
+  provider: PkceProvider,
+  opts: { refreshToken: string; fetchImpl?: typeof fetch; now?: () => Date },
+): Promise<TokenSet> {
+  const doFetch = opts.fetchImpl ?? fetch;
+  const now = opts.now ?? (() => new Date());
+
+  const res = await doFetch(provider.tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: opts.refreshToken,
+      client_id: provider.clientId,
+    }).toString(),
+  });
+
+  if (res.status === 400 || res.status === 401) throw new OAuthRefreshRevoked();
+  if (!res.ok) throw new Error(`OAUTH_REFRESH_FAILED: ${res.status}`);
+
+  const json = (await res.json()) as {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    scope?: string;
+    token_type?: string;
+  };
+  if (!json.access_token) throw new Error('OAUTH_REFRESH_FAILED: response contained no token');
+
+  return {
+    accessToken: json.access_token,
+    // Google usually omits this on refresh; keep the existing one in that case.
+    refreshToken: json.refresh_token,
+    expiresAt: new Date(now().getTime() + (json.expires_in ?? 3600) * 1000).toISOString(),
+    scope: json.scope,
+    tokenType: json.token_type ?? 'Bearer',
+  };
+}
+
 export async function startPkceFlow(provider: PkceProvider, deps: PkceFlowDeps): Promise<TokenSet> {
   const verifier = generateVerifier();
   const challenge = await deriveChallenge(verifier);

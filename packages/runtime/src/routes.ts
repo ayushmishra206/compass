@@ -4,7 +4,7 @@
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
 import type { StoredBriefing } from '@compass/db';
-import type { ProviderId, SceneManifest, WxAffinity } from '@compass/core';
+import type { CalendarEventRow, ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
   'system.ping': {
@@ -67,6 +67,32 @@ export interface Routes {
   'pomodoro.complete': { req: { id: string }; res: { ok: true } };
   'pomodoro.abandon': { req: { id: string }; res: { ok: true } };
   'alarms.refresh': { req: Record<string, never>; res: { ok: true } };
+  // Calendar. `connect` runs in the service worker because
+  // identity.launchWebAuthFlow is unavailable to the offscreen document; the
+  // rest run in offscreen alongside the DB.
+  'calendar.connect': {
+    req: { clientId: string };
+    res: { ok: true; email?: string } | { ok: false; error: string };
+  };
+  'calendar.disconnect': { req: Record<string, never>; res: { ok: true } };
+  'calendar.status': {
+    req: Record<string, never>;
+    res: { connected: boolean; email?: string; lastSyncAt?: string };
+  };
+  'calendar.sync': {
+    req: { force?: boolean };
+    res:
+      | { ok: true; upserted: number; deleted: number; truncated: boolean }
+      | {
+          ok: false;
+          reason: 'not-connected' | 'locked' | 'auth-expired' | 'error';
+          error?: string;
+        };
+  };
+  'calendar.listRange': {
+    req: { fromIso: string; toIso: string };
+    res: { events: CalendarEventRow[] };
+  };
   'notes.create': {
     req: { title: string; body: string; tags: string[] };
     res: { id: string };

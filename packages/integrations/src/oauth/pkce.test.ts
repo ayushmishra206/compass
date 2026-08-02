@@ -6,6 +6,8 @@ import {
   generateState,
   generateVerifier,
   parseCallback,
+  refreshAccessToken,
+  OAuthRefreshRevoked,
   startPkceFlow,
   type PkceProvider,
 } from './pkce';
@@ -250,6 +252,63 @@ describe('exchangeCodeForTokens', () => {
         fetchImpl,
       }),
     ).rejects.toThrow('OAUTH_TOKEN_EXCHANGE_FAILED');
+  });
+});
+
+describe('refreshAccessToken', () => {
+  const ok = (body: unknown) =>
+    vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, json: async () => body, text: async () => '' });
+
+  it('posts the refresh grant', async () => {
+    const fetchImpl = ok({ access_token: 'NEW', expires_in: 3600 });
+    await refreshAccessToken(PROVIDER, { refreshToken: 'RT', fetchImpl });
+    const body = new URLSearchParams(fetchImpl.mock.calls[0]![1].body as string);
+    expect(body.get('grant_type')).toBe('refresh_token');
+    expect(body.get('refresh_token')).toBe('RT');
+    expect(body.get('client_secret')).toBeNull();
+  });
+
+  it('returns an absolute expiry', async () => {
+    const fetchImpl = ok({ access_token: 'NEW', expires_in: 3600 });
+    const t = await refreshAccessToken(PROVIDER, {
+      refreshToken: 'RT',
+      fetchImpl,
+      now: () => new Date('2026-08-02T10:00:00Z'),
+    });
+    expect(t.expiresAt).toBe('2026-08-02T11:00:00.000Z');
+  });
+
+  it('leaves refreshToken undefined when Google does not rotate it', async () => {
+    const fetchImpl = ok({ access_token: 'NEW', expires_in: 60 });
+    expect(
+      (await refreshAccessToken(PROVIDER, { refreshToken: 'RT', fetchImpl })).refreshToken,
+    ).toBeUndefined();
+  });
+
+  it('treats invalid_grant as revoked, not as a retryable failure', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'invalid_grant' }),
+      text: async () => '',
+    });
+    await expect(
+      refreshAccessToken(PROVIDER, { refreshToken: 'RT', fetchImpl }),
+    ).rejects.toBeInstanceOf(OAuthRefreshRevoked);
+  });
+
+  it('treats a 5xx as an ordinary failure', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({}),
+      text: async () => '',
+    });
+    await expect(refreshAccessToken(PROVIDER, { refreshToken: 'RT', fetchImpl })).rejects.toThrow(
+      'OAUTH_REFRESH_FAILED',
+    );
   });
 });
 

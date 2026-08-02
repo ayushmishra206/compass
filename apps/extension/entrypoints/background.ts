@@ -1,19 +1,47 @@
-import { ensureHeavyDoc } from '@compass/runtime';
+import { createHandlerRegistry, ensureHeavyDoc, installRequestListener } from '@compass/runtime';
 import { ensureAlarms, registerAlarmHandlers } from '@compass/integrations';
+import { clearOAuthGrant } from '@compass/core';
+import { connectGoogleCalendar } from './sw/calendarAuth';
+
+/**
+ * Routes the service worker owns outright. Everything else is forwarded to the
+ * offscreen document. These are here because they need extension APIs the
+ * offscreen document cannot reach (identity, alarms).
+ */
+const swRegistry = createHandlerRegistry();
+
+swRegistry.register('alarms.refresh', async () => {
+  await ensureAlarms();
+  return { ok: true } as const;
+});
+
+swRegistry.register('calendar.connect', async ({ clientId }) => {
+  const res = await connectGoogleCalendar(clientId);
+  return res.ok
+    ? ({ ok: true, email: res.email } as const)
+    : ({ ok: false, error: res.error ?? 'Connection failed.' } as const);
+});
+
+swRegistry.register('calendar.disconnect', async () => {
+  await clearOAuthGrant('google');
+  return { ok: true } as const;
+});
 
 export default defineBackground(() => {
   console.log('Compass service worker online');
 
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg?.kind === 'rpc.request' && msg?.route === 'alarms.refresh') {
-      void ensureAlarms().then(() => sendResponse({ ok: true }));
-      return true; // async response
-    }
-    if (msg?.kind === 'rpc.request') {
-      void ensureHeavyDoc();
-      // Do not call sendResponse — offscreen replies via its own sendMessage.
-      return false;
-    }
+  // Answers the routes above. Ownership is checked inside, so this listener and
+  // the offscreen document's can coexist without racing.
+  installRequestListener(swRegistry);
+
+  chrome.runtime.onMessage.addListener((msg: unknown) => {
+    const m = msg as { kind?: string; routeKind?: string } | null;
+    if (m?.kind !== 'rpc.request') return false;
+    // SW-owned routes are already handled by the listener above; anything else
+    // needs the heavy document awake to answer.
+    if (m.routeKind && swRegistry.has(m.routeKind as never)) return false;
+    void ensureHeavyDoc();
+    // Do not call sendResponse — offscreen replies via its own sendMessage.
     return false;
   });
 

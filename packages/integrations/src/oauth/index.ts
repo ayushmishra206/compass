@@ -6,6 +6,8 @@ export {
   generateVerifier,
   parseCallback,
   startPkceFlow,
+  refreshAccessToken,
+  OAuthRefreshRevoked,
   type PkceFlowDeps,
   type PkceProvider,
   type TokenSet,

@@ -1,5 +1,5 @@
-import { Pill, Text } from '@compass/ui';
-import { MOCK } from '../mocks/index.js';
+import { Pill, Stack, Text } from '@compass/ui';
+import { useCalendar } from '../hooks/useCalendar.js';
 
 const START_H = 8;
 const END_H = 19;
@@ -16,9 +16,49 @@ function nowHHMM(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function Empty({ title, body }: { title: string; body: string }) {
+  return (
+    <Stack gap={2} style={{ padding: '32px 8px', textAlign: 'center' }}>
+      <Text variant="heading">{title}</Text>
+      <Text variant="body" tone="muted" style={{ maxWidth: 320, margin: '0 auto' }}>
+        {body}
+      </Text>
+    </Stack>
+  );
+}
+
 export function TodayDrawer() {
   const H = END_H - START_H;
   const now = new Date();
+  const { state } = useCalendar();
+
+  if (state.kind === 'loading') {
+    return <Empty title="Loading your day…" body="Reading today's calendar." />;
+  }
+  if (state.kind === 'not-connected') {
+    return (
+      <Empty
+        title="No calendar connected"
+        body="Connect Google Calendar in Profile to see your day here and to ground the morning brief in real meetings."
+      />
+    );
+  }
+  if (state.kind === 'error') {
+    return <Empty title="Couldn't load your day" body={state.message} />;
+  }
+
+  const timed = state.events.filter((e) => !e.allDay);
+  const allDay = state.events.filter((e) => e.allDay);
+
+  if (state.events.length === 0) {
+    return (
+      <Empty
+        title="Nothing scheduled"
+        body="Your calendar is clear today. A good day for deep work."
+      />
+    );
+  }
+
   return (
     <div style={{ position: 'relative', paddingLeft: 60, height: H * HOUR_PX + 16 }}>
       {Array.from({ length: H + 1 }, (_, i) => (
@@ -68,10 +108,11 @@ export function TodayDrawer() {
           now
         </Text>
       </div>
-      {MOCK.events.map((ev) => {
+      {timed.map((ev) => {
         const top = toY(ev.start);
-        const height = toY(ev.end) - top;
-        const isFocus = 'focus' in ev && ev.focus;
+        // Sub-30-minute events would otherwise render as an unreadable sliver.
+        const height = Math.max(toY(ev.end) - top, 18);
+        const isFocus = ev.isFocusBlock;
         return (
           // Event bars start at left: 60 to align with the hour-line gutter so
           // the mono hour labels (positioned at left: -50 from each line) stay
@@ -110,10 +151,19 @@ export function TodayDrawer() {
             >
               {ev.summary}
             </Text>
-            {'prep' in ev && ev.prep && <Pill tone="accent">prep</Pill>}
+            {ev.hasConference && <Pill tone="accent">meet</Pill>}
           </div>
         );
       })}
+      {allDay.length > 0 && (
+        <Stack gap={1} style={{ position: 'absolute', left: 60, right: 8, top: -4 }}>
+          {allDay.map((ev) => (
+            <Text key={ev.id} variant="mono" tone="muted" as="div" style={{ fontSize: 9 }}>
+              all day · {ev.summary}
+            </Text>
+          ))}
+        </Stack>
+      )}
     </div>
   );
 }
