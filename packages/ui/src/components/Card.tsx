@@ -15,7 +15,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
     <div
       ref={ref}
       className={cn(
-        'bg-[var(--panel)] border border-[var(--hair)] rounded-[14px] shadow-[var(--sh-1)]',
+        'bg-[var(--color-panel)] border border-[var(--color-hair)] rounded-[14px] shadow-[var(--shadow-1)]',
         padded && 'p-[22px]',
         className,
       )}
@@ -28,7 +28,7 @@ export function CardHeader({ className, ...rest }: HTMLAttributes<HTMLDivElement
   return (
     <div
       className={cn(
-        'flex items-center gap-2.5 px-[22px] py-3.5 border-b border-[var(--hair)]',
+        'flex items-center gap-2.5 px-[22px] py-3.5 border-b border-[var(--color-hair)]',
         className,
       )}
       {...rest}

@@ -24,7 +24,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const base =
   'inline-flex items-center gap-2 font-medium transition-colors active:translate-y-[0.5px] ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 ' +
-  'focus-visible:ring-offset-[var(--bg)] disabled:opacity-50 disabled:cursor-not-allowed';
+  'focus-visible:ring-offset-[var(--color-bg)] disabled:opacity-50 disabled:cursor-not-allowed';
 
 const sizeCls: Record<NonNullable<ButtonProps['size']>, string> = {
   xs: 'px-2 py-[3px] text-[11px] rounded-md',
@@ -34,13 +34,14 @@ const sizeCls: Record<NonNullable<ButtonProps['size']>, string> = {
 
 const variantCls: Record<NonNullable<ButtonProps['variant']>, string> = {
   default:
-    'bg-[var(--panel)] text-[var(--ink)] border border-[var(--hair)] ' +
-    'hover:bg-[var(--panel-2)] hover:border-[var(--hair-2)]',
+    'bg-[var(--color-panel)] text-[var(--color-ink)] border border-[var(--color-hair)] ' +
+    'hover:bg-[var(--color-panel-2)] hover:border-[var(--color-hair-2)]',
   primary:
-    'bg-[var(--ink)] text-[var(--bg)] border border-[var(--ink)] ' +
+    'bg-[var(--color-ink)] text-[var(--color-bg)] border border-[var(--color-ink)] ' +
     'hover:bg-[oklch(0.14_0.015_55)] hover:border-[oklch(0.14_0.015_55)]',
   accent: 'bg-[var(--accent)] text-white border border-transparent hover:brightness-105',
-  ghost: 'bg-transparent text-[var(--ink)] border border-transparent hover:bg-[var(--panel-2)]',
+  ghost:
+    'bg-transparent text-[var(--color-ink)] border border-transparent hover:bg-[var(--color-panel-2)]',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

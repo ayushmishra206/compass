@@ -27,6 +27,8 @@ const btnAccent: CSSProperties = {
   fontWeight: 500,
   cursor: 'pointer',
 };
+const labelStyle: CSSProperties = { fontSize: 11, color: 'var(--color-ink-3)' };
+const errorTextStyle: CSSProperties = { color: 'oklch(0.82 0.13 30)', fontSize: 12 };
 const btnGhost: CSSProperties = {
   padding: '10px 16px',
   borderRadius: 999,
@@ -62,7 +64,7 @@ export function PassphraseConfirmForm({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <label htmlFor={passId} style={{ fontSize: 11, color: 'var(--color-ink-3)' }}>
+      <label htmlFor={passId} style={labelStyle}>
         Passphrase
       </label>
       <input
@@ -73,7 +75,7 @@ export function PassphraseConfirmForm({
         autoFocus
         style={inputStyle}
       />
-      {error && <div style={{ color: 'oklch(0.82 0.13 30)', fontSize: 12 }}>{error}</div>}
+      {error && <div style={errorTextStyle}>{error}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         {onCancel && (
           <button type="button" style={btnGhost} onClick={onCancel} disabled={submitting}>

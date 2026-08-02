@@ -50,7 +50,7 @@ export function Modal({
         {...aria}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'bg-[var(--panel)] border border-[var(--hair)] rounded-[18px] shadow-[var(--sh-3)] overflow-hidden',
+          'bg-[var(--color-panel)] border border-[var(--color-hair)] rounded-[18px] shadow-[var(--shadow-3)] overflow-hidden',
           wide ? 'w-[min(860px,94vw)]' : 'w-[min(560px,94vw)]',
           className,
         )}
@@ -73,9 +73,9 @@ export function ModalHeader({
   meta?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2.5 px-[22px] py-[18px] border-b border-[var(--hair)]">
+    <div className="flex items-center gap-2.5 px-[22px] py-[18px] border-b border-[var(--color-hair)]">
       <div className="font-serif text-[18px] font-medium">{title}</div>
-      {meta && <div className="font-mono text-[10px] text-[var(--ink-4)] ml-2">{meta}</div>}
+      {meta && <div className="font-mono text-[10px] text-[var(--color-ink-4)] ml-2">{meta}</div>}
       <IconButton aria-label="Close modal" className="ml-auto" onClick={onClose}>
         <IconClose size={14} />
       </IconButton>

@@ -1,28 +1,28 @@
-import type { CSSProperties } from 'react';
-
-const labelStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-3)',
-  marginBottom: 10,
-};
-const itemStyle: CSSProperties = {
-  fontSize: 13,
-  color: 'var(--color-ink-2)',
-  padding: '6px 0',
-};
+import { Text } from '@compass/ui';
 
 export function WatchoutsSection({ items }: { items: string[] | undefined }) {
   if (!items || items.length === 0) return null;
   return (
     <>
-      <div style={labelStyle}>Watchouts</div>
+      <Text variant="mono" style={{ marginBottom: 10 }}>
+        Watchouts
+      </Text>
       <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px' }}>
         {items.map((w, i) => (
-          <li key={i} style={itemStyle}>
-            • {w}
+          <li
+            key={i}
+            style={{ display: 'flex', gap: 14, padding: '6px 0', alignItems: 'flex-start' }}
+          >
+            <Text variant="mono" tone="dim" style={{ flex: '0 0 18px', paddingTop: 3 }}>
+              {String(i + 1).padStart(2, '0')}
+            </Text>
+            <Text
+              variant="serif-body"
+              tone="secondary"
+              style={{ flex: 1, fontSize: 13, lineHeight: 1.55 }}
+            >
+              {w}
+            </Text>
           </li>
         ))}
       </ul>

@@ -24,6 +24,10 @@ export interface ShellState {
   encryptionEnabled: boolean;
   locked: boolean;
   unlockHint: boolean;
+  /** Salt added to the date seed when picking a scene; bumped by skipScene(). */
+  sceneSalt: number;
+  /** sha256s of scenes the user has hearted. */
+  favoriteScenes: string[];
 
   navClick: (kind: DrawerKind) => void;
   avatarClick: () => void;
@@ -42,6 +46,8 @@ export interface ShellState {
   requestUnlock: () => void;
   setEncryptionState: (enabled: boolean, locked: boolean) => void;
   clearUnlockHint: () => void;
+  skipScene: () => void;
+  toggleFavoriteScene: (sha256: string) => void;
 }
 
 export const useShell = create<ShellState>()(
@@ -56,6 +62,8 @@ export const useShell = create<ShellState>()(
       encryptionEnabled: false,
       locked: false,
       unlockHint: false,
+      sceneSalt: 0,
+      favoriteScenes: [],
 
       navClick: (kind) => set({ drawer: { open: true, kind } }),
       avatarClick: () => {
@@ -102,6 +110,18 @@ export const useShell = create<ShellState>()(
       setEncryptionState: (enabled, locked) => set({ encryptionEnabled: enabled, locked }),
 
       clearUnlockHint: () => set({ unlockHint: false }),
+
+      skipScene: () => set((s) => ({ sceneSalt: s.sceneSalt + 1 })),
+
+      toggleFavoriteScene: (sha256) =>
+        set((s) => {
+          const has = s.favoriteScenes.includes(sha256);
+          return {
+            favoriteScenes: has
+              ? s.favoriteScenes.filter((x) => x !== sha256)
+              : [...s.favoriteScenes, sha256],
+          };
+        }),
     }),
     {
       name: 'compass.shell.v1',
@@ -109,7 +129,9 @@ export const useShell = create<ShellState>()(
         accent: s.accent,
         pinnedScene: s.pinnedScene,
         weatherEnabled: s.weatherEnabled,
-        // intentionally NOT: encryptionEnabled, locked, unlockHint (re-derived on boot)
+        favoriteScenes: s.favoriteScenes,
+        // intentionally NOT: encryptionEnabled, locked, unlockHint, sceneSalt
+        // (re-derived on boot; sceneSalt resets daily by design)
       }),
     },
   ),

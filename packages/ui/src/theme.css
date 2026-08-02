@@ -37,6 +37,38 @@
   --motion-mid: 240ms;
   --motion-slow: 360ms;
   --motion-scenefade: 1200ms;
+  --motion-slideup: 600ms;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 14px;
+  --space-4: 20px;
+  --space-5: 28px;
+  --space-6: 40px;
+
+  --shadow-overlay-text: 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+
+  --scrim-top: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.45) 6%,
+    rgba(0, 0, 0, 0) 14%
+  );
+  --scrim-bottom: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.65) 12%,
+    rgba(0, 0, 0, 0.3) 32%,
+    rgba(0, 0, 0, 0) 50%
+  );
+  --scrim-right: linear-gradient(
+    270deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.2) 28%,
+    rgba(0, 0, 0, 0) 50%
+  );
+  --scrim-ambient: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.18) 100%);
 }
 
 :root {
@@ -46,6 +78,9 @@
   --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
   --accent-soft: oklch(0.85 var(--accent-c) var(--accent-h));
   --accent-wash: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.16);
+  /* Readable ink for text sitting on --accent-wash. Lifted above --accent-soft
+     so small text (Badge, Tag) clears 4.5:1 against the washed backdrop. */
+  --accent-ink: oklch(0.9 var(--accent-c) var(--accent-h));
 
   color-scheme: dark;
 }
@@ -101,22 +136,64 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   /* Honor user preference: collapse repeating animations to a single cycle and
      make transitions instantaneous. Don't zero `animation-duration` — `infinite
-     alternate` keyframes (e.g. Stage compass-ken) would strobe at thousands of
-     cycles per second. Letting them play once and stop on the final keyframe
-     yields a calm, slow zoom that ends in a static frame. */
+     alternate` keyframes would strobe at thousands of cycles per second. */
   *,
   *::before,
   *::after {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+
+  /* Exception: the Stage Ken Burns zoom is calm by design (24s symmetric
+     keyframe). The user reported the auto-disable looked like a hard
+     freeze; keep it looping infinitely so the photo continues to breathe
+     even under prefers-reduced-motion. */
+  .stage-img {
+    animation-iteration-count: infinite !important;
+  }
 }
 
+/* True zoom-in / zoom-out loop: starts at scale 1.04, peaks at scale 1.12
+   at the midpoint, returns to scale 1.04 at the end. No `alternate` needed
+   because the keyframe is itself symmetric, so the animation can run on
+   `infinite` without the jump-back-to-start clunk that the previous
+   asymmetric 0→100 keyframe produced. */
 @keyframes compass-ken {
   0% {
     transform: scale(1.04) translate(0, 0);
   }
-  100% {
+  50% {
     transform: scale(1.12) translate(-1.5%, -1%);
   }
+  100% {
+    transform: scale(1.04) translate(0, 0);
+  }
+}
+
+@keyframes compass-slideup {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.compass-slideup {
+  animation: compass-slideup var(--motion-slideup) ease both;
+}
+
+@keyframes compass-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.compass-fade {
+  animation: compass-fade var(--motion-mid) ease;
 }

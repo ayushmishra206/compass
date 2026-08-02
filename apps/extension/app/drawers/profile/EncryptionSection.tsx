@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { Text } from '@compass/ui';
 import { useShell } from '../../state/shell';
 import { PassphraseSetForm } from '../../components/credentials/PassphraseSetForm';
 import { PassphraseConfirmForm } from '../../components/credentials/PassphraseConfirmForm';
@@ -50,9 +51,9 @@ export function EncryptionSection() {
     return (
       <div style={sectionWrap}>
         <div style={sectionLabelStyle}>Encryption</div>
-        <div style={{ fontSize: 12, color: 'var(--color-ink-3)', marginBottom: 10 }}>
+        <Text variant="body" tone="muted" style={{ fontSize: 12, marginBottom: 10 }}>
           Off — keys are stored unencrypted in this browser.
-        </div>
+        </Text>
         {expanded !== 'enable' ? (
           <button type="button" style={btnGhost} onClick={() => setExpanded('enable')}>
             Enable encryption
@@ -67,9 +68,9 @@ export function EncryptionSection() {
   return (
     <div style={sectionWrap}>
       <div style={sectionLabelStyle}>Encryption</div>
-      <div style={{ fontSize: 12, color: 'var(--color-ink-3)', marginBottom: 10 }}>
+      <Text variant="body" tone="muted" style={{ fontSize: 12, marginBottom: 10 }}>
         On — keys are encrypted at rest with your passphrase.
-      </div>
+      </Text>
       <div style={{ display: 'flex', gap: 8 }}>
         {!locked && (
           <button type="button" style={btnGhost} onClick={() => void lock()}>

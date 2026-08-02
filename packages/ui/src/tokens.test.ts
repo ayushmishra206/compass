@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COLORS, GLASS, RADII, SHADOWS, FONTS, MOTION, ACCENT_NAMES } from './tokens.js';
+import { COLORS, GLASS, RADII, SHADOWS, FONTS, MOTION, SPACE, ACCENT_NAMES } from './tokens.js';
 
 describe('tokens', () => {
   it('exposes the dark-only color ramp', () => {
@@ -30,5 +30,15 @@ describe('tokens', () => {
     expect(RADII.lg).toBe(20);
     expect(SHADOWS.sh3).toContain('rgba(0,0,0,0.7)');
     expect(MOTION.scenefade).toBe(1200);
+    expect(MOTION.slideup).toBe(600);
+  });
+
+  it('exposes a 6-step spacing scale', () => {
+    expect(SPACE).toEqual({ s1: 4, s2: 8, s3: 14, s4: 20, s5: 28, s6: 40 });
+  });
+
+  it('exposes the overlay-text and card shadow recipes', () => {
+    expect(SHADOWS.overlayText).toContain('rgba(0, 0, 0, 0.6)');
+    expect(SHADOWS.card).toContain('rgba(0, 0, 0, 0.5)');
   });
 });

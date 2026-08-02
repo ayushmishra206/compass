@@ -92,6 +92,16 @@ const closeBtnStyle: CSSProperties = {
   color: 'var(--color-ink-2)',
   background: 'rgba(255,255,255,0.04)',
   border: '1px solid rgba(255,255,255,0.08)',
+  flexShrink: 0,
+};
+
+// When no meta string is supplied, the close button itself owns the
+// auto-margin so it stays pinned to the right edge of the header — keeping
+// chrome consistent across every drawer instead of drifting left next to the
+// title (as observed in TodayDrawer / GoalsDrawer / etc.).
+const closeBtnSoloStyle: CSSProperties = {
+  ...closeBtnStyle,
+  marginLeft: 'auto',
 };
 
 export function Drawer({
@@ -126,7 +136,7 @@ export function Drawer({
               data-testid="drawer-close"
               aria-label="Close drawer"
               onClick={onClose}
-              style={closeBtnStyle}
+              style={meta ? closeBtnStyle : closeBtnSoloStyle}
             >
               ×
             </button>

@@ -1,42 +1,35 @@
-import type { CSSProperties } from 'react';
-
-const labelStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-3)',
-  marginBottom: 10,
-};
-const quoteStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontStyle: 'italic',
-  fontSize: 14,
-  color: 'var(--color-ink-2)',
-  borderLeft: '2px solid var(--accent-soft)',
-  paddingLeft: 12,
-  marginBottom: 24,
-};
-const emptyStyle: CSSProperties = {
-  fontSize: 12,
-  color: 'var(--color-ink-3)',
-  fontStyle: 'italic',
-  marginBottom: 24,
-};
+import { Text } from '@compass/ui';
 
 export function QuotedGoalSection({ goal }: { goal: string | null | undefined }) {
   if (!goal) {
     return (
       <>
-        <div style={labelStyle}>Goal</div>
-        <p style={emptyStyle}>Set goals to anchor your day. Coming with the Goals drawer.</p>
+        <Text variant="mono" style={{ marginBottom: 10 }}>
+          Goal
+        </Text>
+        <Text variant="body" tone="muted" italic style={{ fontSize: 12, marginBottom: 24 }}>
+          Set goals to anchor your day. Coming with the Goals drawer.
+        </Text>
       </>
     );
   }
   return (
     <>
-      <div style={labelStyle}>Goal</div>
-      <p style={quoteStyle}>&ldquo;{goal}&rdquo;</p>
+      <Text variant="mono" style={{ marginBottom: 10 }}>
+        Goal
+      </Text>
+      <Text
+        variant="serif-body"
+        italic
+        style={{
+          fontSize: 14,
+          borderLeft: '2px solid var(--accent-soft)',
+          paddingLeft: 12,
+          marginBottom: 24,
+        }}
+      >
+        &ldquo;{goal}&rdquo;
+      </Text>
     </>
   );
 }

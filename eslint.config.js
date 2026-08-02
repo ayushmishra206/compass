@@ -103,6 +103,33 @@ export default [
       ],
     },
   },
+  // Design-system guardrail: no direct `style={{ color: ... }}` in shell or
+  // drawer components. Color decisions must go through @compass/ui's <Text>,
+  // <OverlayText>, <Pill> primitives so the canonical ink-ladder + accent
+  // tokens stay consistent — see PR #11's contrast bugs and the UI primitives
+  // refactor plan at docs/superpowers/plans/2026-05-14-ui-design-system-refactor.md.
+  // Scope: apps/extension/app/components/ + apps/extension/app/drawers/.
+  // Exempt: packages/ui/** (primitives + UI components own color), test files.
+  {
+    files: [
+      'apps/extension/app/components/**/*.{ts,tsx}',
+      'apps/extension/app/drawers/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          // `color: 'inherit'` is exempt: it defers to the surrounding ink
+          // tone rather than picking one, which is exactly what the rule wants.
+          selector:
+            "JSXAttribute[name.name='style'] ObjectExpression > Property[key.name='color']:not([value.value='inherit'])",
+          message:
+            "Don't set `color` inline. Use <Text variant tone> / <OverlayText> / <Pill tone> / <Ink tone> from @compass/ui — the ink ladder (primary/secondary/muted/dim/accent) is the only source of color for shell text.",
+        },
+      ],
+    },
+  },
   // Notes pipeline must not leak content into logs. Blocks console.{log,warn,...}
   // calls whose arguments reach into `.body`, `.title`, `.text`, `.context`,
   // `.answer`, `.rationale`, or `.query` member access. Scoped to notes

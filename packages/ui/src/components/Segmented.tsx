@@ -26,7 +26,7 @@ export function Segmented<T extends string>({
       role="radiogroup"
       {...aria}
       className={cn(
-        'inline-flex bg-[var(--panel-2)] border border-[var(--hair)] rounded-lg p-0.5',
+        'inline-flex bg-[var(--color-panel-2)] border border-[var(--color-hair)] rounded-lg p-0.5',
         className,
       )}
     >
@@ -41,8 +41,8 @@ export function Segmented<T extends string>({
             className={cn(
               'px-2.5 py-1 text-[11.5px] rounded-md transition-colors',
               active
-                ? 'bg-[var(--panel)] text-[var(--ink)] shadow-[var(--sh-1)]'
-                : 'text-[var(--ink-3)]',
+                ? 'bg-[var(--color-panel)] text-[var(--color-ink)] shadow-[var(--shadow-1)]'
+                : 'text-[var(--color-ink-3)]',
             )}
           >
             {o.label}

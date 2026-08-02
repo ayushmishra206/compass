@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
+import { OverlayText, Pill, Stack } from '@compass/ui';
 import { rpc } from '@compass/runtime';
 import { useShell } from '../state/shell.js';
 import { useBrief } from '../hooks/useBrief.js';
@@ -17,64 +18,17 @@ const tickerStyle: CSSProperties = {
   padding: '14px 56px',
   zIndex: 8,
   position: 'relative',
+  animationDelay: '240ms',
 };
-
-// Same shadow as Topbar — ticker text floats on the photo per the design
-// reference; Stage's bottom scrim does most of the work, this is the safety net.
-const textShadow = '0 1px 2px rgba(0,0,0,0.55), 0 0 12px rgba(0,0,0,0.35)';
 
 const vitalsStyle: CSSProperties = { display: 'flex', gap: 28 };
-const vitalStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 };
-const lblStyle: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 10,
-  letterSpacing: '0.16em',
-  textTransform: 'uppercase',
-  color: 'var(--color-ink-3)',
-  textShadow,
-};
-const valStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 22,
-  fontWeight: 400,
-  lineHeight: 1,
-  letterSpacing: '-0.02em',
-  color: 'var(--color-ink)',
-  textShadow,
-};
-const subStyle: CSSProperties = {
-  fontSize: 10,
-  color: 'var(--color-ink-2)',
-  fontFamily: 'var(--font-mono)',
-  textShadow,
-};
-const centerStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontStyle: 'italic',
-  fontSize: 14,
-  color: 'var(--color-ink-2)',
-  textAlign: 'center',
-  maxWidth: 480,
-  textShadow,
-};
 const rightStyle: CSSProperties = {
   display: 'flex',
   gap: 10,
   justifyContent: 'flex-end',
   alignItems: 'center',
 };
-const pillStyle: CSSProperties = {
-  padding: '6px 12px',
-  borderRadius: 999,
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  fontSize: 11,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  color: 'var(--color-ink-2)',
-  cursor: 'pointer',
-};
+
 const dotStyle: CSSProperties = {
   width: 6,
   height: 6,
@@ -85,6 +39,36 @@ const dotWarnStyle: CSSProperties = {
   ...dotStyle,
   background: 'oklch(0.7 0.16 30)',
 };
+
+interface VitalProps {
+  label: string;
+  value: number | string;
+  sub: string;
+}
+
+function Vital({ label, value, sub }: VitalProps) {
+  return (
+    <Stack gap={1}>
+      <OverlayText variant="mono" tone="muted" style={{ fontSize: 10, letterSpacing: '0.16em' }}>
+        {label}
+      </OverlayText>
+      <OverlayText
+        variant="title"
+        as="span"
+        style={{ fontSize: 22, fontWeight: 400, lineHeight: 1 }}
+      >
+        {value}
+      </OverlayText>
+      <OverlayText
+        variant="mono"
+        tone="secondary"
+        style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'none' as const }}
+      >
+        {sub}
+      </OverlayText>
+    </Stack>
+  );
+}
 
 export function Ticker() {
   const navClick = useShell((s) => s.navClick);
@@ -103,41 +87,35 @@ export function Ticker() {
     state.kind === 'have-brief' ? ((state.brief.output as BriefingOutput).watchouts ?? []) : [];
 
   return (
-    <div style={tickerStyle}>
+    <div style={tickerStyle} className="compass-slideup">
       <div style={vitalsStyle}>
-        <div style={vitalStyle}>
-          <span style={lblStyle}>Sleep</span>
-          <span style={valStyle}>{v.sleep}</span>
-          <span style={subStyle}>good</span>
-        </div>
-        <div style={vitalStyle}>
-          <span style={lblStyle}>Recovery</span>
-          <span style={valStyle}>{v.recovery}</span>
-          <span style={subStyle}>mid</span>
-        </div>
-        <div style={vitalStyle}>
-          <span style={lblStyle}>RHR</span>
-          <span style={valStyle}>{v.rhr}</span>
-          <span style={subStyle}>bpm</span>
-        </div>
-        {streak.days > 0 && (
-          <div style={vitalStyle}>
-            <span style={lblStyle}>Streak</span>
-            <span style={valStyle}>{streak.days}</span>
-            <span style={subStyle}>days</span>
-          </div>
-        )}
+        <Vital label="Sleep" value={v.sleep} sub="good" />
+        <Vital label="Recovery" value={v.recovery} sub="mid" />
+        <Vital label="RHR" value={v.rhr} sub="bpm" />
+        {streak.days > 0 && <Vital label="Streak" value={streak.days} sub="days" />}
       </div>
-      <div style={centerStyle}>&quot;{MOCK.brief.quotedGoal}&quot;</div>
+      <OverlayText
+        variant="serif-body"
+        italic
+        tone="secondary"
+        style={{ fontSize: 14, textAlign: 'center', maxWidth: 480 }}
+      >
+        &quot;{MOCK.brief.quotedGoal}&quot;
+      </OverlayText>
       <div style={rightStyle}>
-        <button style={pillStyle} onClick={() => navClick('inbox')}>
-          <span style={dotStyle} />2 inbox actions
-        </button>
+        <Pill size="md" onClick={() => navClick('inbox')} leading={<span style={dotStyle} />}>
+          2 inbox actions
+        </Pill>
         {watchouts.map((w, i) => (
-          <button key={i} style={pillStyle} onClick={() => navClick('today')}>
-            <span style={dotWarnStyle} />
+          <Pill
+            key={i}
+            size="md"
+            tone="warn"
+            onClick={() => navClick('today')}
+            leading={<span style={dotWarnStyle} />}
+          >
             {w}
-          </button>
+          </Pill>
         ))}
       </div>
     </div>
