@@ -64,3 +64,19 @@ describe('Text', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 });
+
+describe('display type sizing', () => {
+  it('is bounded by viewport height, not width alone', () => {
+    render(<Text variant="display">Good evening.</Text>);
+    const el = screen.getByText('Good evening.');
+    // A wide-but-short window previously produced type taller than the grid
+    // row containing it, which overlapped the pinned photo-attribution card.
+    expect(el.style.fontSize).toContain('vh');
+    expect(el.style.fontSize).toContain('min(');
+  });
+
+  it('keeps a floor small enough for a very short window', () => {
+    render(<Text variant="display">x</Text>);
+    expect(screen.getByText('x').style.fontSize).toMatch(/clamp\(3[0-9]px/);
+  });
+});

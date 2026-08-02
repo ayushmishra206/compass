@@ -7,6 +7,11 @@ import type { StoredBriefing, StoredGoal, StoredBlockRule, StoredMessage } from 
 import type { CalendarEventRow, ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
+  /** Distinguishes "no data yet" from "storage is unavailable". */
+  'system.dbStatus': {
+    req: Record<string, never>;
+    res: { ok: true } | { ok: false; error: string };
+  };
   'system.ping': {
     req: { utterance: string };
     res: { pong: true; echo: string };

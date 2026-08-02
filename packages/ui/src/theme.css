@@ -194,6 +194,19 @@ textarea {
   }
 }
 
+.compass-attribution {
+  /* Fixed-position overlay: it cannot know what it is covering. Below this
+     height there is not enough room for both the hero and a pinned card, so
+     the card yields — the photo credit matters less than legible copy. */
+  display: block;
+}
+
+@media (max-height: 620px) {
+  .compass-attribution {
+    display: none;
+  }
+}
+
 .compass-fade {
   animation: compass-fade var(--motion-mid) ease;
 }

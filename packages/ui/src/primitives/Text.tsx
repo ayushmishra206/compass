@@ -7,7 +7,11 @@ export type TextTone = 'primary' | 'secondary' | 'muted' | 'dim' | 'accent';
 const variantStyle: Record<TextVariant, CSSProperties> = {
   display: {
     fontFamily: 'var(--font-serif)',
-    fontSize: 'clamp(48px, 7.2vw, 108px)',
+    // Bounded by height as well as width. Sizing on vw alone meant a wide but
+    // short window (a laptop with devtools open, a short browser window)
+    // produced text far taller than the grid row holding it, which then
+    // overlapped whatever was pinned near the bottom of the viewport.
+    fontSize: 'clamp(34px, min(7.2vw, 13vh), 108px)',
     lineHeight: 0.95,
     letterSpacing: '-0.04em',
     fontWeight: 300,
