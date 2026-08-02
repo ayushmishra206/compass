@@ -184,12 +184,45 @@ CREATE INDEX milestones_goal ON milestones(goal_id, week_index);
 UPDATE meta SET value = '5' WHERE key = 'schema_version';
 `;
 
+const MIGRATION_0006_FOCUS = `
+-- Which soundscape was playing, so soundscapeCorrelations has something to
+-- correlate. Additive per the migration policy; existing rows stay NULL.
+ALTER TABLE pomodoros ADD COLUMN soundscape_id TEXT;
+
+CREATE TABLE block_rules (
+  id          TEXT PRIMARY KEY,
+  pattern     TEXT NOT NULL,
+  mode        TEXT NOT NULL CHECK (mode IN ('hard', 'soft')),
+  source      TEXT NOT NULL DEFAULT 'user' CHECK (source IN ('user', 'adaptive')),
+  created_at  TEXT NOT NULL,
+  enabled     INTEGER NOT NULL DEFAULT 1,
+  -- Only blocks while a pomodoro is running, rather than around the clock.
+  focus_only  INTEGER NOT NULL DEFAULT 1,
+  strikes     INTEGER NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX block_rules_pattern ON block_rules(pattern);
+
+CREATE TABLE block_events (
+  id          TEXT PRIMARY KEY,
+  rule_id     TEXT NOT NULL REFERENCES block_rules(id) ON DELETE CASCADE,
+  occurred_at TEXT NOT NULL,
+  -- Hostname only. Never the path and never the query — see AGENTS.md.
+  hostname    TEXT NOT NULL,
+  outcome     TEXT NOT NULL
+                CHECK (outcome IN ('blocked', 'bypassed', 'dismissed'))
+);
+CREATE INDEX block_events_rule ON block_events(rule_id, occurred_at DESC);
+
+UPDATE meta SET value = '6' WHERE key = 'schema_version';
+`;
+
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
   { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
   { version: 3, name: 'notes', sql: MIGRATION_0003_NOTES },
   { version: 4, name: 'calendar', sql: MIGRATION_0004_CALENDAR },
   { version: 5, name: 'goals', sql: MIGRATION_0005_GOALS },
+  { version: 6, name: 'focus', sql: MIGRATION_0006_FOCUS },
 ];
 
 /** Version a fully-migrated DB lands on. Derived, so adding a migration updates it. */

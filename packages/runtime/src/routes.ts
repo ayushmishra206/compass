@@ -3,7 +3,7 @@
 //
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
-import type { StoredBriefing, StoredGoal } from '@compass/db';
+import type { StoredBriefing, StoredGoal, StoredBlockRule } from '@compass/db';
 import type { CalendarEventRow, ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
@@ -62,7 +62,6 @@ export interface Routes {
     req: { dateLocal: string; kind: 'morning' | 'eod'; rating: -1 | 1 };
     res: { ok: true };
   };
-  'brief.streak': { req: Record<string, never>; res: { days: number; lastDate: string | null } };
   'pomodoro.start': { req: { id: string; durationMin: number; theme?: string }; res: { ok: true } };
   'pomodoro.complete': { req: { id: string }; res: { ok: true } };
   'pomodoro.abandon': { req: { id: string }; res: { ok: true } };
@@ -124,6 +123,31 @@ export interface Routes {
       | { ok: true; goal: StoredGoal }
       | { ok: false; reason: 'locked' | 'not-found' | 'error'; error?: string };
   };
+  'personalization.signals': {
+    req: Record<string, never>;
+    res: {
+      peakFocusHour: number | null;
+      streakDays: number;
+      streakLastDate: string | null;
+      totalFocusMin: number;
+      completedSessions: number;
+      burnoutEwma: number;
+    };
+  };
+  'blocker.list': { req: Record<string, never>; res: { rules: StoredBlockRule[] } };
+  'blocker.add': {
+    req: { pattern: string; mode: 'hard' | 'soft'; focusOnly?: boolean };
+    res: { ok: true } | { ok: false; error: string };
+  };
+  'blocker.setEnabled': { req: { id: string; enabled: boolean }; res: { ok: true } };
+  'blocker.remove': { req: { id: string }; res: { ok: true } };
+  // Service-worker owned: declarativeNetRequest is unavailable to offscreen.
+  'blocker.applyRules': {
+    req: { rules: StoredBlockRule[]; focusActive: boolean };
+    res: { ok: true; active: number };
+  };
+  'blocker.grantPass': { req: { hostname: string }; res: { ok: true } };
+  'blocker.recordBypass': { req: { ruleId: string; hostname: string }; res: { ok: true } };
   'goals.setMilestoneDone': {
     req: { milestoneId: string; done: boolean };
     res: { ok: true };

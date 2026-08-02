@@ -9,6 +9,7 @@ import {
   createNotesRepo,
   createCalendarRepo,
   createGoalsRepo,
+  createBlockerRepo,
 } from '@compass/db';
 import type { StoredBriefing, NotesRepo } from '@compass/db';
 import { embed, embedBatch } from '@compass/embeddings';
@@ -22,6 +23,9 @@ import {
   codeToAffinity,
   hasOAuthGrant,
   getOAuthGrant,
+  computeFocusSignals,
+  burnoutEwma,
+  normalizeBlockPattern,
 } from '@compass/core';
 import {
   callWithSchema,
@@ -404,22 +408,6 @@ registry.register('brief.recordRating', async ({ dateLocal, kind, rating }) => {
   return { ok: true as const };
 });
 
-registry.register('brief.streak', async () => {
-  const briefRepo = await getBriefRepo();
-  const status = await briefRepo.recentOpenStatus(60);
-  let days = 0;
-  let lastDate: string | null = null;
-  for (const day of status) {
-    if (day.opened) {
-      days++;
-      if (lastDate === null) lastDate = day.dateLocal;
-    } else {
-      break;
-    }
-  }
-  return { days, lastDate };
-});
-
 // ── Calendar handlers ────────────────────────────────────────────────────────
 
 async function getCalendarRepo() {
@@ -569,6 +557,72 @@ registry.register('goals.decompose', async ({ id }) => {
       error: e instanceof Error ? e.message : String(e),
     };
   }
+});
+
+// ── Personalization + blocker handlers ───────────────────────────────────────
+
+/** Window for focus signals. Long enough for a peak hour, short enough to adapt. */
+const SIGNALS_WINDOW_DAYS = 30;
+
+registry.register('personalization.signals', async () => {
+  const profile = await getUserProfile();
+  const repo = await getPomodoroRepo();
+  const since = new Date(Date.now() - SIGNALS_WINDOW_DAYS * 86_400_000).toISOString();
+  const sessions = await repo.listSince(since);
+  const signals = computeFocusSignals(sessions, profile.timezone, new Date());
+  return { ...signals, burnoutEwma: burnoutEwma(sessions, profile.timezone) };
+});
+
+async function getBlockerRepo() {
+  const db = await getDb();
+  return createBlockerRepo(db);
+}
+
+registry.register('blocker.list', async () => {
+  const repo = await getBlockerRepo();
+  return { rules: await repo.list() };
+});
+
+registry.register('blocker.add', async ({ pattern, mode, focusOnly }) => {
+  const normalized = normalizeBlockPattern(pattern);
+  if (!normalized) {
+    return { ok: false as const, error: 'Enter a site like reddit.com' };
+  }
+  const repo = await getBlockerRepo();
+  await repo.add({
+    id: crypto.randomUUID(),
+    pattern: normalized,
+    mode,
+    focusOnly,
+    createdAt: new Date().toISOString(),
+  });
+  return { ok: true as const };
+});
+
+registry.register('blocker.setEnabled', async ({ id, enabled }) => {
+  const repo = await getBlockerRepo();
+  await repo.setEnabled(id, enabled);
+  return { ok: true as const };
+});
+
+registry.register('blocker.recordBypass', async ({ ruleId, hostname }) => {
+  const repo = await getBlockerRepo();
+  // Only the outcome and the host are stored. The reason the user typed stays
+  // in the page and is never persisted or sent anywhere.
+  await repo.recordEvent({
+    id: crypto.randomUUID(),
+    ruleId,
+    hostname,
+    outcome: 'bypassed',
+    occurredAt: new Date().toISOString(),
+  });
+  return { ok: true as const };
+});
+
+registry.register('blocker.remove', async ({ id }) => {
+  const repo = await getBlockerRepo();
+  await repo.remove(id);
+  return { ok: true as const };
 });
 
 // ── Ledger handlers ──────────────────────────────────────────────────────────

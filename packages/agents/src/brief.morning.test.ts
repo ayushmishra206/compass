@@ -35,6 +35,7 @@ const baseDeps = (): MorningBriefDeps => ({
     start: vi.fn(),
     complete: vi.fn(),
     abandon: vi.fn(),
+    listSince: vi.fn(async () => []),
     summarize14d: vi.fn(async () => ({
       totalFocusMin: 0,
       peakHourLocal: null,
