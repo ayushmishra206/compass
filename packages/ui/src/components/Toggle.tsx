@@ -18,7 +18,7 @@ export function Toggle({ on, onChange, disabled, ...aria }: ToggleProps) {
       {...aria}
       className={cn(
         'relative w-9 h-5 rounded-full transition-colors',
-        on ? 'bg-[var(--accent)]' : 'bg-[var(--hair-2)]',
+        on ? 'bg-[var(--accent)]' : 'bg-[var(--color-hair-2)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
         disabled && 'opacity-50 cursor-not-allowed',
       )}

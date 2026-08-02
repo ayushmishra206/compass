@@ -6,8 +6,8 @@ export function Tag({ className, ...rest }: HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       className={cn(
-        'font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--panel-2)]',
-        'text-[var(--ink-3)] border border-[var(--hair)]',
+        'font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-panel-2)]',
+        'text-[var(--color-ink-3)] border border-[var(--color-hair)]',
         className,
       )}
       {...rest}

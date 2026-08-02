@@ -17,7 +17,7 @@ export function Swatch({ color, active, onClick, label }: SwatchProps) {
       onClick={onClick}
       className={cn(
         'w-5 h-5 rounded-full border-[1.5px] transition-transform hover:scale-110',
-        active ? 'border-[var(--ink)]' : 'border-transparent',
+        active ? 'border-[var(--color-ink)]' : 'border-transparent',
       )}
       style={{ background: color }}
     />

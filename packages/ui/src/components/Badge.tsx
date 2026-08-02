@@ -6,7 +6,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantCls: Record<NonNullable<BadgeProps['variant']>, string> = {
-  default: 'bg-[var(--panel-2)] text-[var(--ink-3)] border border-[var(--hair)]',
+  default: 'bg-[var(--color-panel-2)] text-[var(--color-ink-3)] border border-[var(--color-hair)]',
   accent: 'bg-[var(--accent-wash)] text-[var(--accent-ink)] border border-transparent',
   sage: 'bg-[oklch(0.55_0.05_150_/_0.12)] text-[oklch(0.34_0.05_150)] border border-transparent',
   slate: 'bg-[oklch(0.52_0.03_255_/_0.12)] text-[oklch(0.34_0.04_255)] border border-transparent',

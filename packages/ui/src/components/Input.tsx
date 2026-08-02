@@ -14,8 +14,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     <input
       ref={ref}
       className={cn(
-        'w-full px-3 py-2.5 bg-[var(--panel-2)] border border-[var(--hair)] rounded-[10px]',
-        'text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-4)]',
+        'w-full px-3 py-2.5 bg-[var(--color-panel-2)] border border-[var(--color-hair)] rounded-[10px]',
+        'text-[14px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-4)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:border-transparent',
         mono && 'font-mono',
         className,

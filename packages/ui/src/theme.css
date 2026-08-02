@@ -78,6 +78,9 @@
   --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
   --accent-soft: oklch(0.85 var(--accent-c) var(--accent-h));
   --accent-wash: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.16);
+  /* Readable ink for text sitting on --accent-wash. Lifted above --accent-soft
+     so small text (Badge, Tag) clears 4.5:1 against the washed backdrop. */
+  --accent-ink: oklch(0.9 var(--accent-c) var(--accent-h));
 
   color-scheme: dark;
 }

@@ -7,7 +7,7 @@ export function Kbd({ className, ...rest }: HTMLAttributes<HTMLSpanElement>) {
     <span
       className={cn(
         'inline-flex items-center justify-center h-[18px] px-[5px] font-mono text-[10px]',
-        'text-[var(--ink-3)] bg-[var(--panel-2)] border border-[var(--hair)] rounded',
+        'text-[var(--color-ink-3)] bg-[var(--color-panel-2)] border border-[var(--color-hair)] rounded',
         className,
       )}
       {...rest}

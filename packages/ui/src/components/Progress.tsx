@@ -16,7 +16,7 @@ export function Progress({ value, className, label }: ProgressProps) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label ?? 'progress'}
-      className={cn('h-1 bg-[var(--hair)] rounded-full overflow-hidden', className)}
+      className={cn('h-1 bg-[var(--color-hair)] rounded-full overflow-hidden', className)}
     >
       <span className="block h-full bg-[var(--accent)] rounded-full" style={{ width: `${pct}%` }} />
     </div>

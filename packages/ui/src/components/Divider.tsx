@@ -13,8 +13,8 @@ export function Divider({ orientation = 'horizontal', className, ...rest }: Divi
       aria-orientation={orientation}
       className={cn(
         orientation === 'horizontal'
-          ? 'h-px w-full bg-[var(--hair)]'
-          : 'w-px h-full bg-[var(--hair)]',
+          ? 'h-px w-full bg-[var(--color-hair)]'
+          : 'w-px h-full bg-[var(--color-hair)]',
         className,
       )}
       {...rest}

@@ -15,8 +15,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     <button
       ref={ref}
       className={cn(
-        'w-8 h-8 grid place-items-center rounded-lg text-[var(--ink-2)]',
-        'hover:bg-[var(--panel-2)] hover:text-[var(--ink)] transition-colors',
+        'w-8 h-8 grid place-items-center rounded-lg text-[var(--color-ink-2)]',
+        'hover:bg-[var(--color-panel-2)] hover:text-[var(--color-ink)] transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
         className,
       )}
