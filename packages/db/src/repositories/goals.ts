@@ -89,13 +89,13 @@ const GOAL_COLS = `id, created_at, horizon, start_date, end_date, title, why, st
                    decomposed_at, model_id, daily_templates, risks, first_week_focus`;
 
 export function createGoalsRepo(db: Db): GoalsRepo {
-  function milestonesFor(goalId: string): StoredMilestone[] {
-    const rows = db.exec({
+  async function milestonesFor(goalId: string): Promise<StoredMilestone[]> {
+    const rows = (await db.exec({
       sql: `SELECT id, goal_id, week_index, title, target_date, definition_of_done, done, completed_at
             FROM milestones WHERE goal_id = ? ORDER BY week_index ASC`,
       bind: [goalId],
       returnValue: 'resultRows',
-    }) as Array<Array<unknown>>;
+    })) as Array<Array<unknown>>;
     return rows.map((m) => ({
       id: m[0] as string,
       goalId: m[1] as string,
@@ -110,7 +110,7 @@ export function createGoalsRepo(db: Db): GoalsRepo {
 
   return {
     async create(input, now) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO goals (id, created_at, horizon, start_date, end_date, title, why, status)
               VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
         bind: [
@@ -143,42 +143,45 @@ export function createGoalsRepo(db: Db): GoalsRepo {
       }
       if (sets.length === 0) return;
       bind.push(id);
-      db.exec({ sql: `UPDATE goals SET ${sets.join(', ')} WHERE id = ?`, bind });
+      await db.exec({ sql: `UPDATE goals SET ${sets.join(', ')} WHERE id = ?`, bind });
     },
 
     async remove(id) {
-      db.exec({ sql: 'DELETE FROM milestones WHERE goal_id = ?', bind: [id] });
-      db.exec({ sql: 'DELETE FROM goals WHERE id = ?', bind: [id] });
+      await db.exec({ sql: 'DELETE FROM milestones WHERE goal_id = ?', bind: [id] });
+      await db.exec({ sql: 'DELETE FROM goals WHERE id = ?', bind: [id] });
     },
 
     async get(id) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT ${GOAL_COLS} FROM goals WHERE id = ?`,
         bind: [id],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       if (!rows[0]) return null;
-      return toGoal(rows[0], milestonesFor(id));
+      return toGoal(rows[0], await milestonesFor(id));
     },
 
     async list(status) {
       const rows = (
         status
-          ? db.exec({
+          ? await db.exec({
               sql: `SELECT ${GOAL_COLS} FROM goals WHERE status = ? ORDER BY end_date ASC`,
               bind: [status],
               returnValue: 'resultRows',
             })
-          : db.exec({
+          : await db.exec({
               sql: `SELECT ${GOAL_COLS} FROM goals ORDER BY end_date ASC`,
               returnValue: 'resultRows',
             })
       ) as Array<Array<unknown>>;
-      return rows.map((r) => toGoal(r, milestonesFor(r[0] as string)));
+      // `.map` cannot await; each goal needs its milestones fetched.
+      const out: StoredGoal[] = [];
+      for (const r of rows) out.push(toGoal(r, await milestonesFor(r[0] as string)));
+      return out;
     },
 
     async saveDecomposition(goalId, input) {
-      db.exec({
+      await db.exec({
         sql: `UPDATE goals
               SET decomposed_at = ?, model_id = ?, daily_templates = ?, risks = ?,
                   first_week_focus = ?
@@ -195,9 +198,9 @@ export function createGoalsRepo(db: Db): GoalsRepo {
 
       // A re-decomposition supersedes the old plan entirely; keeping the old
       // milestones would interleave two different plans on the same timeline.
-      db.exec({ sql: 'DELETE FROM milestones WHERE goal_id = ?', bind: [goalId] });
+      await db.exec({ sql: 'DELETE FROM milestones WHERE goal_id = ?', bind: [goalId] });
       for (const m of input.milestones) {
-        db.exec({
+        await db.exec({
           sql: `INSERT INTO milestones
                   (id, goal_id, week_index, title, target_date, definition_of_done)
                 VALUES (?, ?, ?, ?, ?, ?)`,
@@ -207,7 +210,7 @@ export function createGoalsRepo(db: Db): GoalsRepo {
     },
 
     async setMilestoneDone(milestoneId, done, at) {
-      db.exec({
+      await db.exec({
         sql: 'UPDATE milestones SET done = ?, completed_at = ? WHERE id = ?',
         bind: [done ? 1 : 0, done ? at : null, milestoneId],
       });

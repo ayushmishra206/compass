@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runMigrations } from '../../src/migration-runner';
+import { wrapSyncDb } from '../../src/worker/client';
 import { createNotesRepo } from '../../src/repositories/notes';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -34,8 +35,8 @@ describe.skipIf(!SHOULD_RUN)('autolink precision @ curated fixture', () => {
     const fx = JSON.parse(raw) as Fixture;
 
     const sqlite3 = await sqlite3InitModule();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = new sqlite3.oo1.DB(':memory:', 'c') as any;
+
+    const db = wrapSyncDb(new sqlite3.oo1.DB(':memory:', 'c'));
     await runMigrations(db);
     const repo = createNotesRepo(db);
 
@@ -79,7 +80,7 @@ describe.skipIf(!SHOULD_RUN)('autolink precision @ curated fixture', () => {
 });
 
 describe('autolink fixture shape', () => {
-  it('parses fixture JSON with the expected fields', () => {
+  it('parses fixture JSON with the expected fields', async () => {
     const raw = readFileSync(FIXTURE, 'utf8');
     const fx = JSON.parse(raw) as Fixture;
     expect(fx.notes.length).toBeGreaterThanOrEqual(20);

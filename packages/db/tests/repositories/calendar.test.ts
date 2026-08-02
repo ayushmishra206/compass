@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { runMigrations } from '../../src/migration-runner';
+import { wrapSyncDb } from '../../src/worker/client';
 import {
   createCalendarRepo,
   type CalendarRepo,
@@ -30,8 +31,8 @@ const evt = (over: Partial<CalendarEventRow> = {}): CalendarEventRow => ({
 
 beforeEach(async () => {
   const sqlite3 = await sqlite3InitModule();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db = new sqlite3.oo1.DB(':memory:') as any;
+
+  db = wrapSyncDb(new sqlite3.oo1.DB(':memory:'));
   await runMigrations(db);
   repo = createCalendarRepo(db);
 });
@@ -133,10 +134,10 @@ describe('remove', () => {
   it('cascades to attendees, leaving no orphans', async () => {
     await repo.upsert([evt()], '2026-08-02T08:00:00.000Z');
     await repo.remove(['e1']);
-    const orphans = db.exec({
+    const orphans = (await db.exec({
       sql: 'SELECT COUNT(*) FROM calendar_attendees',
       returnValue: 'resultRows',
-    }) as Array<Array<unknown>>;
+    })) as Array<Array<unknown>>;
     expect(orphans[0]?.[0]).toBe(0);
   });
 

@@ -18,7 +18,7 @@ export interface CostLedgerRepo {
 export function createCostLedgerRepo(db: Db): CostLedgerRepo {
   return {
     async recordRow(r) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO llm_cost_ledger (id, ts, feature, provider, model, prompt_tok, cached_tok, completion_tok, usd_estimated)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         bind: [
@@ -40,13 +40,13 @@ export function createCostLedgerRepo(db: Db): CostLedgerRepo {
       const nextMonth = new Date(
         Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1),
       ).toISOString();
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT COALESCE(SUM(usd_estimated), 0), COUNT(*)
               FROM llm_cost_ledger
               WHERE ts >= ? AND ts < ?`,
         bind: [monthStartIso, nextMonth],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return {
         usd: (rows[0]?.[0] as number) ?? 0,
         calls: (rows[0]?.[1] as number) ?? 0,

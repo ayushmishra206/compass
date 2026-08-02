@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { runMigrations } from '../../src/migration-runner';
+import { wrapSyncDb } from '../../src/worker/client';
 import { createGmailRepo, MAX_SNIPPET_CHARS, type GmailRepo } from '../../src/repositories/gmail';
 import type { Db } from '../../src/opfs';
 
@@ -20,8 +21,8 @@ const msg = (over: Record<string, unknown> = {}) => ({
 
 beforeEach(async () => {
   const sqlite3 = await sqlite3InitModule();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db = new sqlite3.oo1.DB(':memory:') as any;
+
+  db = wrapSyncDb(new sqlite3.oo1.DB(':memory:'));
   await runMigrations(db);
   repo = createGmailRepo(db);
 });
@@ -60,19 +61,19 @@ describe('upsert / list', () => {
 
   it('truncates the snippet at write time, not just on read', async () => {
     await repo.upsert([msg({ snippet: 'x'.repeat(2000) })]);
-    const raw = db.exec({
+    const raw = (await db.exec({
       sql: 'SELECT snippet FROM gmail_messages_index',
       returnValue: 'resultRows',
-    }) as Array<Array<unknown>>;
+    })) as Array<Array<unknown>>;
     expect(String(raw[0]?.[0]).length).toBe(MAX_SNIPPET_CHARS);
   });
 
   it('never stores a full body — only what the caller passed as snippet', async () => {
     await repo.upsert([msg({ snippet: 'short' })]);
-    const cols = db.exec({
+    const cols = (await db.exec({
       sql: 'PRAGMA table_info(gmail_messages_index)',
       returnValue: 'resultRows',
-    }) as Array<Array<unknown>>;
+    })) as Array<Array<unknown>>;
     const names = cols.map((c) => c[1]);
     expect(names).not.toContain('body');
     expect(names).not.toContain('body_html');

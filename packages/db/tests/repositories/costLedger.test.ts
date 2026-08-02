@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { runMigrations } from '../../src/migration-runner';
+import { wrapSyncDb } from '../../src/worker/client';
 import type { Db } from '../../src/opfs';
 import { createCostLedgerRepo, type CostLedgerRepo } from '../../src/repositories/costLedger';
 
@@ -9,8 +10,8 @@ let repo: CostLedgerRepo;
 
 beforeEach(async () => {
   const sqlite3 = await sqlite3InitModule();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db = new sqlite3.oo1.DB(':memory:') as any;
+
+  db = wrapSyncDb(new sqlite3.oo1.DB(':memory:'));
   await runMigrations(db);
   repo = createCostLedgerRepo(db);
 });

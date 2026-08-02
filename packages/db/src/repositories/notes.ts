@@ -115,16 +115,16 @@ function cosine(a: Float32Array, b: Float32Array): number {
 
 export function createNotesRepo(db: Db): NotesRepo {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- sqlite-wasm bind types are loose
-  const exec = (sql: string, bind?: any[], returnRows = false) =>
+  const exec = async (sql: string, bind?: any[], returnRows = false) =>
     returnRows
-      ? (db.exec({ sql, bind, returnValue: 'resultRows' }) as Array<Array<unknown>>)
-      : (db.exec({ sql, bind }) as unknown);
+      ? ((await db.exec({ sql, bind, returnValue: 'resultRows' })) as Array<Array<unknown>>)
+      : ((await db.exec({ sql, bind })) as unknown);
 
   return {
     async create(input) {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      exec(
+      await exec(
         `INSERT INTO notes(id, created_at, updated_at, title, body, tags_json, manual_links, embedding_model)
          VALUES (?,?,?,?,?,?,?,?)`,
         [
@@ -151,7 +151,7 @@ export function createNotesRepo(db: Db): NotesRepo {
         autolinkEnabled: patch.autolinkEnabled ?? cur.autolinkEnabled,
         updatedAt: new Date().toISOString(),
       };
-      exec(
+      await exec(
         `UPDATE notes
          SET title=?, body=?, tags_json=?, autolink_enabled=?, updated_at=?
          WHERE id=?`,
@@ -167,63 +167,63 @@ export function createNotesRepo(db: Db): NotesRepo {
     },
 
     async delete(id) {
-      exec('DELETE FROM note_chunks WHERE note_id=?', [id]);
-      exec('DELETE FROM auto_links WHERE src_note_id=? OR target_note_id=?', [id, id]);
-      exec('DELETE FROM notes WHERE id=?', [id]);
+      await exec('DELETE FROM note_chunks WHERE note_id=?', [id]);
+      await exec('DELETE FROM auto_links WHERE src_note_id=? OR target_note_id=?', [id, id]);
+      await exec('DELETE FROM notes WHERE id=?', [id]);
     },
 
     async getById(id) {
-      const rows = exec(`SELECT ${SELECT_COLS} FROM notes WHERE id=? LIMIT 1`, [id], true) as Array<
-        Array<unknown>
-      >;
+      const rows = (await exec(
+        `SELECT ${SELECT_COLS} FROM notes WHERE id=? LIMIT 1`,
+        [id],
+        true,
+      )) as Array<Array<unknown>>;
       return rows[0] ? rowToNote(rows[0]) : null;
     },
 
     async list({ limit, offset }) {
-      const rows = exec(
+      const rows = (await exec(
         `SELECT ${SELECT_COLS} FROM notes ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
         [limit, offset],
         true,
-      ) as Array<Array<unknown>>;
+      )) as Array<Array<unknown>>;
       return rows.map(rowToNote);
     },
 
     async upsertChunks(noteId, chunks) {
-      db.exec('BEGIN');
+      await db.exec('BEGIN');
       try {
-        exec('DELETE FROM note_chunks WHERE note_id=?', [noteId]);
+        await exec('DELETE FROM note_chunks WHERE note_id=?', [noteId]);
         for (let i = 0; i < chunks.length; i++) {
           const c = chunks[i] as ChunkInput;
-          exec(`INSERT INTO note_chunks(note_id, chunk_index, text, embedding) VALUES(?,?,?,?)`, [
-            noteId,
-            i,
-            c.text,
-            f32ToBlob(c.embedding),
-          ]);
+          await exec(
+            `INSERT INTO note_chunks(note_id, chunk_index, text, embedding) VALUES(?,?,?,?)`,
+            [noteId, i, c.text, f32ToBlob(c.embedding)],
+          );
         }
-        db.exec('COMMIT');
+        await db.exec('COMMIT');
       } catch (err) {
-        db.exec('ROLLBACK');
+        await db.exec('ROLLBACK');
         throw err;
       }
     },
 
     async findNeighbors(noteId, { k, threshold }) {
       // Use the first chunk of the source note as the query vector.
-      const qRows = exec(
+      const qRows = (await exec(
         `SELECT embedding FROM note_chunks WHERE note_id=? AND chunk_index=0 LIMIT 1`,
         [noteId],
         true,
-      ) as Array<[Uint8Array]>;
+      )) as Array<[Uint8Array]>;
       if (qRows.length === 0) return [];
       const q = blobToF32((qRows[0] as [Uint8Array])[0]);
 
       // Pull every other note's chunks; aggregate by note_id keeping the max similarity.
-      const rows = exec(
+      const rows = (await exec(
         `SELECT note_id, embedding FROM note_chunks WHERE note_id != ?`,
         [noteId],
         true,
-      ) as Array<[string, Uint8Array]>;
+      )) as Array<[string, Uint8Array]>;
       const bestByNote = new Map<string, number>();
       for (const [nid, blob] of rows) {
         const v = blobToF32(blob);
@@ -250,11 +250,11 @@ export function createNotesRepo(db: Db): NotesRepo {
       let ftsRows: Array<[string, number]> = [];
       if (ftsQuery) {
         try {
-          ftsRows = exec(
+          ftsRows = (await exec(
             `SELECT note_id, rank FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank LIMIT 20`,
             [ftsQuery],
             true,
-          ) as Array<[string, number]>;
+          )) as Array<[string, number]>;
         } catch {
           // Tokenizer rejects some queries (e.g., empty after stripping); fall back to no FTS hits.
           ftsRows = [];
@@ -262,9 +262,11 @@ export function createNotesRepo(db: Db): NotesRepo {
       }
 
       // Vec hits via JS cosine over all chunks; aggregate per-note with max similarity, top-20.
-      const allChunks = exec(`SELECT note_id, embedding FROM note_chunks`, [], true) as Array<
-        [string, Uint8Array]
-      >;
+      const allChunks = (await exec(
+        `SELECT note_id, embedding FROM note_chunks`,
+        [],
+        true,
+      )) as Array<[string, Uint8Array]>;
       const bestByNote = new Map<string, number>();
       for (const [nid, blob] of allChunks) {
         const v = blobToF32(blob);
@@ -290,11 +292,11 @@ export function createNotesRepo(db: Db): NotesRepo {
       if (ranked.length === 0) return [];
 
       const placeholders = ranked.map(() => '?').join(',');
-      const hydration = exec(
+      const hydration = (await exec(
         `SELECT id, title, substr(body, 1, 160) FROM notes WHERE id IN (${placeholders})`,
         ranked.map(([id]) => id),
         true,
-      ) as Array<[string, string, string]>;
+      )) as Array<[string, string, string]>;
       const byId = new Map(hydration.map(([id, t, e]) => [id, { title: t, excerpt: e }]));
 
       return ranked.map(([id, score]) => ({
@@ -309,7 +311,7 @@ export function createNotesRepo(db: Db): NotesRepo {
       // Per-pair user state (dismissed, rationale, rationale_at, user_feedback)
       // must survive a rebuild. We delete only pairs that are NOT in the new
       // neighbor set, and upsert the rest preserving existing state.
-      db.exec('BEGIN');
+      await db.exec('BEGIN');
       try {
         const now = new Date().toISOString();
         const keepKeys = new Set<string>();
@@ -320,14 +322,17 @@ export function createNotesRepo(db: Db): NotesRepo {
         }
 
         // Drop only rows touching this note that aren't in the new set.
-        const existing = exec(
+        const existing = (await exec(
           'SELECT src_note_id, target_note_id FROM auto_links WHERE src_note_id=? OR target_note_id=?',
           [noteId, noteId],
           true,
-        ) as Array<[string, string]>;
+        )) as Array<[string, string]>;
         for (const [src, tgt] of existing) {
           if (!keepKeys.has(`${src}\x00${tgt}`)) {
-            exec('DELETE FROM auto_links WHERE src_note_id=? AND target_note_id=?', [src, tgt]);
+            await exec('DELETE FROM auto_links WHERE src_note_id=? AND target_note_id=?', [
+              src,
+              tgt,
+            ]);
           }
         }
 
@@ -336,7 +341,7 @@ export function createNotesRepo(db: Db): NotesRepo {
         for (const n of neighbors) {
           if (n.noteId === noteId) continue;
           const [src, tgt] = orderPair(noteId, n.noteId);
-          exec(
+          await exec(
             `INSERT INTO auto_links(src_note_id, target_note_id, similarity, detected_at)
              VALUES(?,?,?,?)
              ON CONFLICT(src_note_id, target_note_id) DO UPDATE SET
@@ -345,22 +350,22 @@ export function createNotesRepo(db: Db): NotesRepo {
             [src, tgt, n.similarity, now],
           );
         }
-        db.exec('COMMIT');
+        await db.exec('COMMIT');
       } catch (err) {
-        db.exec('ROLLBACK');
+        await db.exec('ROLLBACK');
         throw err;
       }
     },
 
     async listAutoLinksForNote(noteId) {
-      const rows = exec(
+      const rows = (await exec(
         `SELECT src_note_id, target_note_id, similarity, rationale, rationale_at
          FROM auto_links
          WHERE (src_note_id=? OR target_note_id=?) AND dismissed=0
          ORDER BY similarity DESC`,
         [noteId, noteId],
         true,
-      ) as Array<[string, string, number, string | null, string | null]>;
+      )) as Array<[string, string, number, string | null, string | null]>;
       return rows.map(([src, tgt, sim, rat, ratAt]) => ({
         srcNoteId: noteId,
         targetNoteId: src === noteId ? tgt : src,
@@ -372,7 +377,7 @@ export function createNotesRepo(db: Db): NotesRepo {
 
     async dismissAutoLink(a, b) {
       const [src, tgt] = orderPair(a, b);
-      exec('UPDATE auto_links SET dismissed=1 WHERE src_note_id=? AND target_note_id=?', [
+      await exec('UPDATE auto_links SET dismissed=1 WHERE src_note_id=? AND target_note_id=?', [
         src,
         tgt,
       ]);
@@ -380,7 +385,7 @@ export function createNotesRepo(db: Db): NotesRepo {
 
     async setAutoLinkRationale(a, b, rationale) {
       const [src, tgt] = orderPair(a, b);
-      exec(
+      await exec(
         `UPDATE auto_links SET rationale=?, rationale_at=? WHERE src_note_id=? AND target_note_id=?`,
         [rationale, new Date().toISOString(), src, tgt],
       );
@@ -388,11 +393,11 @@ export function createNotesRepo(db: Db): NotesRepo {
 
     async getAutoLinkRationale(a, b) {
       const [src, tgt] = orderPair(a, b);
-      const rows = exec(
+      const rows = (await exec(
         `SELECT rationale FROM auto_links WHERE src_note_id=? AND target_note_id=? LIMIT 1`,
         [src, tgt],
         true,
-      ) as Array<[string | null]>;
+      )) as Array<[string | null]>;
       return rows[0]?.[0] ?? null;
     },
   };

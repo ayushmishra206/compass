@@ -38,16 +38,16 @@ function rowToStored(row: Array<unknown>): StoredBriefing {
 export function createBriefRepo(db: Db): BriefRepo {
   return {
     async getByDate(dateLocal, kind) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT ${SELECT_COLS} FROM briefings WHERE date_local = ? AND kind = ?`,
         bind: [dateLocal, kind],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows[0] ? rowToStored(rows[0]) : null;
     },
 
     async upsert(b) {
-      db.exec({
+      await db.exec({
         sql: `INSERT INTO briefings (date_local, kind, generated_at, output_json, opened_at, user_rating, provider_used, cost_usd)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(date_local, kind) DO UPDATE SET
@@ -71,27 +71,27 @@ export function createBriefRepo(db: Db): BriefRepo {
     },
 
     async recordOpen(dateLocal, kind, at) {
-      db.exec({
+      await db.exec({
         sql: 'UPDATE briefings SET opened_at = ? WHERE date_local = ? AND kind = ?',
         bind: [at, dateLocal, kind],
       });
     },
 
     async recordRating(dateLocal, kind, rating) {
-      db.exec({
+      await db.exec({
         sql: 'UPDATE briefings SET user_rating = ? WHERE date_local = ? AND kind = ?',
         bind: [rating, dateLocal, kind],
       });
     },
 
     async recentOpenStatus(daysBack) {
-      const rows = db.exec({
+      const rows = (await db.exec({
         sql: `SELECT date_local, opened_at FROM briefings
               WHERE kind = 'morning' AND date_local >= date('now', ?)
               ORDER BY date_local DESC`,
         bind: [`-${daysBack} days`],
         returnValue: 'resultRows',
-      }) as Array<Array<unknown>>;
+      })) as Array<Array<unknown>>;
       return rows.map((r) => ({
         dateLocal: r[0] as string,
         opened: r[1] !== null,

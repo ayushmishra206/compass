@@ -3,6 +3,7 @@ import { OverlayText, Pill, Stack } from '@compass/ui';
 import { useShell } from '../state/shell.js';
 import { useBrief } from '../hooks/useBrief.js';
 import { formatFocusTime, formatHour, useFocusSignals } from '../hooks/useFocusSignals.js';
+import { PhotoAttribution } from './PhotoAttribution.js';
 
 interface BriefingOutput {
   watchouts?: string[];
@@ -20,7 +21,10 @@ const tickerStyle: CSSProperties = {
   animationDelay: '240ms',
 };
 
-const vitalsStyle: CSSProperties = { display: 'flex', gap: 28 };
+// Photo credit shares this cell with the vitals rather than floating over the
+// stage — see PhotoAttribution for why. `minWidth: 0` lets it shrink instead
+// of pushing the row wider than its column.
+const vitalsStyle: CSSProperties = { display: 'flex', gap: 28, alignItems: 'center', minWidth: 0 };
 const rightStyle: CSSProperties = {
   display: 'flex',
   gap: 10,
@@ -94,6 +98,7 @@ export function Ticker() {
           <Vital label="Focus" value={formatFocusTime(signals.totalFocusMin)} sub="last 30d" />
         )}
         {peak && <Vital label="Peak" value={peak} sub="best hour" />}
+        <PhotoAttribution />
       </div>
       {quotedGoal && (
         <OverlayText

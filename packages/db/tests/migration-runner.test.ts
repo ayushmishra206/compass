@@ -1,24 +1,25 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { runMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from '../src/migration-runner';
+import { wrapSyncDb } from '../src/worker/client';
 import type { Db } from '../src/opfs';
 
 let db: Db | null = null;
 
 beforeEach(async () => {
   const sqlite3 = await sqlite3InitModule();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db = new sqlite3.oo1.DB(':memory:') as any;
+
+  db = wrapSyncDb(new sqlite3.oo1.DB(':memory:'));
 });
 
 describe('migration-runner', () => {
   it('applies all migrations on a fresh DB', async () => {
     await runMigrations(db!);
-    expect(getSchemaVersion(db!)).toBe(LATEST_SCHEMA_VERSION);
-    const tables = db!.exec({
+    expect(await getSchemaVersion(db!)).toBe(LATEST_SCHEMA_VERSION);
+    const tables = (await db!.exec({
       sql: "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
       returnValue: 'resultRows',
-    });
+    })) as Array<Array<unknown>>;
     expect(tables.flat()).toContain('llm_cost_ledger');
     expect(tables.flat()).toContain('meta');
     expect(tables.flat()).toContain('briefings');
@@ -28,7 +29,7 @@ describe('migration-runner', () => {
   it('is idempotent — running twice does not re-apply', async () => {
     await runMigrations(db!);
     await runMigrations(db!);
-    expect(getSchemaVersion(db!)).toBe(LATEST_SCHEMA_VERSION);
+    expect(await getSchemaVersion(db!)).toBe(LATEST_SCHEMA_VERSION);
   });
 });
 
@@ -40,25 +41,25 @@ describe('migration v3 — semantic notes', () => {
   // 10k-note target size; gate is tracked in tests/perf/hybrid-search.bench.ts.
   it('creates notes (with embedding BLOB on chunks), notes_fts, auto_links and bumps schema_version past 3', async () => {
     const sqlite3 = await sqlite3InitModule();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = new sqlite3.oo1.DB(':memory:', 'c') as any;
-    await runMigrations(db);
-    expect(getSchemaVersion(db)).toBeGreaterThanOrEqual(3);
 
-    const tables = db.exec({
+    const db = wrapSyncDb(new sqlite3.oo1.DB(':memory:', 'c'));
+    await runMigrations(db);
+    expect(await getSchemaVersion(db)).toBeGreaterThanOrEqual(3);
+
+    const tables = (await db.exec({
       sql: "SELECT name FROM sqlite_master WHERE type IN ('table','view')",
       returnValue: 'resultRows',
-    }) as Array<[string]>;
+    })) as Array<[string]>;
     const names = (tables as Array<[string]>).map((r) => r[0]);
     for (const t of ['notes', 'note_chunks', 'notes_fts', 'auto_links']) {
       expect(names).toContain(t);
     }
 
     // note_chunks must carry an embedding BLOB column (raw float32 bytes).
-    const cols = db.exec({
+    const cols = (await db.exec({
       sql: 'PRAGMA table_info(note_chunks)',
       returnValue: 'resultRows',
-    }) as Array<[number, string, string, number, unknown, number]>;
+    })) as Array<[number, string, string, number, unknown, number]>;
     const colNames = cols.map((c) => c[1]);
     expect(colNames).toContain('embedding');
   });
@@ -70,40 +71,40 @@ describe('migration v4 — calendar', () => {
 
   beforeEach(async () => {
     const sqlite3 = await sqlite3InitModule();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cdb = new sqlite3.oo1.DB(':memory:', 'c') as any;
+
+    cdb = wrapSyncDb(new sqlite3.oo1.DB(':memory:', 'c'));
     await runMigrations(cdb);
   });
 
-  it('creates the calendar tables', () => {
+  it('creates the calendar tables', async () => {
     const names = (
-      cdb.exec({
+      (await cdb.exec({
         sql: "SELECT name FROM sqlite_master WHERE type='table'",
         returnValue: 'resultRows',
-      }) as Array<[string]>
+      })) as Array<[string]>
     ).map((r) => r[0]);
     for (const t of ['calendar_events', 'calendar_attendees', 'calendar_sync_state']) {
       expect(names).toContain(t);
     }
   });
 
-  it('indexes attendees by email for the meeting-prep lookup', () => {
+  it('indexes attendees by email for the meeting-prep lookup', async () => {
     const names = (
-      cdb.exec({
+      (await cdb.exec({
         sql: "SELECT name FROM sqlite_master WHERE type='index'",
         returnValue: 'resultRows',
-      }) as Array<[string]>
+      })) as Array<[string]>
     ).map((r) => r[0]);
     expect(names).toContain('idx_attendees_email');
     expect(names).toContain('calendar_events_start');
   });
 
-  it('preserves the earlier tables — migrations are additive only', () => {
+  it('preserves the earlier tables — migrations are additive only', async () => {
     const names = (
-      cdb.exec({
+      (await cdb.exec({
         sql: "SELECT name FROM sqlite_master WHERE type='table'",
         returnValue: 'resultRows',
-      }) as Array<[string]>
+      })) as Array<[string]>
     ).map((r) => r[0]);
     for (const t of ['llm_cost_ledger', 'briefings', 'pomodoros', 'notes']) {
       expect(names).toContain(t);

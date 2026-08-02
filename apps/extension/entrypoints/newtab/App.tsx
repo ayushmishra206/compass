@@ -6,7 +6,6 @@ import { useGlobalShortcuts } from '@app/shortcuts.js';
 import { Topbar } from '@app/components/Topbar.js';
 import { Hero } from '@app/components/Hero.js';
 import { Ticker } from '@app/components/Ticker.js';
-import { PhotoAttribution } from '@app/components/PhotoAttribution.js';
 import { CmdK } from '@app/components/CmdK.js';
 import { BriefDrawer } from '@app/drawers/BriefDrawer.js';
 import { TodayDrawer } from '@app/drawers/TodayDrawer.js';
@@ -109,7 +108,6 @@ export function App() {
         <Hero />
         <Ticker />
       </div>
-      <PhotoAttribution />
       <Drawer
         open={drawer.open}
         kind={drawer.kind}

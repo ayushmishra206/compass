@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { runMigrations } from '../../src/migration-runner';
+import { wrapSyncDb } from '../../src/worker/client';
 import { createNotesRepo } from '../../src/repositories/notes';
 import type { Db } from '../../src/opfs';
 
 async function freshDb(): Promise<Db> {
   const sqlite3 = await sqlite3InitModule();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = new sqlite3.oo1.DB(':memory:', 'c') as any;
+
+  const db = wrapSyncDb(new sqlite3.oo1.DB(':memory:', 'c'));
   await runMigrations(db);
   return db;
 }
@@ -105,19 +106,19 @@ describe('NotesRepo chunks', () => {
       { text: 'chunk a', embedding: vec([0, 1]) },
       { text: 'chunk b', embedding: vec([1, 1]) },
     ]);
-    const r1 = db.exec({
+    const r1 = (await db.exec({
       sql: 'SELECT COUNT(*) FROM note_chunks WHERE note_id=?',
       bind: [id],
       returnValue: 'resultRows',
-    }) as Array<[number]>;
+    })) as Array<[number]>;
     expect(r1[0][0]).toBe(2);
 
     await repo.upsertChunks(id, [{ text: 'only', embedding: vec([0, 1]) }]);
-    const r2 = db.exec({
+    const r2 = (await db.exec({
       sql: 'SELECT COUNT(*) FROM note_chunks WHERE note_id=?',
       bind: [id],
       returnValue: 'resultRows',
-    }) as Array<[number]>;
+    })) as Array<[number]>;
     expect(r2[0][0]).toBe(1);
   });
 
@@ -132,10 +133,10 @@ describe('NotesRepo chunks', () => {
     });
     await repo.upsertChunks(id, [{ text: 'c', embedding: vec([0, 1]) }]);
     await repo.delete(id);
-    const r = db.exec({
+    const r = (await db.exec({
       sql: 'SELECT COUNT(*) FROM note_chunks',
       returnValue: 'resultRows',
-    }) as Array<[number]>;
+    })) as Array<[number]>;
     expect(r[0][0]).toBe(0);
   });
 });
@@ -278,11 +279,11 @@ describe('NotesRepo auto_links', () => {
     expect(await repo.getAutoLinkRationale(a, b)).toBe('shared topic');
     expect(await repo.listAutoLinksForNote(a)).toHaveLength(0); // still dismissed
     // Similarity should have been refreshed by the upsert.
-    const raw = db.exec({
+    const raw = (await db.exec({
       sql: 'SELECT similarity FROM auto_links WHERE src_note_id=? AND target_note_id=?',
       bind: a < b ? [a, b] : [b, a],
       returnValue: 'resultRows',
-    }) as Array<[number]>;
+    })) as Array<[number]>;
     expect(raw[0]![0]).toBeCloseTo(0.91, 5);
   });
 
