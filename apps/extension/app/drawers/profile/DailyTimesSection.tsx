@@ -68,7 +68,22 @@ export function DailyTimesSection() {
 
   return (
     <div style={sectionWrap}>
-      <div style={sectionLabelStyle}>Daily times</div>
+      <div style={sectionLabelStyle}>You</div>
+
+      <div style={rowStyle}>
+        <label htmlFor="displayName">Name</label>
+        <input
+          id="displayName"
+          type="text"
+          defaultValue={profile.displayName ?? ''}
+          placeholder="Optional"
+          maxLength={60}
+          onBlur={(e) => void update({ displayName: e.target.value.trim() || undefined })}
+          style={{ ...selectStyle, minWidth: 140 }}
+        />
+      </div>
+
+      <div style={{ ...sectionLabelStyle, marginTop: 16 }}>Daily times</div>
 
       <div style={rowStyle}>
         <label htmlFor="briefingHour">Morning brief</label>

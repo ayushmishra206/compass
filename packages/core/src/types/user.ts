@@ -18,6 +18,8 @@ export type FeatureFlag = z.infer<typeof FeatureFlagSchema>;
 export const UserProfileSchema = z.object({
   id: z.string(),
   createdAt: z.string(),
+  /** What Compass calls you. Optional; the shell reads fine without it. */
+  displayName: z.string().max(60).optional(),
   compassLicense: z.string().optional(),
   timezone: z.string(),
   locale: z.string(),

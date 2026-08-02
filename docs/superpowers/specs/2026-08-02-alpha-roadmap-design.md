@@ -104,7 +104,7 @@ a crash; Brief visibly reflects today's actual calendar. ✅ (code complete and
 green against mocks; first live fetch needs the one-time OAuth client setup in
 [setup-google-calendar.md](../../setup-google-calendar.md))
 
-### Phase C — Real Goals (no OAuth)
+### Phase C — Real Goals (no OAuth) ✅ complete
 
 Fully local, so it can proceed even if Google review or quota bites.
 
@@ -119,7 +119,7 @@ Fully local, so it can proceed even if Google review or quota bites.
 **Gate:** PRD §10.7 DoD minus drift; a decomposition round-trips and survives
 reload.
 
-### Phase D — Real Focus (PRD Phase 3)
+### Phase D — Real Focus (PRD Phase 3) ✅ complete
 
 Makes the half-real surface whole, and turns the Ticker's mock vitals real.
 
@@ -134,7 +134,7 @@ Makes the half-real surface whole, and turns the Ticker's mock vitals real.
 
 **Gate:** PRD §13.11 + §15.5 DoD.
 
-### Phase E — Real Inbox (Gmail)
+### Phase E — Real Inbox (Gmail) ✅ complete
 
 Last, deliberately. It is the heaviest surface, carries the only
 untrusted-input attack surface in the product, and is the one phase whose
@@ -152,7 +152,7 @@ value does not compound into the other surfaces.
 **Gate:** PRD §12.8 DoD; red-team 100%; no `messages.send` / `drafts.send`
 anywhere in the tree.
 
-### Phase F — Make it mine (polish)
+### Phase F — Make it mine (polish) ✅ complete
 
 - **Hero personalisation** — greeting, mood line and TLDR are currently
   generic; drive them from `UserProfile` and the real Brief.
@@ -185,6 +185,24 @@ driving the product:
 | A dormant repo (May → Aug) may have stale deps or a broken toolchain | Verified green before any new work: tests, typecheck, lint, build all pass on Node 24                    |
 | LLM spend while dogfooding                                           | The §6.5 cost ledger and $2/month soft cap already exist and already write rows                          |
 | Phases B/C/E each add a DB migration                                 | Migrations are additive-only and `DROP COLUMN` is banned (§5.7); each phase adds its own numbered file   |
+
+---
+
+## 5a. Outcome
+
+All six phases landed. Two items were deliberately deferred rather than
+half-built, both because they need adversarial testing before they are safe to
+use, not because they were hard:
+
+- **Gmail draft replies (§12.4)** — needs a write scope, a preview gate, and
+  its own red-team pass.
+- **Block negotiation (§13.6)** — an LLM that talks a user out of their own
+  focus rule must be red-teamed before it ships.
+
+One correction to §2.1 of this document: the guardrails in §19.4 of the PRD did
+not exist when this plan was written, and the plan did not notice. They were
+built as a prerequisite in Phase E. Any future phase that reads untrusted
+content should treat them as load-bearing.
 
 ---
 
