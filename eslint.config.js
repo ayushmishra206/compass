@@ -65,6 +65,7 @@ export default [
     files: ['**/*.{ts,tsx}'],
     ignores: [
       'packages/core/src/crypto/credentials.ts',
+      'packages/core/src/crypto/oauthTokens.ts',
       '**/*.test.ts',
       '**/*.test.tsx',
       '**/*.spec.ts',
@@ -78,6 +79,12 @@ export default [
             "CallExpression[callee.object.property.name='local'] Literal[value=/llm\\.creds/]",
           message:
             'Use getActiveCredentials() from @compass/core/crypto instead of direct chrome.storage.local access.',
+        },
+        {
+          selector:
+            'CallExpression[callee.object.property.name=/^(local|session)$/] Literal[value=/oauth\\./]',
+          message:
+            'Use getOAuthGrant() / setAccessToken() from @compass/core/crypto instead of direct chrome.storage access. Refresh tokens must stay inside the EncryptedSecret envelope.',
         },
       ],
     },

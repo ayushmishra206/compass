@@ -10,6 +10,9 @@ export function createHandlerRegistry(): HandlerRegistry {
     unregister(kind) {
       handlers.delete(kind);
     },
+    has(kind) {
+      return handlers.has(kind);
+    },
     dispatch: async (kind, payload) => {
       const handler = handlers.get(kind);
       if (!handler) throw new Error(`No handler for route '${String(kind)}'`);
@@ -25,12 +28,20 @@ interface RpcRequestEnvelope {
   payload: unknown;
 }
 
+/**
+ * Installs an RPC listener for the routes this registry owns.
+ *
+ * Ownership is checked before dispatch so the service worker and the offscreen
+ * document can both listen on the same channel: each ignores what it does not
+ * own rather than racing to answer with a "no handler" error.
+ */
 export function installRequestListener(registry: HandlerRegistry): void {
   chrome.runtime.onMessage.addListener((msg: unknown) => {
     if (!msg || typeof msg !== 'object' || (msg as { kind?: string }).kind !== 'rpc.request') {
       return false;
     }
     const env = msg as RpcRequestEnvelope;
+    if (!registry.has(env.routeKind)) return false;
     void registry
       .dispatch(env.routeKind, env.payload as Routes[keyof Routes]['req'])
       .then((result) => {

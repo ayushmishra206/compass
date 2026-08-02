@@ -28,6 +28,13 @@ export const UserProfileSchema = z.object({
   briefingHour: z.number().int(),
   reflectionHour: z.number().int(),
   autoLinkEnabled: z.boolean().default(true),
+  /**
+   * Google OAuth client ID for calendar sync. Per-install, and public by OAuth
+   * design (it travels in the authorize URL), so it lives in the profile
+   * rather than the encrypted credential store — the offscreen document needs
+   * it to refresh tokens without prompting for a passphrase.
+   */
+  calendarClientId: z.string().optional(),
   featureFlags: z.record(z.string(), z.boolean()).optional(),
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;

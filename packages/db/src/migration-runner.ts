@@ -112,11 +112,52 @@ END;
 UPDATE meta SET value = '3' WHERE key = 'schema_version';
 `;
 
+const MIGRATION_0004_CALENDAR = `
+CREATE TABLE calendar_events (
+  id             TEXT PRIMARY KEY,
+  calendar_id    TEXT NOT NULL,
+  start_at       TEXT NOT NULL,
+  end_at         TEXT NOT NULL,
+  all_day        INTEGER NOT NULL DEFAULT 0,
+  summary        TEXT NOT NULL DEFAULT '',
+  location       TEXT,
+  has_conference INTEGER NOT NULL DEFAULT 0,
+  is_focus_block INTEGER NOT NULL DEFAULT 0,
+  self_response  TEXT,
+  status         TEXT NOT NULL DEFAULT 'confirmed',
+  updated_at     TEXT NOT NULL,
+  synced_at      TEXT NOT NULL
+);
+CREATE INDEX calendar_events_start ON calendar_events(start_at);
+
+CREATE TABLE calendar_attendees (
+  event_id  TEXT NOT NULL REFERENCES calendar_events(id) ON DELETE CASCADE,
+  email     TEXT NOT NULL,
+  is_self   INTEGER NOT NULL DEFAULT 0,
+  response  TEXT,
+  PRIMARY KEY (event_id, email)
+);
+CREATE INDEX idx_attendees_email ON calendar_attendees(email);
+
+-- One row per calendar, holding Google's opaque incremental syncToken.
+CREATE TABLE calendar_sync_state (
+  calendar_id  TEXT PRIMARY KEY,
+  sync_token   TEXT,
+  last_sync_at TEXT
+);
+
+UPDATE meta SET value = '4' WHERE key = 'schema_version';
+`;
+
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
   { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
   { version: 3, name: 'notes', sql: MIGRATION_0003_NOTES },
+  { version: 4, name: 'calendar', sql: MIGRATION_0004_CALENDAR },
 ];
+
+/** Version a fully-migrated DB lands on. Derived, so adding a migration updates it. */
+export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 
 export function getSchemaVersion(db: Db): number {
   try {

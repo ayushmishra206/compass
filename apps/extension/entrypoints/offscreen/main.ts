@@ -7,16 +7,20 @@ import {
   createPomodoroRepo,
   createCostLedgerRepo,
   createNotesRepo,
+  createCalendarRepo,
 } from '@compass/db';
 import type { StoredBriefing, NotesRepo } from '@compass/db';
 import { embed, embedBatch } from '@compass/embeddings';
 import { chunkNote, isMinorEdit } from './notes';
+import { eventsForBrief, listRange, syncPrimaryCalendar } from './calendar';
 import {
   getActiveCredentials,
   LlmCredentialsLocked,
   getUserProfile,
   PingOutputSchema,
   codeToAffinity,
+  hasOAuthGrant,
+  getOAuthGrant,
 } from '@compass/core';
 import {
   callWithSchema,
@@ -251,6 +255,7 @@ registry.register('brief.morning', async ({ trigger: _t, force }) => {
     briefRepo,
     pomodoroRepo: await getPomodoroRepo(),
     weatherRpc: async () => null, // Phase 1.6 weather wired in shell hook; offscreen call deferred
+    todayEvents: () => todayEventsForBrief(profile.timezone),
     router,
     costLedger: await getCostLedger(),
     now: () => new Date(),
@@ -408,6 +413,47 @@ registry.register('brief.streak', async () => {
     }
   }
   return { days, lastDate };
+});
+
+// ── Calendar handlers ────────────────────────────────────────────────────────
+
+async function getCalendarRepo() {
+  const db = await getDb();
+  return createCalendarRepo(db);
+}
+
+/** Today's events for the briefing. Never throws — no calendar means no events. */
+async function todayEventsForBrief(timezone: string) {
+  try {
+    return await eventsForBrief(await getCalendarRepo(), timezone, new Date());
+  } catch {
+    return [];
+  }
+}
+
+registry.register('calendar.status', async () => {
+  const connected = await hasOAuthGrant('google');
+  if (!connected) return { connected: false };
+  // Read through the plaintext index and the profile only — this must answer
+  // while the encrypted store is locked.
+  let email: string | undefined;
+  try {
+    email = (await getOAuthGrant('google'))?.email;
+  } catch {
+    email = undefined;
+  }
+  return { connected: true, email };
+});
+
+registry.register('calendar.sync', async () => {
+  const profile = await getUserProfile();
+  const repo = await getCalendarRepo();
+  return syncPrimaryCalendar({ repo, clientId: profile.calendarClientId });
+});
+
+registry.register('calendar.listRange', async ({ fromIso, toIso }) => {
+  const repo = await getCalendarRepo();
+  return { events: await listRange(repo, fromIso, toIso) };
 });
 
 // ── Ledger handlers ──────────────────────────────────────────────────────────

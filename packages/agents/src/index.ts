@@ -2,6 +2,7 @@ export {
   generateMorningBrief,
   type MorningBriefDeps,
   type MorningBriefResult,
+  type BriefEvent,
   type LlmRouter,
 } from './brief.morning';
 export {

@@ -7,6 +7,7 @@ import type { Mood } from '@compass/core';
 import { ConnectedProvidersSection } from './profile/ConnectedProvidersSection';
 import { DailyTimesSection } from './profile/DailyTimesSection';
 import { NotesSection } from './profile/NotesSection';
+import { CalendarSection } from './profile/CalendarSection';
 import { EncryptionSection } from './profile/EncryptionSection';
 
 const sectionWrap: CSSProperties = {
@@ -128,6 +129,8 @@ export function ProfileDrawer() {
       </div>
 
       <DailyTimesSection />
+      <CalendarSection />
+
       <NotesSection />
       <ConnectedProvidersSection />
       <EncryptionSection />

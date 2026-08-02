@@ -81,7 +81,7 @@ Unblocks everything else; nothing here is user-visible.
 **Gate:** lint + typecheck + tests + build green; `master` has the design
 system work. ✅
 
-### Phase B — The Real Day (Google Calendar)
+### Phase B — The Real Day (Google Calendar) ✅ complete
 
 The highest-value phase. Kills the largest mock and fills `events` in the
 Brief snapshot.
@@ -100,7 +100,9 @@ Brief snapshot.
 - `brief.morning` snapshot gets real `events`.
 
 **Gate:** PRD §9.6 DoD; a revoked token degrades to a dismissible banner, never
-a crash; Brief visibly reflects today's actual calendar.
+a crash; Brief visibly reflects today's actual calendar. ✅ (code complete and
+green against mocks; first live fetch needs the one-time OAuth client setup in
+[setup-google-calendar.md](../../setup-google-calendar.md))
 
 ### Phase C — Real Goals (no OAuth)
 

@@ -11,6 +11,7 @@ export * from './block';
 export * from './briefing';
 export * from './gmail';
 export * from './meeting';
+export * from './calendar';
 export * from './telemetry';
 
 /**

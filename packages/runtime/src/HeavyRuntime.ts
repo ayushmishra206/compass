@@ -18,5 +18,7 @@ export interface RpcHandler<K extends keyof Routes> {
 export interface HandlerRegistry {
   register<K extends keyof Routes>(kind: K, handler: RpcHandler<K>): void;
   unregister(kind: keyof Routes): void;
+  /** Whether this registry owns the route. Lets several listeners coexist. */
+  has(kind: keyof Routes): boolean;
   dispatch<K extends keyof Routes>(kind: K, payload: Routes[K]['req']): Promise<Routes[K]['res']>;
 }
