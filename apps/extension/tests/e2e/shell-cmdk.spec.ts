@@ -33,10 +33,14 @@ test.describe('Command palette', () => {
     // Phase 2 semantic-notes wires the real notes.askGrounded RPC.
     // We accept ANY terminal state (no-notes / locked / error / grounded
     // answer). The point of this e2e is "dispatch happens"; the in-process
-    // tests cover state-machine details. The thinking spinner is the
-    // signal that the rpc fired.
-    await expect(page.getByText(/Searching your notes/i)).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText(/Searching your notes/i)).not.toBeVisible({ timeout: 30_000 });
+    // tests cover state-machine details.
+    //
+    // Deliberately NOT asserting the "Searching your notes" spinner. It is a
+    // transient state, and in CI the RPC rejects almost immediately because
+    // sqlite-wasm cannot init without cross-origin isolation — so `busy` can
+    // flip true→false inside a single commit and the spinner is never painted
+    // long enough to observe. Reaching a terminal state proves the dispatch
+    // happened just as well, and does so deterministically.
     const terminalStates = [
       /Write some notes first/i,
       /Unlock to ask/i,
@@ -57,7 +61,7 @@ test.describe('Command palette', () => {
           }
           return false;
         },
-        { timeout: 5_000 },
+        { timeout: 30_000 },
       )
       .toBe(true);
   });
