@@ -48,22 +48,31 @@ import {
   type BriefGoal,
 } from '@compass/agents';
 
-// sqlite-wasm's OPFS-backed OpfsDb requires SharedArrayBuffer (cross-origin
-// isolation) which is not available in a plain MV3 offscreen document. The
-// proper fix is to run sqlite-wasm in a dedicated worker via the bundled
-// sqlite3Worker1Promiser (tracked as a separate workstream). Until that
-// lands we swallow the rejection here so the failure does not show up as
-// "Uncaught (in promise)" in chrome://extensions — DB-backed routes
-// (brief / notes / pomodoro / cost-ledger) will still error individually
-// when called, but the surface-level red error goes away.
+// The database uses the OPFS SAHPool VFS, which needs no SharedArrayBuffer
+// and no COOP/COEP headers — see packages/db/src/opfs.ts for why the default
+// OpfsDb cannot work in an MV3 offscreen document.
+//
+// A failure here is recorded rather than swallowed, so `system.dbStatus` can
+// tell the UI the difference between "you have no data" and "storage is
+// broken". Those looked identical before, which made a total outage present
+// as a set of ordinary empty states.
+let dbFailure: string | null = null;
 void startDb().catch((err) => {
-  console.warn(
-    '[offscreen] sqlite-wasm DB init failed — DB-backed routes will be unavailable:',
-    err instanceof Error ? err.message : err,
-  );
+  dbFailure = err instanceof Error ? err.message : String(err);
+  console.error('[offscreen] database init failed — DB-backed routes unavailable:', dbFailure);
 });
 
 const registry = createHandlerRegistry();
+
+registry.register('system.dbStatus', async () => {
+  if (dbFailure) return { ok: false as const, error: dbFailure };
+  try {
+    await getDb();
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
+  }
+});
 
 registry.register('system.ping', async ({ utterance }) => {
   const creds = await getActiveCredentials();
