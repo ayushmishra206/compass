@@ -70,6 +70,34 @@ export const ROUTING: ReadonlyArray<RouteConfig> = [
     temperature: 0.2,
   },
   // Phase 2+ adds rows here as features ship.
+  {
+    // Untrusted input. Kept on a cheap, fast model: the task is extraction,
+    // not reasoning, and a larger model is not a safety improvement here.
+    taskId: 'gmail.extract',
+    models: {
+      openrouter: 'anthropic/claude-haiku-4-5',
+      openai: 'gpt-5.4-mini',
+      anthropic: 'claude-haiku-4-5',
+    },
+    reasoningEffort: 'none',
+    maxOutputTokens: 600,
+    cacheable: true,
+    temperature: 0.1,
+  },
+  {
+    // The one high-tier task: infrequent, user-triggered, and a vague plan is
+    // worse than none (PRD §6.2).
+    taskId: 'goal.decompose',
+    models: {
+      openrouter: 'anthropic/claude-sonnet-4-6',
+      openai: 'gpt-5.4',
+      anthropic: 'claude-sonnet-4-6',
+    },
+    reasoningEffort: 'high',
+    maxOutputTokens: 2500,
+    cacheable: false,
+    temperature: 0.4,
+  },
 ];
 
 export function findRoute(taskId: string): RouteConfig | undefined {

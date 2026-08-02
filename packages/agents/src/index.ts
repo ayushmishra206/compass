@@ -24,4 +24,10 @@ export {
   type AskGroundedHit,
   type AskGroundedResult,
 } from './notes.askGrounded';
+export {
+  extractGmailActions,
+  type ExtractGmailDeps,
+  type ExtractGmailResult,
+  type GmailExtractionOutput,
+} from './gmail.extract';
 export * as stubs from './stubs/index.js';

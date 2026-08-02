@@ -95,7 +95,14 @@ const INJECTION_PATTERNS: Array<{ id: string; re: RegExp }> = [
   { id: 'ignore_previous', re: /\bignore\s+(all\s+)?(previous|prior|above)\b/i },
   { id: 'disregard', re: /\bdisregard\s+(all\s+)?(previous|prior|your)\b/i },
   { id: 'new_instructions', re: /\bnew\s+instructions?\b/i },
-  { id: 'system_prompt', re: /\b(system\s+prompt|you\s+are\s+now|act\s+as)\b/i },
+  {
+    // Deliberately narrower than "mentions a system prompt". A plain mention
+    // is ordinary shop talk — especially for someone who builds with LLMs —
+    // and flagging it would make the badge meaningless. Requires the phrase to
+    // be asserting or overriding one.
+    id: 'system_prompt',
+    re: /\b(system\s+prompt\s*(update|override|change)|your\s+system\s+prompt|you\s+are\s+now\b|act\s+as\s+(an?\s+)?(unrestricted|unfiltered|jailbroken|admin|developer|dan)\b)/i,
+  },
   { id: 'exfiltrate', re: /\b(send|forward|email)\b[^.]{0,40}\b(to|at)\b\s*\S+@\S+/i },
   { id: 'tool_invoke', re: /\b(call|invoke|execute|run)\s+(the\s+)?(tool|function|command)\b/i },
   { id: 'delimiter_escape', re: /<\/?\s*untrusted_source\s*>/i },

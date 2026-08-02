@@ -33,6 +33,36 @@ export function googleCalendarProvider(clientId: string): PkceProvider {
   };
 }
 
+/**
+ * Google, calendar + read-only Gmail.
+ *
+ * Requested as an incremental grant on top of the calendar scope, so a user
+ * who only wants calendar is never shown a Gmail consent screen.
+ *
+ * `gmail.readonly` rather than the PRD's `gmail.modify`: drafting is not in
+ * this phase, and asking for write access to support a feature that does not
+ * exist would violate least privilege.
+ */
+export function googleInboxProvider(clientId: string): PkceProvider {
+  return {
+    id: 'google',
+    authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    clientId,
+    scopes: [
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/userinfo.email',
+    ],
+    extraAuthParams: {
+      access_type: 'offline',
+      prompt: 'consent',
+      // Keeps any previously-granted scope rather than replacing it.
+      include_granted_scopes: 'true',
+    },
+  };
+}
+
 /** OpenRouter — PRD §7.2 option C, "one-click sign-in". Returns a BYOK key. */
 export function openRouterProvider(clientId: string): PkceProvider {
   return {

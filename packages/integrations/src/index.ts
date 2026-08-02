@@ -3,3 +3,4 @@
 export * from './scheduling';
 export * from './oauth';
 export * from './gcal';
+export * from './gmail';
