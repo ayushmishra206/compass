@@ -109,9 +109,19 @@ registry.register('llm.validateKey', async ({ provider, apiKey }) => {
   return { valid: false, error: `Unknown provider: ${String(provider)}` };
 });
 
-// Pre-domain interim host. Flip back to https://assets.compassdash.com/scenes/manifest.v1.json
-// once the custom domain is registered and Pages CNAME is configured.
+/**
+ * Scene manifest host.
+ *
+ * GitHub Pages rather than assets.compassdash.com: the custom domain is not
+ * registered, and for a single-user alpha Pages is a real CDN with a real
+ * cache — not a stopgap. Overridable at build time via
+ * VITE_SCENE_MANIFEST_URL so pointing at a domain later needs no code change.
+ *
+ * A failed fetch is survivable: useScene seeds from the last image URL in
+ * localStorage, so the Stage still paints without this.
+ */
 const SCENE_MANIFEST_URL =
+  import.meta.env.VITE_SCENE_MANIFEST_URL ??
   'https://ayushmishra206.github.io/compass-assets/scenes/manifest.v1.json';
 
 registry.register('scenes.getManifest', async (req) => {

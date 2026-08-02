@@ -106,7 +106,7 @@ export async function generateMorningBrief(deps: MorningBriefDeps): Promise<Morn
   const snapshot = {
     now: now.toISOString(),
     timezone: deps.userProfile.timezone,
-    user: {},
+    user: { name: deps.userProfile.displayName ?? '' },
     events,
     overdueTasks: [],
     focusSummary14d: focus,

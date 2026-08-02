@@ -1,13 +1,16 @@
 import type { CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { GlassCard, Ink, OverlayText, Row, Stack, Text } from '@compass/ui';
+import { getUserProfile } from '@compass/core';
 import { useShell } from '../state/shell.js';
 import { useScene } from '../scene/useScene.js';
-import { MOCK } from '../mocks/index.js';
 import { useBrief } from '../hooks/useBrief.js';
+import { buildGreeting, buildSubline, focusLabel } from '../lib/greeting.js';
 
 interface BriefingOutput {
-  tldr: string;
+  tldr?: string;
   oneLineMood?: string;
+  topPriority?: { title: string; why: string; suggestedFocusMinutes?: number };
 }
 
 const MOOD_TEXT: Record<string, string> = {
@@ -71,21 +74,43 @@ const btnGhost: CSSProperties = {
 export function Hero() {
   const navClick = useShell((s) => s.navClick);
   const scene = useScene();
-  const b = MOCK.brief;
   const { state } = useBrief('morning');
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
-  let tldr = '';
-  if (state.kind === 'have-brief') {
-    tldr = (state.brief.output as BriefingOutput).tldr;
-  } else if (state.kind === 'too-early') {
+  useEffect(() => {
+    void getUserProfile()
+      .then((p) => setDisplayName(p.displayName ?? null))
+      .catch(() => setDisplayName(null));
+  }, []);
+
+  const output = state.kind === 'have-brief' ? (state.brief.output as BriefingOutput) : null;
+
+  // Status lines for the states where there is no brief to show yet. These
+  // replace the sub-line rather than sitting alongside it, so the shell never
+  // claims to summarise a day it has not read.
+  let statusLine: string | null = null;
+  if (state.kind === 'too-early') {
     const ready = new Date(state.readyAt).toLocaleTimeString(undefined, {
       hour: 'numeric',
       minute: '2-digit',
     });
-    tldr = `Your morning brief will be ready at ${ready}.`;
+    statusLine = `Your morning brief will be ready at ${ready}.`;
   } else if (state.kind === 'locked-no-brief') {
-    tldr = '🔒 Your daily brief is waiting. Unlock to generate.';
+    statusLine = 'Your daily brief is waiting. Unlock to generate it.';
   }
+
+  const greeting = buildGreeting(new Date(), displayName);
+  const subline =
+    statusLine ??
+    buildSubline({
+      briefMood: output?.oneLineMood ?? null,
+      briefTldr: output?.tldr ?? null,
+      sceneMood: scene.mood,
+      fallbackBySceneMood: MOOD_TEXT,
+    });
+
+  const priority = output?.topPriority ?? null;
+  const focusMinutes = priority?.suggestedFocusMinutes ?? null;
 
   return (
     <section style={sectionStyle} className="compass-slideup">
@@ -98,44 +123,42 @@ export function Hero() {
           {stamp(new Date())}
         </OverlayText>
         <OverlayText variant="display">
-          Move with{' '}
+          {greeting.lead}
           <Ink as="em" tone="accent" style={{ fontWeight: 400 }}>
-            momentum
+            {greeting.emphasis}
           </Ink>
-          .
+          {greeting.trailing}
         </OverlayText>
-        <OverlayText variant="serif-body" style={{ fontSize: 18, maxWidth: 480 }}>
-          {MOOD_TEXT[scene.mood] ?? ''} {tldr}
-        </OverlayText>
+        {subline && (
+          <OverlayText variant="serif-body" style={{ fontSize: 18, maxWidth: 480 }}>
+            {subline}
+          </OverlayText>
+        )}
       </Stack>
-      <GlassCard tier={1} style={cardWrapStyle}>
-        <Stack gap={3}>
-          <Text variant="mono" tone="accent" style={{ fontSize: 10, letterSpacing: '0.14em' }}>
-            Top of mind · 90 minutes
-          </Text>
-          <Row gap={3} align="start">
-            <Text variant="title" style={{ fontSize: 24, flex: 1 }}>
-              {b.topPriority.title}
+
+      {priority && (
+        <GlassCard tier={1} style={cardWrapStyle}>
+          <Stack gap={3}>
+            <Text variant="mono" tone="accent" style={{ fontSize: 10, letterSpacing: '0.14em' }}>
+              Top of mind · {focusLabel(focusMinutes)}
             </Text>
-          </Row>
-          <Text variant="serif-body">{b.topPriority.why}</Text>
-          <Row gap={3} align="center">
-            <button style={btnAccent} onClick={() => navClick('focus')}>
-              ▶ Begin 90 min
-            </button>
-            <button style={btnGhost} onClick={() => navClick('brief')}>
-              Read full brief
-            </button>
-            <Text
-              variant="mono"
-              tone="secondary"
-              style={{ marginLeft: 'auto', fontSize: 10, letterSpacing: '0.14em' }}
-            >
-              claude · 4.2s
-            </Text>
-          </Row>
-        </Stack>
-      </GlassCard>
+            <Row gap={3} align="start">
+              <Text variant="title" style={{ fontSize: 24, flex: 1 }}>
+                {priority.title}
+              </Text>
+            </Row>
+            <Text variant="serif-body">{priority.why}</Text>
+            <Row gap={3} align="center">
+              <button style={btnAccent} onClick={() => navClick('focus')}>
+                ▶ Begin {focusLabel(focusMinutes)}
+              </button>
+              <button style={btnGhost} onClick={() => navClick('brief')}>
+                Read full brief
+              </button>
+            </Row>
+          </Stack>
+        </GlassCard>
+      )}
     </section>
   );
 }
