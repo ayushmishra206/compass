@@ -2,3 +2,4 @@
 // @compass/llm, or @compass/runtime. Phase 1.5 introduces the alarms scheduler.
 export * from './scheduling';
 export * from './oauth';
+export * from './gcal';

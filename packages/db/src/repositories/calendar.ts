@@ -1,26 +1,7 @@
+import type { CalendarEventRow } from '@compass/core';
 import type { Db } from '../opfs';
 
-export interface CalendarAttendee {
-  email: string;
-  isSelf: boolean;
-  response: string | null;
-}
-
-export interface CalendarEventRow {
-  id: string;
-  calendarId: string;
-  startAt: string;
-  endAt: string;
-  allDay: boolean;
-  summary: string;
-  location: string | null;
-  hasConference: boolean;
-  isFocusBlock: boolean;
-  selfResponse: string | null;
-  status: string;
-  updatedAt: string;
-  attendees: CalendarAttendee[];
-}
+export type { CalendarAttendee, CalendarEventRow } from '@compass/core';
 
 export interface CalendarRepo {
   /** Insert-or-replace a synced batch. Attendees are replaced, not merged. */
