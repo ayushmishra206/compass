@@ -20,7 +20,10 @@ export default defineConfig({
   manifest: {
     name: 'Compass',
     description: 'A calm new tab that quietly learns your day.',
-    permissions: ['storage', 'alarms', 'offscreen'],
+    // `identity` drives the Google OAuth PKCE flow from the service worker.
+    // No host_permissions: calendar and token endpoints are reached with
+    // ordinary fetch from extension pages, which needs no host grant.
+    permissions: ['storage', 'alarms', 'offscreen', 'identity'],
     chrome_url_overrides: { newtab: 'newtab.html' },
     action: { default_title: 'Compass' },
     // MV3 default CSP blocks WebAssembly compilation. sqlite-wasm needs

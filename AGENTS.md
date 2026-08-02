@@ -65,6 +65,7 @@ Custom `no-restricted-syntax` rules that enforce architectural boundaries. Viola
 ## Reference docs
 
 - **[docs/prd.md](docs/prd.md)** — product requirements; 7 pillars, 5 phases, architectural invariants. Canonical.
+- **[docs/setup-google-calendar.md](docs/setup-google-calendar.md)** — one-time Google OAuth client setup for calendar sync.
 - **[docs/design-system.md](docs/design-system.md)** — tokens, primitives, icons, hooks, layout recipes. Update when you add to `packages/ui`.
 - **[docs/architecture.md](docs/architecture.md)** — package boundaries, integration seams, routing/state/shortcuts, recipes for adding surfaces/primitives/seams.
 - **[docs/superpowers/specs/](docs/superpowers/specs/)** — sprint design specs.
