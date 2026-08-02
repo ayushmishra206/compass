@@ -634,9 +634,9 @@ registry.register('ledger.getMonthlySpend', async ({ monthStartIso }) => {
 
 // ── Pomodoro handlers ─────────────────────────────────────────────────────────
 
-registry.register('pomodoro.start', async ({ id, durationMin, theme }) => {
+registry.register('pomodoro.start', async ({ id, durationMin, theme, soundscapeId }) => {
   const repo = await getPomodoroRepo();
-  await repo.start({ id, durationMin, theme });
+  await repo.start({ id, durationMin, theme, soundscapeId });
   return { ok: true as const };
 });
 

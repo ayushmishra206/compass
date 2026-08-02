@@ -62,7 +62,10 @@ export interface Routes {
     req: { dateLocal: string; kind: 'morning' | 'eod'; rating: -1 | 1 };
     res: { ok: true };
   };
-  'pomodoro.start': { req: { id: string; durationMin: number; theme?: string }; res: { ok: true } };
+  'pomodoro.start': {
+    req: { id: string; durationMin: number; theme?: string; soundscapeId?: string | null };
+    res: { ok: true };
+  };
   'pomodoro.complete': { req: { id: string }; res: { ok: true } };
   'pomodoro.abandon': { req: { id: string }; res: { ok: true } };
   'alarms.refresh': { req: Record<string, never>; res: { ok: true } };
