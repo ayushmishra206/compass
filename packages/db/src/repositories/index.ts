@@ -8,6 +8,13 @@ export {
 export { createCostLedgerRepo, type CostLedgerRepo } from './costLedger';
 export { createBlockerRepo, type BlockerRepo, type StoredBlockRule } from './blocker';
 export {
+  createGmailRepo,
+  MAX_SNIPPET_CHARS,
+  type GmailRepo,
+  type StoredMessage,
+  type ExtractedAction,
+} from './gmail';
+export {
   createGoalsRepo,
   type GoalsRepo,
   type StoredGoal,

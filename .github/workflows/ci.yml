@@ -87,6 +87,25 @@ jobs:
           path: apps/extension/.output/firefox-mv2
           retention-days: 14
 
+  red-team:
+    # PRD §19.4.7 — must run on every PR touching the agents or the prompt
+    # layer. Runs unconditionally rather than on a path filter: a change to
+    # the guardrails in @compass/core is exactly the change most likely to
+    # weaken this, and a skipped required check reads as a passing one.
+    name: red-team
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm vitest run tests/red-team/
+
   gate-offline:
     name: gate:offline
     runs-on: ubuntu-latest

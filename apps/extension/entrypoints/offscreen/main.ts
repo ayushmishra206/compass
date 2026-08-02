@@ -10,11 +10,13 @@ import {
   createCalendarRepo,
   createGoalsRepo,
   createBlockerRepo,
+  createGmailRepo,
 } from '@compass/db';
 import type { StoredBriefing, NotesRepo } from '@compass/db';
 import { embed, embedBatch } from '@compass/embeddings';
 import { chunkNote, isMinorEdit } from './notes';
 import { eventsForBrief, listRange, syncPrimaryCalendar } from './calendar';
+import { syncInbox } from './inbox';
 import {
   getActiveCredentials,
   LlmCredentialsLocked,
@@ -622,6 +624,44 @@ registry.register('blocker.recordBypass', async ({ ruleId, hostname }) => {
 registry.register('blocker.remove', async ({ id }) => {
   const repo = await getBlockerRepo();
   await repo.remove(id);
+  return { ok: true as const };
+});
+
+// ── Inbox handlers ───────────────────────────────────────────────────────────
+
+async function getGmailRepo() {
+  const db = await getDb();
+  return createGmailRepo(db);
+}
+
+registry.register('inbox.status', async () => {
+  let connected = false;
+  try {
+    const grant = await getOAuthGrant('google');
+    connected = !!grant?.scope.includes('gmail.readonly');
+  } catch {
+    // Locked store: fall back to "not connected" rather than prompting.
+    connected = false;
+  }
+  const repo = await getGmailRepo();
+  const messages = await repo.list(200);
+  return { connected, count: messages.length };
+});
+
+registry.register('inbox.sync', async ({ max }) => {
+  const profile = await getUserProfile();
+  const repo = await getGmailRepo();
+  return syncInbox({ repo, router, clientId: profile.calendarClientId, max });
+});
+
+registry.register('inbox.list', async ({ limit }) => {
+  const repo = await getGmailRepo();
+  return { messages: await repo.list(limit ?? 50) };
+});
+
+registry.register('inbox.wipe', async () => {
+  const repo = await getGmailRepo();
+  await repo.wipe();
   return { ok: true as const };
 });
 

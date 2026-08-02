@@ -12,4 +12,4 @@ export {
   type PkceProvider,
   type TokenSet,
 } from './pkce';
-export { googleCalendarProvider, openRouterProvider } from './providers';
+export { googleCalendarProvider, googleInboxProvider, openRouterProvider } from './providers';

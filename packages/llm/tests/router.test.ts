@@ -63,7 +63,8 @@ beforeEach(() => {
 });
 
 // Import the module under test AFTER mocks are set up
-const { executeTask } = await import('../src/router');
+const { executeTask, assertTrustBoundary } = await import('../src/router');
+const { LlmUntrustedToolViolation } = await import('../src/errors');
 
 describe('executeTask', () => {
   it('throws on unknown taskId', async () => {
@@ -320,5 +321,54 @@ describe('executeTask', () => {
       expect(mockOpenAiComplete).not.toHaveBeenCalled();
       expect(mockAnthropicComplete).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// ── PRD §19.4.1 — separation of extraction and action ────────────────────────
+
+describe('assertTrustBoundary', () => {
+  it('allows a trusted request to hold a state-changing capability', () => {
+    expect(() => assertTrustBoundary('brief.morning', true, ['createTask'])).not.toThrow();
+  });
+
+  it('allows an untrusted request with no capabilities', () => {
+    expect(() => assertTrustBoundary('gmail.extract', false, [])).not.toThrow();
+  });
+
+  it('allows an untrusted request holding only read capabilities', () => {
+    expect(() => assertTrustBoundary('gmail.extract', false, ['readNote'])).not.toThrow();
+  });
+
+  it.each([
+    'sendEmail',
+    'draftsSend',
+    'messagesSend',
+    'createTask',
+    'applyLabel',
+    'deleteMessage',
+    'createEvent',
+    'writeNote',
+  ])('refuses an untrusted request holding %s', (cap) => {
+    expect(() => assertTrustBoundary('gmail.extract', false, [cap])).toThrow(
+      LlmUntrustedToolViolation,
+    );
+  });
+
+  it('names the offending capability so the wiring bug is findable', () => {
+    expect(() => assertTrustBoundary('gmail.extract', false, ['sendEmail'])).toThrow(/sendEmail/);
+  });
+
+  it('catches a violation among otherwise safe capabilities', () => {
+    expect(() =>
+      assertTrustBoundary('gmail.extract', false, ['readNote', 'search', 'sendEmail']),
+    ).toThrow(LlmUntrustedToolViolation);
+  });
+});
+
+describe('executeTask trust boundary', () => {
+  it('refuses an untrusted task that asks for free-form output', async () => {
+    await expect(
+      executeTask('gmail.extract', { messages: [] }, { trusted: false }),
+    ).rejects.toThrow(LlmUntrustedToolViolation);
   });
 });

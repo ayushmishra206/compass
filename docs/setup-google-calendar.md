@@ -47,7 +47,8 @@ The trailing slash matters.
 - User type: **External**
 - App name: `Compass`
 - User support email and developer contact: your own address
-- **Scopes:** add `.../auth/calendar.readonly` and `.../auth/userinfo.email`
+- **Scopes:** add `.../auth/calendar.readonly` and `.../auth/userinfo.email`.
+  Add `.../auth/gmail.readonly` too if you want the Inbox drawer.
 - **Test users:** add your own Google account
 
 Leave the app in **Testing**. Do not click "Publish app".
@@ -105,14 +106,32 @@ will be grounded in your real schedule.
 
 ---
 
+## Adding Gmail
+
+Gmail is a separate, optional grant. **Profile → Calendar → Add Gmail
+(read-only)** re-opens the consent screen with `gmail.readonly` added; the
+calendar grant is preserved via `include_granted_scopes`.
+
+`gmail.readonly` is a _restricted_ scope in Google's classification. In
+Testing mode that costs you nothing — no verification, no CASA — but it is why
+publishing this app would trigger a security assessment.
+
+Compass reads the last week of primary-inbox mail, extracts commitments on this
+device, and stores only Gmail's own snippet (capped at 500 characters). Message
+bodies are never written to disk. **Profile → Inbox → Clear local copy** wipes
+the index.
+
+---
+
 ## What Compass can and cannot do with this
 
 **Can:** read event times, titles, locations, attendee lists, and conference
 links from your primary calendar.
 
-**Cannot:** create, edit, or delete events. The grant is `calendar.readonly`.
-Writing would require a different scope that is not requested anywhere in the
-codebase.
+**Cannot:** create, edit, or delete events; send, reply to, draft, label, or
+delete email. The grants are `calendar.readonly` and `gmail.readonly`. There is
+no send path anywhere in the codebase, and a test asserts the Gmail client
+exports no send, draft, trash, or delete function.
 
 Event data is stored in the extension's local SQLite database. Your refresh
 token is encrypted at rest if you have enabled passphrase encryption in

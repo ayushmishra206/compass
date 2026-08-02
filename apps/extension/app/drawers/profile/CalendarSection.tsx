@@ -30,9 +30,11 @@ const inputStyle: CSSProperties = {
 };
 
 type Status = { connected: boolean; email?: string };
+type InboxStatus = { connected: boolean; count: number };
 
 export function CalendarSection() {
   const [status, setStatus] = useState<Status | null>(null);
+  const [inbox, setInbox] = useState<InboxStatus | null>(null);
   const [clientId, setClientId] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -45,6 +47,11 @@ export function CalendarSection() {
         setStatus(await rpc('calendar.status', {}));
       } catch {
         setStatus({ connected: false });
+      }
+      try {
+        setInbox(await rpc('inbox.status', {}));
+      } catch {
+        setInbox({ connected: false, count: 0 });
       }
     })();
   }, []);
@@ -63,6 +70,25 @@ export function CalendarSection() {
         setMessage('Connected. Syncing your calendar…');
         await rpc('calendar.sync', {});
         setMessage('Connected.');
+      } else {
+        setMessage(res.error);
+      }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const connectInbox = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await setUserProfile({ calendarClientId: clientId.trim() });
+      const res = await rpc('inbox.connect', { clientId: clientId.trim() });
+      if (res.ok) {
+        setInbox({ connected: true, count: 0 });
+        setMessage('Gmail connected, read-only.');
       } else {
         setMessage(res.error);
       }
@@ -124,6 +150,27 @@ export function CalendarSection() {
             {busy ? 'Connecting…' : 'Connect Google Calendar'}
           </button>
         </>
+      )}
+
+      {status.connected && !inbox?.connected && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--color-hair)' }}>
+          <Text variant="body" tone="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+            Also read Gmail? Compass extracts commitments read-only and cannot send, reply, or
+            modify anything. Adding this re-opens the Google consent screen.
+          </Text>
+          <button type="button" style={btnGhost} onClick={connectInbox} disabled={busy}>
+            {busy ? 'Connecting…' : 'Add Gmail (read-only)'}
+          </button>
+        </div>
+      )}
+
+      {inbox?.connected && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--color-hair)' }}>
+          <Text variant="body" tone="muted" style={{ fontSize: 12 }}>
+            Gmail connected, read-only — {inbox.count} message{inbox.count === 1 ? '' : 's'} indexed
+            locally.
+          </Text>
+        </div>
       )}
 
       {message && (

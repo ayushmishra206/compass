@@ -3,7 +3,7 @@
 //
 // Streaming variants are deferred — see Q3(d) in the Phase 1 spec.
 
-import type { StoredBriefing, StoredGoal, StoredBlockRule } from '@compass/db';
+import type { StoredBriefing, StoredGoal, StoredBlockRule, StoredMessage } from '@compass/db';
 import type { CalendarEventRow, ProviderId, SceneManifest, WxAffinity } from '@compass/core';
 
 export interface Routes {
@@ -151,6 +151,27 @@ export interface Routes {
   };
   'blocker.grantPass': { req: { hostname: string }; res: { ok: true } };
   'blocker.recordBypass': { req: { ruleId: string; hostname: string }; res: { ok: true } };
+  'inbox.connect': {
+    req: { clientId: string };
+    res: { ok: true; email?: string } | { ok: false; error: string };
+  };
+  'inbox.status': {
+    req: Record<string, never>;
+    res: { connected: boolean; lastSyncAt?: string; count: number };
+  };
+  'inbox.sync': {
+    req: { max?: number };
+    res:
+      | { ok: true; fetched: number; extracted: number; failed: number }
+      | {
+          ok: false;
+          reason: 'not-connected' | 'locked' | 'auth-expired' | 'error';
+          error?: string;
+        };
+  };
+  'inbox.list': { req: { limit?: number }; res: { messages: StoredMessage[] } };
+  /** §12.8 kill switch: wipes the local index. */
+  'inbox.wipe': { req: Record<string, never>; res: { ok: true } };
   'goals.setMilestoneDone': {
     req: { milestoneId: string; done: boolean };
     res: { ok: true };

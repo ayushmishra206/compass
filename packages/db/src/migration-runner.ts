@@ -216,6 +216,30 @@ CREATE INDEX block_events_rule ON block_events(rule_id, occurred_at DESC);
 UPDATE meta SET value = '6' WHERE key = 'schema_version';
 `;
 
+const MIGRATION_0007_GMAIL = `
+-- Local index only. Never the full body: snippet is capped at 500 chars by
+-- the writer, and nothing here outlives the retention sweep (PRD §5.7).
+CREATE TABLE gmail_messages_index (
+  message_id        TEXT PRIMARY KEY,
+  thread_id         TEXT,
+  from_email        TEXT,
+  from_name         TEXT,
+  subject           TEXT,
+  snippet           TEXT,
+  received_at       TEXT NOT NULL,
+  last_processed_at TEXT,
+  priority          TEXT CHECK (priority IN ('p1','p2','p3','p4')),
+  -- Set when the injection heuristic flagged the body. Ids only, no content.
+  injection_flags   TEXT NOT NULL DEFAULT '[]',
+  actions_json      TEXT NOT NULL DEFAULT '[]',
+  archived          INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX gmail_received ON gmail_messages_index(received_at DESC);
+CREATE INDEX gmail_priority ON gmail_messages_index(priority, received_at DESC);
+
+UPDATE meta SET value = '7' WHERE key = 'schema_version';
+`;
+
 const MIGRATIONS: Migration[] = [
   { version: 1, name: 'foundation', sql: MIGRATION_0001_FOUNDATION },
   { version: 2, name: 'briefings-pomodoros', sql: MIGRATION_0002_BRIEFINGS_POMODOROS },
@@ -223,6 +247,7 @@ const MIGRATIONS: Migration[] = [
   { version: 4, name: 'calendar', sql: MIGRATION_0004_CALENDAR },
   { version: 5, name: 'goals', sql: MIGRATION_0005_GOALS },
   { version: 6, name: 'focus', sql: MIGRATION_0006_FOCUS },
+  { version: 7, name: 'gmail', sql: MIGRATION_0007_GMAIL },
 ];
 
 /** Version a fully-migrated DB lands on. Derived, so adding a migration updates it. */

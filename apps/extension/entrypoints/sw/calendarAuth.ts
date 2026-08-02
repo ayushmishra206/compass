@@ -1,4 +1,9 @@
-import { googleCalendarProvider, startPkceFlow, type PkceFlowDeps } from '@compass/integrations';
+import {
+  googleCalendarProvider,
+  googleInboxProvider,
+  startPkceFlow,
+  type PkceFlowDeps,
+} from '@compass/integrations';
 import { setOAuthGrant } from '@compass/core';
 
 /**
@@ -39,11 +44,27 @@ export async function connectGoogleCalendar(
   clientId: string,
   deps: Partial<PkceFlowDeps> & { fetchImpl?: typeof fetch } = {},
 ): Promise<ConnectResult> {
+  return connectGoogle(googleCalendarProvider, clientId, deps);
+}
+
+/** Same flow, adding the read-only Gmail scope as an incremental grant. */
+export async function connectGoogleInbox(
+  clientId: string,
+  deps: Partial<PkceFlowDeps> & { fetchImpl?: typeof fetch } = {},
+): Promise<ConnectResult> {
+  return connectGoogle(googleInboxProvider, clientId, deps);
+}
+
+async function connectGoogle(
+  makeProvider: (clientId: string) => ReturnType<typeof googleCalendarProvider>,
+  clientId: string,
+  deps: Partial<PkceFlowDeps> & { fetchImpl?: typeof fetch } = {},
+): Promise<ConnectResult> {
   const trimmed = clientId.trim();
   if (!trimmed) return { ok: false, error: 'A Google OAuth client ID is required.' };
 
   const fetchImpl = deps.fetchImpl ?? fetch;
-  const provider = googleCalendarProvider(trimmed);
+  const provider = makeProvider(trimmed);
 
   try {
     const tokens = await startPkceFlow(provider, {
